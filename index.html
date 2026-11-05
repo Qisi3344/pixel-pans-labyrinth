@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="一座放在白色桌面上的黑暗童话微缩迷宫。Three.js 正交视角，低模像素渲染，三重符文机关。" />
+  <title>石之迷宫 | THE STONE LABYRINTH</title>
+</head>
+<body>
+  <main id="app">
+    <canvas id="world" role="img" aria-label="可交互的等距三维石头迷宫"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><div><div class="eyebrow">A MINIATURE DARK FAIRYTALE</div><div class="brand-name">石之迷宫<span> / 01</span></div></div></div>
+      <div class="top-actions">
+        <button type="button" class="tool" id="zoom-out" aria-label="缩小视图">−</button>
+        <button type="button" class="tool" id="zoom-in" aria-label="放大视图">+</button>
+        <button type="button" class="tool sound" id="sound" aria-label="切换音效" aria-pressed="true">♫</button>
+        <button type="button" class="tool reset" id="restart" title="重新开始">↻</button>
+      </div>
+    </header>
+    <section class="chapter" aria-live="polite">
+      <div class="chapter-brow">CHAPTER I · THE FORGOTTEN STONES</div>
+      <h1>遗忘之井</h1>
+      <div class="chapter-desc">走进石墙之间。让三枚符印归位。</div>
+      <div class="runes" id="runes">
+        <div class="rune-state" data-rune="0"><span class="rune-dot mint">◆</span><span>苔之印</span><b>未解</b></div>
+        <div class="rune-state" data-rune="1"><span class="rune-dot violet">◆</span><span>月之印</span><b>未解</b></div>
+        <div class="rune-state" data-rune="2"><span class="rune-dot gold">◆</span><span>灰烬印</span><b>未解</b></div>
+      </div>
+    </section>
+    <div class="game-tip" id="game-tip" aria-live="polite">点击石砖移动，寻找第一枚符印。</div>
+    <div class="hint" id="hint"><span class="hint-sigil">✧</span><div id="hint-content">符印藏在迷宫岔路中。</div><button id="interact" class="interact" type="button">旋转符印 <kbd>E</kbd></button></div>
+    <div class="bottom-panel">
+      <div class="controls-copy"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><span class="copy-connector">移动</span><span class="key">E</span><span class="copy-connector">旋转符印</span><span class="copy-alt">· 点击地面可自动寻路</span></div>
+      <div class="progress" id="progress">0 / 3 <span>SEALS RELEASED</span></div>
+    </div>
+    <div class="touch-controls" aria-label="手机方向键">
+      <button class="touch-up" data-move="0,-1" aria-label="向北移动">↑</button>
+      <button class="touch-left" data-move="-1,0" aria-label="向西移动">←</button>
+      <button class="touch-down" data-move="0,1" aria-label="向南移动">↓</button>
+      <button class="touch-right" data-move="1,0" aria-label="向东移动">→</button>
+      <button class="touch-act" id="touch-interact" aria-label="旋转符印">✦<small>交互</small></button>
+    </div>
+    <div class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+      <div class="start-card">
+        <div class="start-ornament">✧ &nbsp; ✦ &nbsp; ✧</div>
+        <div class="start-en">A LITTLE WORLD OF STONE & SHADOW</div>
+        <h2 id="intro-title">石之迷宫</h2>
+        <div class="start-sub">THE STONE LABYRINTH</div>
+        <div class="start-divider"></div>
+        <p>古老的石井通向一条被遗忘的道路。<br/>三枚符印，三扇石门。<br/>你能找到归途吗？</p>
+        <button class="main-button" id="begin" type="button">进入迷宫 <span>↗</span></button>
+        <div class="start-foot">THREE.JS · ISOMETRIC · PIXEL DIORAMA</div>
+      </div>
+    </div>
+    <div class="overlay hidden" id="victory" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+      <div class="start-card victory-card">
+        <div class="start-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+        <div class="start-en">THE WELL REMEMBERS YOU</div>
+        <h2 id="victory-title">迷宫已苏醒</h2>
+        <div class="start-sub">CHAPTER I · COMPLETE</div>
+        <div class="start-divider"></div>
+        <p>三枚符印终于指向天空中的秘密。<br/>古老的石门沉入地下。<br/>而更深的森林，仍在等待。</p>
+        <button class="main-button" id="play-again" type="button">再次探索 <span>↻</span></button>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
