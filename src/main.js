@@ -3,12 +3,13 @@ import {generateMaze,availablePath,same,CELL} from './maze.js';
 import {stepRune} from './rune-turn.js';
 import {createRuneInspector} from './rune-inspector.js';
 import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
+import {shouldStartDescent,spiralDescentRoute} from './descent.js';
 import {note,chime,toggleSound} from './audio.js';
 
 const $=id=>document.getElementById(id);
 const maze=generateMaze();
 const diorama=createDiorama($('world'),maze);
-let current={...maze.start}, moving=null, route=[],started=false,won=false;
+let current={...maze.start}, moving=null, route=[],started=false,won=false,autoDescending=false;
 let autoRune=null,lastTime=0,lastNotice=0,tipTimeout=null;
 const inspector=createRuneInspector({
  onTurn:(index,direction)=>{
@@ -50,7 +51,7 @@ function startGame(){
  updateUI();
 }
 function interact(withIndex=null){
- if(!started||won||inspector.isOpen())return;
+ if(!started||won||autoDescending||inspector.isOpen())return;
  const available=maze.runes.filter(r=>!r.solved&&distance(current,r)<=1);
  const rune=withIndex===null?available[0]:available.find(r=>r.index===withIndex);
  if(!rune){notice('还没靠近可操作的符印。试着沿岔路寻找石台。');return;}
@@ -61,7 +62,7 @@ function interact(withIndex=null){
 }
 
 function planTo(to){
- if(!started||won||inspector.isOpen())return false;
+ if(!started||won||autoDescending||inspector.isOpen())return false;
  if(moving)return false;
  const path=availablePath(maze,current,to);
  if(!path){notice('这条路被石墙封住了。先寻找符印。');return false;}
@@ -69,7 +70,7 @@ function planTo(to){
  return true;
 }
 function moveTo(dx,dz){
- if(!started||won||moving||inspector.isOpen())return;
+ if(!started||won||moving||autoDescending||inspector.isOpen())return;
  const to={x:current.x+dx,z:current.z+dz};
  autoRune=null;route=[];
  const path=availablePath(maze,current,to);
@@ -77,10 +78,20 @@ function moveTo(dx,dz){
  else note(160,.06,'square',.009);
 }
 function walkToRune(index){
+ if(autoDescending)return;
  const rune=maze.runes[index];
  if(rune.solved){notice('这枚符印已经归位。');return;}
  if(distance(current,rune)<=1){interact(index);return;}
  if(planTo(rune)) autoRune=index;
+}
+function beginAutoDescent(){
+ if(!shouldStartDescent(maze,current,autoDescending))return;
+ autoDescending=true;
+ route=spiralDescentRoute();
+ autoRune=null;
+ document.body.classList.add('auto-descending');
+ note(370,.18,'sine',.022);
+ notice('石阶在脚下延伸，脚步自动走向井底……',3.5);
 }
 function wonGame(){
  if(won)return;won=true;route=[];moving=null;
@@ -90,6 +101,7 @@ function wonGame(){
 function update(now){
  const dt=Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
  if(started&&!won&&!inspector.isOpen()){
+  if(!moving)beginAutoDescent();
   if(!moving&&route.length){
    const dest=route.shift();
    if(availablePath(maze,current,dest)){
@@ -113,6 +125,7 @@ function update(now){
    diorama.player.body.position.y+=.13+Math.sin(Math.PI*t)*.075;
    if(t>=1){
     current={...moving.to};moving=null;
+    beginAutoDescent();
     if(same(current,maze.exit)&&maze.gates.every(g=>g.open)){wonGame();}
     if(route.length===0&&autoRune!==null&&distance(current,maze.runes[autoRune])<=1){const index=autoRune;autoRune=null;interact(index);}
     updateUI();
@@ -149,6 +162,7 @@ window.addEventListener('keydown',event=>{
   return; // Never move the maze character or re-open a rune while focused.
  }
  if(!started){if(event.key==='Enter')startGame();return;}
+ if(autoDescending)return;
  if(event.repeat||won)return;
  const keys={ArrowUp:[0,-1],w:[0,-1],W:[0,-1],ArrowDown:[0,1],s:[0,1],S:[0,1],ArrowLeft:[-1,0],a:[-1,0],A:[-1,0],ArrowRight:[1,0],d:[1,0],D:[1,0]};
  if(keys[event.key])moveTo(...keys[event.key]);
@@ -157,7 +171,7 @@ window.addEventListener('keydown',event=>{
 let pointerStart=null;
 $('world').addEventListener('pointerdown',event=>{pointerStart={x:event.clientX,y:event.clientY};});
 $('world').addEventListener('pointerup',event=>{
- if(!started||won||!pointerStart)return;
+ if(!started||won||autoDescending||!pointerStart)return;
  if(Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>15){pointerStart=null;return;}
  pointerStart=null;
  const hit=diorama.pick(event.clientX,event.clientY);
@@ -166,6 +180,6 @@ $('world').addEventListener('pointerup',event=>{
  if(hit.kind==='tile')planTo({x:hit.x,z:hit.z});
  if(hit.kind==='gate'&&!maze.gates[hit.index].open)notice('古老石墙上的封印没有回应。需要先修复符印。');
 });
-$('world').addEventListener('wheel',event=>{if(!started)return;event.preventDefault();diorama.setZoom(diorama.getZoom()+(event.deltaY>0?-.06:.06));},{passive:false});
+$('world').addEventListener('wheel',event=>{if(!started||autoDescending)return;event.preventDefault();diorama.setZoom(diorama.getZoom()+(event.deltaY>0?-.06:.06));},{passive:false});
 window.addEventListener('resize',()=>{diorama.resize();inspector.resize();});
 updateUI();

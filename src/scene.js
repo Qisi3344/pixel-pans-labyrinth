@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
-import {ARCH,WELL,wellFloorY,spiralStep,spiralPosition,entranceAngle} from './architecture.js';
+import {ARCH,WELL,wellFloorY,spiralStep,spiralPosition,entranceAngle,isStairheadClearance} from './architecture.js';
 
 const PALETTE = {
   rock: [0x55615d,0x65726a,0x78857b,0x47524f,0x5d685f],
@@ -438,6 +438,14 @@ export function createDiorama(canvas,maze) {
       continue;
     }
     if(solid){
+      // Low collapsed stones by the stairhead keep the upper spiral visible.
+      // Original impassable grid cells remain impassable.
+      if(isStairheadClearance(p.x,p.z,CELL)){
+        const rubble=box(stage,PALETTE.rock[Math.floor(h*5)],
+          [p.x,-.18,p.z],[CELL*.87,.20,CELL*.87],false);
+        rubble.userData.kind='wall';
+        continue;
+      }
       // Weathered, short, visibly stacked stonework: not tall concrete blocks.
       const height=.78+h*.40;
       const column=box(stage,PALETTE.rock[Math.floor(h*5)],

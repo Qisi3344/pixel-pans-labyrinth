@@ -44,3 +44,11 @@ export function spiralPosition(t) {
   const r=3.12-2.20*t;
   return {x:Math.cos(a)*r,z:Math.sin(a)*r,y:-0.27-4.12*t};
 }
+
+/** Low rubble clearance at the upper northern stair flight (visual only). */
+export function isStairheadClearance(x,z,cellSize=1.27){
+ const radius=Math.hypot(x,z);
+ const a=Math.atan2(z,x);
+ const delta=Math.atan2(Math.sin(a-WELL.startAngle),Math.cos(a-WELL.startAngle));
+ return radius<WELL.rimOuter+cellSize*1.2 && Math.abs(delta)<.80;
+}

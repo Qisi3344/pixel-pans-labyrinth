@@ -57,7 +57,8 @@ export function shortestPath(grid, start, end, blocked = new Set()) {
   return null;
 }
 
-export function generateMaze(seed = 140629) {
+// Curated default: mandatory passage through both western quadrants.
+export function generateMaze(seed = 132) {
   const rand = random(seed);
   const grid = Array.from({length: SIZE}, () => Array(SIZE).fill(false));
   const start = {x:15,z:15}; // southeast-facing entrance, framed by the skull arch
