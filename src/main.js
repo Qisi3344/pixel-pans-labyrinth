@@ -5,6 +5,7 @@ import {createRuneInspector} from './rune-inspector.js';
 import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
 import {shouldStartDescent,spiralDescentRoute} from './descent.js';
 import {note,chime,toggleSound} from './audio.js';
+import {normalizeJoystick,joystickGridStep} from './joystick.js';
 
 const $=id=>document.getElementById(id);
 const maze=generateMaze();
@@ -52,6 +53,7 @@ function startGame(){
 }
 function interact(withIndex=null){
  if(!started||won||autoDescending||inspector.isOpen())return;
+ releaseJoystick();
  const available=maze.runes.filter(r=>!r.solved&&distance(current,r)<=1);
  const rune=withIndex===null?available[0]:available.find(r=>r.index===withIndex);
  if(!rune){notice('还没靠近可操作的符印。试着沿岔路寻找石台。');return;}
@@ -77,6 +79,59 @@ function moveTo(dx,dz){
  if(path&&path.length===2){route=[to];}
  else note(160,.06,'square',.009);
 }
+// A floating analogue joystick is active only on touch-size layouts.
+// We preserve the original cell-based collision, auto-path and keyboard controls.
+const joystickPad=$('joystick');
+let joystickPointer=null,joystickX=0,joystickY=0;
+function updateJoystickFromPointer(event){
+ const rect=joystickPad.getBoundingClientRect();
+ const travel=Math.min(48,rect.width*.29);
+ const stick=normalizeJoystick(
+   event.clientX-rect.left-rect.width/2,
+   event.clientY-rect.top-rect.height/2,
+   travel
+ );
+ joystickX=stick.x;joystickY=stick.y;
+ joystickPad.style.setProperty('--stick-x',`${(stick.x*travel).toFixed(1)}px`);
+ joystickPad.style.setProperty('--stick-y',`${(stick.y*travel).toFixed(1)}px`);
+}
+function releaseJoystick(event){
+ if(joystickPointer===null || (event && event.pointerId!==joystickPointer))return;
+ const pointer=joystickPointer;joystickPointer=null;
+ joystickX=0;joystickY=0;
+ joystickPad.classList.remove('is-active');
+ joystickPad.style.setProperty('--stick-x','0px');
+ joystickPad.style.setProperty('--stick-y','0px');
+ if(joystickPad.hasPointerCapture?.(pointer))joystickPad.releasePointerCapture(pointer);
+ // Finish any in-progress step naturally, but don't start another after release.
+ if(!autoDescending)route=[];
+}
+joystickPad.addEventListener('pointerdown',event=>{
+ if(joystickPointer!==null||event.button>0||!started||won||autoDescending||inspector.isOpen())return;
+ event.preventDefault();
+ joystickPointer=event.pointerId;
+ joystickPad.setPointerCapture(event.pointerId);
+ joystickPad.classList.add('is-active');
+ route=[];autoRune=null;updateJoystickFromPointer(event);
+});
+joystickPad.addEventListener('pointermove',event=>{
+ if(event.pointerId!==joystickPointer)return;
+ event.preventDefault();updateJoystickFromPointer(event);
+});
+joystickPad.addEventListener('pointerup',releaseJoystick);
+joystickPad.addEventListener('pointercancel',releaseJoystick);
+joystickPad.addEventListener('lostpointercapture',releaseJoystick);
+function driveJoystick(){
+ if(joystickPointer===null||moving||route.length||won||autoDescending||inspector.isOpen())return;
+ const step=joystickGridStep(joystickX,joystickY);
+ if(!step)return;
+ const to={x:current.x+step.dx,z:current.z+step.dz};
+ // No pathfinding short-cuts: one legal neighbouring grid square per step.
+ if(availablePath(maze,current,to)?.length===2){
+   route=[to];autoRune=null;
+ }
+}
+
 function walkToRune(index){
  if(autoDescending)return;
  const rune=maze.runes[index];
@@ -87,6 +142,7 @@ function walkToRune(index){
 function beginAutoDescent(){
  if(!shouldStartDescent(maze,current,autoDescending))return;
  autoDescending=true;
+ releaseJoystick();
  route=spiralDescentRoute();
  autoRune=null;
  document.body.classList.add('auto-descending');
@@ -102,6 +158,7 @@ function update(now){
  const dt=Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
  if(started&&!won&&!inspector.isOpen()){
   if(!moving)beginAutoDescent();
+  driveJoystick();
   if(!moving&&route.length){
    const dest=route.shift();
    if(availablePath(maze,current,dest)){
@@ -146,9 +203,6 @@ $('touch-interact').addEventListener('click',()=>interact());
 $('sound').addEventListener('click',()=>{const enabled=toggleSound();$('sound').setAttribute('aria-pressed',String(enabled));if(enabled)note(523,.13);});
 $('zoom-in').addEventListener('click',()=>diorama.setZoom(diorama.getZoom()+.12));
 $('zoom-out').addEventListener('click',()=>diorama.setZoom(diorama.getZoom()-.12));
-for(const button of document.querySelectorAll('[data-move]')){
- button.addEventListener('click',()=>{const [dx,dz]=button.dataset.move.split(',').map(Number);moveTo(dx,dz);});
-}
 window.addEventListener('keydown',event=>{
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key))event.preventDefault();
  if(inspector.isOpen()){

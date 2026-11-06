@@ -34,12 +34,15 @@
       <div class="controls-copy"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><span class="copy-connector">移动</span><span class="key">E</span><span class="copy-connector">查看符印</span><span class="copy-alt">· 点击地面可自动寻路</span></div>
       <div class="progress" id="progress">0 / 3 <span>SEALS RELEASED</span></div>
     </div>
-    <div class="touch-controls" aria-label="手机方向键">
-      <button class="touch-up" data-move="0,-1" aria-label="向北移动">↑</button>
-      <button class="touch-left" data-move="-1,0" aria-label="向西移动">←</button>
-      <button class="touch-down" data-move="0,1" aria-label="向南移动">↓</button>
-      <button class="touch-right" data-move="1,0" aria-label="向东移动">→</button>
-      <button class="touch-act" id="touch-interact" aria-label="观察符印">✦<small>交互</small></button>
+    <div class="touch-controls" aria-label="手机移动与交互控制">
+      <div class="joystick" id="joystick" role="group" aria-label="拖动圆形摇杆控制人物移动" tabindex="0">
+        <div class="joystick-ring" aria-hidden="true"></div>
+        <div class="joystick-guide" aria-hidden="true"></div>
+        <div class="joystick-knob" id="joystick-knob" aria-hidden="true">
+          <span class="joystick-knob-center"></span>
+        </div>
+      </div>
+      <button type="button" class="touch-act" id="touch-interact" aria-label="观察符印">✦<small>交互</small></button>
     </div>
     <section id="rune-inspector" class="rune-inspector is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="符印特写解谜">
       <div class="rune-inspector-shade" aria-hidden="true"></div>
