@@ -1,5 +1,5 @@
 import './style.css';
-import {generateMaze,availablePath,same,CELL} from './maze.js';
+import {generateMaze,availablePath,same,CELL,SYMBOLS} from './maze.js';
 import {stepRune} from './rune-turn.js';
 import {createRuneInspector} from './rune-inspector.js';
 import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
@@ -41,7 +41,7 @@ function updateUI(){
  const near=maze.runes.find(r=>!r.solved&&distance(current,r)<=1);
  const hint=$('hint');
  if (near&&started&&!won){
-  $('hint-content').innerHTML=`看石台旁小石碑上的箭头：那就是机关要求的方位。按 <strong>E</strong> 旋转符印指针与它一致。`;
+  $('hint-content').innerHTML=`石碑刻痕 <strong style="font-size:1.4em;color:#6b9680">${SYMBOLS[near.target]}</strong> · 旋转指针与石碑箭头一致，按 <strong>E</strong> 查看符印。`;
   hint.classList.add('visible');
  } else {hint.classList.remove('visible');}
 }
