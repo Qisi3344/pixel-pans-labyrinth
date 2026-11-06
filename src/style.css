@@ -12,3 +12,47 @@
 @media(max-width:820px){.topbar{left:20px;right:20px;top:17px}.eyebrow{font-size:8px}.brand-name{font-size:16px}.brand-mark{font-size:26px}.tool{height:34px;width:34px}.chapter{top:83px;left:22px;max-width:225px}.chapter h1{font-size:25px;margin:5px 0}.chapter-brow{font-size:8px}.chapter-desc{font-size:11px}.runes{margin-top:14px;gap:4px}.rune-state{font-size:10px;width:144px}.game-tip{top:210px;font-size:11px}.bottom-panel{bottom:calc(13px + env(safe-area-inset-bottom));left:17px;right:17px}.controls-copy{display:none}.progress{margin-left:auto;font-size:14px}.progress span{font-size:8px}.hint{bottom:calc(153px + env(safe-area-inset-bottom));left:50%;width:min(370px,90vw);padding:9px 11px;font-size:11px}.touch-controls{position:absolute;z-index:4;left:20px;bottom:calc(38px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,45px) 10px 62px;grid-template-rows:repeat(2,45px);gap:5px;pointer-events:auto}.touch-controls button{border:1px solid #d5e1d6;background:#f7faf7ed;border-radius:10px;color:#4d6557;font-weight:700;font-size:19px;box-shadow:0 5px 15px #22322b10;touch-action:manipulation}.touch-controls button:active{background:#cfded1}.touch-up{grid-column:2;grid-row:1}.touch-left{grid-column:1;grid-row:2}.touch-down{grid-column:2;grid-row:2}.touch-right{grid-column:3;grid-row:2}.touch-controls .touch-act{grid-column:5;grid-row:1/span 2;background:#405c4e;color:white;border:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px}.touch-act small{font-weight:500;font-size:10px}.start-card{padding:38px 25px 32px}}
 @media(max-width:380px){.top-actions{gap:3px}.tool{height:31px;width:31px}.brand{gap:8px}.brand-name{font-size:14px}.eyebrow{max-width:144px;white-space:nowrap;overflow:hidden}.chapter{top:77px}.game-tip{top:196px}.hint{bottom:154px}.touch-controls{left:12px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Shared rune-examination closeup. An actual interactive Three.js model is rendered behind the controls. */
+.rune-inspector{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:clamp(14px,4vw,44px);--rune-accent:#a8dcc4;isolation:isolate}
+.rune-inspector.is-hidden{display:none}
+.rune-inspector-shade{position:absolute;inset:0;background:rgba(12,23,20,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rune-inspector-panel{position:relative;width:min(900px,100%);max-height:min(720px,calc(100dvh - 30px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #64786b;background:radial-gradient(ellipse at 33% 36%,#2a4035 0%,#1b2a25 52%,#101c19 100%);color:#e3eae0;box-shadow:0 34px 110px #0009,0 0 0 5px #111d1960}
+.rune-inspector-panel:before{position:absolute;inset:9px;content:"";pointer-events:none;border:1px solid #9fae8b25;z-index:2}
+.rune-inspector-header{display:flex;justify-content:space-between;align-items:start;padding:28px 34px 10px;gap:14px;z-index:3}
+.rune-inspector-heading{position:relative}
+.rune-eyebrow,.rune-number,.rune-legend,.rune-keyboard-hint{font-size:10px;letter-spacing:.20em;color:#90a599}
+.rune-inspector-heading h2{margin:7px 0 0;font-size:clamp(25px,3vw,38px);font-weight:500;letter-spacing:.16em}
+.rune-number{display:inline-block;margin-top:5px;color:var(--rune-accent)}
+.rune-close{background:#32463c;border:1px solid #6b8373;color:#d7e6d9;min-width:78px;padding:10px;border-radius:4px;z-index:4}
+.rune-close:hover,.rune-close:focus-visible{background:#496454}
+.rune-close span{margin-left:5px;font-size:11px}
+.rune-inspector-content{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.9fr);gap:0;min-height:410px;padding:0 24px 20px;align-items:center;z-index:3}
+.rune-inspector-viewport{height:min(465px,53vh);min-height:300px;position:relative;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.rune-inspector-viewport.is-dragging{cursor:grabbing}
+.rune-inspector-viewport canvas{position:relative;z-index:2;display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+.rune-viewport-halo{position:absolute;z-index:0;width:min(95%,400px);aspect-ratio:1;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#91b2a026 0%,#476a5613 40%,transparent 71%);border:1px solid #a2b5a41d;pointer-events:none}
+.rune-viewport-halo:before,.rune-viewport-halo:after{content:"";position:absolute;inset:14%;border:1px dashed #94b5a02b;border-radius:50%}
+.rune-viewport-halo:after{inset:27%;border-style:solid;opacity:.45}
+.rune-inspector-orient{position:absolute;z-index:3;top:12%;left:50%;transform:translateX(-50%);color:var(--rune-accent);font-size:18px;opacity:.8;pointer-events:none}
+.rune-drag-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:11px;letter-spacing:.08em;color:#a6b8aa;pointer-events:none}
+.rune-inspector-details{padding:18px 24px 28px 8px;display:flex;flex-direction:column;gap:16px;align-self:stretch;justify-content:center}
+.rune-legend{color:var(--rune-accent)}
+.rune-instruction{margin:0;font-size:13px;color:#b5c3b8;line-height:2.15}
+.rune-directions{border-top:1px solid #8ba39238;border-bottom:1px solid #8ba39238;padding:15px 0;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.rune-direction{display:flex;flex-direction:column;gap:9px;min-width:0}
+.rune-direction span{font-size:10px;color:#91a79b;white-space:nowrap}
+.rune-direction strong{font-size:21px;font-weight:500;letter-spacing:.08em;color:#e5f0e5}
+.rune-direction-target strong{color:var(--rune-accent)}
+.rune-directions-line{height:38px;width:1px;background:#667d6c5c}
+.rune-inspector-status{font-size:12px;color:#bbcabf;line-height:1.8;min-height:40px;margin:0}
+.rune-rotate-controls{display:flex;gap:10px}
+.rune-rotate{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;border:1px solid #79957b;background:#2d4837;color:#e9f2e8;border-radius:4px;font-size:13px;transition:background .15s,transform .15s}
+.rune-rotate span{font-size:21px;color:var(--rune-accent)}
+.rune-rotate:hover:not(:disabled){background:#44614c;transform:translateY(-1px)}
+.rune-rotate:disabled{opacity:.4;cursor:default}
+.rune-keyboard-hint{font-size:10px;line-height:1.7;letter-spacing:.045em}
+.rune-inspector.is-solved .rune-inspector-panel{border-color:var(--rune-accent);box-shadow:0 34px 110px #0009,0 0 46px #b6e4ae30}
+.rune-inspector.is-solved .rune-inspector-status{color:var(--rune-accent);font-weight:600}
+@media(max-width:700px){.rune-inspector{padding:10px}.rune-inspector-panel{max-height:calc(100dvh - 20px);overflow:auto}.rune-inspector-header{padding:20px 20px 4px}.rune-inspector-heading h2{font-size:25px}.rune-close{min-width:52px;padding:8px}.rune-close span{display:none}.rune-inspector-content{grid-template-columns:1fr;min-height:0;padding:0 16px 18px}.rune-inspector-viewport{height:clamp(210px,35dvh,310px);min-height:210px}.rune-drag-hint{bottom:0}.rune-inspector-details{padding:12px 8px 12px;gap:10px}.rune-instruction{font-size:12px;line-height:1.7}.rune-direction strong{font-size:18px}.rune-directions{padding:10px 0}.rune-inspector-status{min-height:25px;font-size:11px}.rune-rotate{min-height:42px}.rune-keyboard-hint{font-size:9px}}
+@media(max-width:380px){.rune-inspector-header{padding-top:15px}.rune-inspector-viewport{height:210px}.rune-inspector-details{gap:8px}.rune-inspector-content{padding-bottom:10px}}
