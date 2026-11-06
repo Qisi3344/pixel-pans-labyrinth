@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,WELL_CLEARING_ROOTS,id} from './maze.js';
+import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
 import {ARCH,WELL,spiralStep,visibleSpiralPosition,visibleWellFloorY,entranceAngle} from './architecture.js';
 
 const PALETTE = {
@@ -523,7 +523,6 @@ export function createDiorama(canvas,maze) {
   buildWell(stage);
   const clickables=[];
   const tiles=[];
-  const rootGapKeys=new Set(WELL_CLEARING_ROOTS.map(({x,z})=>id(x,z)));
   for(let z=0;z<SIZE;z++) for(let x=0;x<SIZE;x++){
     if(!withinRuin(x,z))continue;
     const p=world({x,z});const h=hash(x,z);
@@ -542,20 +541,6 @@ export function createDiorama(canvas,maze) {
       continue;
     }
     if(solid){
-      if(rootGapKeys.has(id(x,z))){
-        // Two originally blocked cells become unmistakable low, root-choked
-        // ground instead of the former full-height wall. They keep the third
-        // gate mandatory and are NOT invisible air walls: brambles mark them.
-        box(stage,0x253c32,[p.x,-.105,p.z],[CELL*.98,.20,CELL*.98],false);
-        for(let k=0;k<6;k++){
-          const a=k*Math.PI/3;
-          fernClump(stage,p.x+Math.cos(a)*.35,p.z+Math.sin(a)*.35,x*71+z*23+k);
-        }
-        const a=new THREE.Vector3(p.x-CELL*.36,.11,p.z-CELL*.35);
-        const b=new THREE.Vector3(p.x+CELL*.37,.12,p.z+CELL*.34);
-        root(stage,a,b,.09,0x273d30);
-        continue;
-      }
       // Every blocked tile outside the ACTUAL well opening must be visible
       // as a full stone wall. The old broad stairhead-rubble clearance left
       // several visually empty yet impassable cells (invisible air walls).

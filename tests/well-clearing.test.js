@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateMaze,availablePath,shortestPath,turnRune,WELL_ROUTE,
-  WELL_CLEARING_WALKABLE,WELL_CLEARING_ROOTS,id} from '../src/maze.js';
+  WELL_CLEARING_WALKABLE,id} from '../src/maze.js';
 
 test('the outlined upper-left well wall is gone and its ground is walkable',()=>{
  const m=generateMaze();
- assert.equal(WELL_CLEARING_WALKABLE.length,13);
+ assert.equal(WELL_CLEARING_WALKABLE.length,18);
  const removed=new Set(WELL_CLEARING_WALKABLE.map(({x,z})=>id(x,z)));
  for(const {x,z} of WELL_CLEARING_WALKABLE) {
    assert.equal(m.grid[z][x],true,`removed wall ${x},${z} must be traversable`);
  }
- for(const {x,z} of WELL_CLEARING_ROOTS){
+ for(const {x,z} of [{x:6,z:6},{x:7,z:6}]){
    assert.ok(!removed.has(id(x,z)));
-   assert.equal(m.grid[z][x],false,'visible bramble pit blocks the only bypass');
+   assert.equal(m.grid[z][x],false,'stone wall blocks the only bypass');
  }
+ for(let x=6;x<=10;x++) assert.equal(m.grid[11][x],true,`outlined stone ${x},11 removed`);
  // The existing mandatory route to the well is not short-circuited.
  assert.deepEqual(shortestPath(m.grid,m.start,m.exit),m.mainRoute);
  assert.deepEqual(m.mainRoute.slice(-WELL_ROUTE.length),WELL_ROUTE);
