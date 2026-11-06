@@ -131,21 +131,23 @@ function archStone(parent,a,b,tint){
 function makeStoneFace(arch){
   // Five-sided weathered mask at the keystone. Its sockets and teeth are
   // genuine 3D geometry, so it remains visible in a fixed isometric view.
-  const face=new THREE.Group();face.position.set(0,3.66,-.62);arch.add(face);
-  const skull=new THREE.Mesh(new THREE.IcosahedronGeometry(.39,1),mat(0x778479));
+  const face=new THREE.Group();face.position.set(0,3.67,-.77);
+  face.scale.setScalar(1.45);
+  arch.add(face);
+  const skull=new THREE.Mesh(new THREE.IcosahedronGeometry(.39,1),mat(0xa1ada0));
   skull.scale.set(.99,1.17,.57);skull.castShadow=true;face.add(skull);
-  const jaw=box(face,0x718075,[0,-.29,-.09],[.42,.19,.28]);
+  const jaw=box(face,0x899c8b,[0,-.29,-.09],[.42,.19,.28]);
   jaw.rotation.z=.035;
   for(const sign of [-1,1]){
-    const eye=new THREE.Mesh(new THREE.OctahedronGeometry(.117,0),mat(0x23342f));
+    const eye=new THREE.Mesh(new THREE.OctahedronGeometry(.145,0),mat(0x182d24));
     eye.scale.set(1.20,.95,.58);eye.position.set(sign*.17,.055,-.24);face.add(eye);
-    const brow=box(face,0x879388,[sign*.17,.155,-.224],[.24,.065,.10]);
+    const brow=box(face,0x9ba99b,[sign*.17,.155,-.224],[.24,.065,.10]);
     brow.rotation.z=sign*.18;
     box(face,0x66766a,[sign*.29,-.14,-.12],[.11,.15,.17]);
   }
   const nose=new THREE.Mesh(new THREE.ConeGeometry(.08,.155,3),mat(0x283932));
   nose.position.set(0,-.13,-.26);nose.rotation.z=Math.PI;face.add(nose);
-  for(let i=0;i<4;i++)box(face,0x9fa99b,[(i-1.5)*.09,-.34,-.245],[.053,.095,.075],false);
+  for(let i=0;i<4;i++)box(face,0xced4c4,[(i-1.5)*.09,-.34,-.245],[.053,.095,.075],false);
 }
 function buildEntrance(parent,angle,radius){
   const arch=new THREE.Group();
@@ -221,7 +223,7 @@ function buildWell(parent){
   // Genuine OPEN funnel. The upper mouth is narrower than the bottom,
   // leaving a dark 4.9-unit cut into the stage rather than a painted tile.
   const wall=new THREE.Mesh(new THREE.CylinderGeometry(outer,4.19,WELL.depth,48,1,true),
-    mat(0x35463f,{side:THREE.DoubleSide}));
+    mat(0x293b33,{side:THREE.DoubleSide}));
   wall.position.y=-WELL.depth/2-.13;
   wall.castShadow=true;wall.receiveShadow=true;well.add(wall);
   for(let layer=0;layer<7;layer++){
@@ -247,7 +249,7 @@ function buildWell(parent){
     const gap=Math.atan2(Math.sin(mid-WELL.startAngle),Math.cos(mid-WELL.startAngle));
     if(Math.abs(gap)<.19)continue; // a real gap where the upper stairs begin
     stoneSector(well,outer-.055,WELL.rimOuter,a,b,.095+(hash(i,23)-.5)*.055,
-      .27,PALETTE.rock[(i*5+1)%PALETTE.rock.length]);
+      .27,[0x849387,0x748579,0x98a69a][i%3]);
     if(i%6===1){
       stoneSector(well,outer+.04,WELL.rimOuter-.06,a+.024,b-.024,.132,
         .04,0x384e43);
@@ -266,12 +268,27 @@ function buildWell(parent){
     const {angle,radius,y,width}=spiralStep(i);
     const delta=(Math.PI*2*WELL.turns)/(WELL.stepCount-1);
     const inset=Math.max(.44,radius-width/2),outset=radius+width/2;
-    stoneSector(well,inset,outset,angle-delta*.13,angle+delta*.98,
-      y,.20,PALETTE.rock[(i+2)%PALETTE.rock.length]);
+    const tread=stoneSector(well,inset,outset,angle-delta*.13,angle+delta*.98,
+      y,.20,[0xa1b3a3,0x899e8e,0x738b7d,0x99ac9b][i%4]);
+    tread.material.emissive.setHex(0x213a2b);
+    tread.material.emissiveIntensity=.18;
     // A darker vertical riser accent highlights the grade at small scale.
     if(i%3===0)stoneSector(well,inset+.025,outset-.03,angle+delta*.91,
       angle+delta*1.02,y-.07,.11,0x2b4038);
   }
+  // A carved inner-edge seam reads as an unmistakable spiral even at
+  // deliberately pixelated resolutions, without a flat overlay texture.
+  const stairLine=[];
+  for(let i=0;i<WELL.stepCount;i++){
+    const {angle,radius,y,width}=spiralStep(i);
+    const edge=radius-width/2+.04;
+    stairLine.push(new THREE.Vector3(Math.cos(angle)*edge,y+.035,Math.sin(angle)*edge));
+  }
+  const seam=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stairLine),148,.043,5,false),
+    new THREE.MeshBasicMaterial({color:0xc0d3bb}));
+  well.add(seam);
+  const wellFill=new THREE.PointLight(0xb6cbb8,.95,8,2);
+  wellFill.position.set(0,-.85,0);well.add(wellFill);
   // All the bottom detail lives far below the lip. No tall obelisk pokes
   // out and disguises the opening as an altar on a flat tiled platform.
   cylinder(well,mat(0x172522),1.36,1.46,.27,26,-4.66);
