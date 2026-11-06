@@ -418,21 +418,75 @@ function makeExit(parent, cell){
 }
 function makePlayer(parent,initial){
   const body=new THREE.Group();body.position.copy(world(initial));body.position.y=.13;parent.add(body);
-  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.29,16),new THREE.MeshBasicMaterial({color:0x182c2c,transparent:true,opacity:.40,depthWrite:false}));
-  shadow.rotation.x=-Math.PI/2;shadow.position.y=-.065;body.add(shadow);
-  const cape=new THREE.Mesh(new THREE.ConeGeometry(.30,.78,6),mat(0x556a87));cape.position.y=.48;cape.rotation.y=Math.PI/6;cape.castShadow=true;body.add(cape);
-  box(body,0x25333a,[0,.22,.14],[.16,.37,.14]);
-  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.24,1),mat(0xcebcae));head.position.y=.92;head.castShadow=true;body.add(head);
-  const hair=new THREE.Mesh(new THREE.SphereGeometry(.245,8,5,0,Math.PI*2,0,Math.PI*.58),mat(0x272a2e));
-  hair.position.y=1.03;hair.castShadow=true;body.add(hair);
-  box(body,0x25343b,[-.12,.13,.05],[.13,.24,.17]);
-  box(body,0x25343b,[.12,.13,.05],[.13,.24,.17]);
-  // Small lantern with an actual luminous mesh, not a billboard/sprite.
-  const lantern=box(body,0x2b3436,[.30,.48,-.08],[.22,.31,.20]);
-  lantern.material=mat(0x2d3a39);
-  makeGlow(body,0xf4d6a3,.082,[.30,.48,-.08]);
-  const light=new THREE.PointLight(0xe2c69c,.7,2.5,2);light.position.set(.3,.52,-.08);body.add(light);
-  return {body,cape,head,light};
+  const fabric=(color)=>mat(color,{side:THREE.DoubleSide});
+  const burgundy=fabric(0x87373e),coatTrim=fabric(0xa6474b),deepRed=fabric(0x5d2733);
+  const gold=fabric(0xc8b98b),cream=fabric(0xd9ca9a),skin=fabric(0xd7b7a0);
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.32,16),
+    new THREE.MeshBasicMaterial({color:0x142824,transparent:true,opacity:.36,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=-.075;body.add(shadow);
+
+  // Visible legs and deep-red leather shoes under a knee-length floral dress.
+  for(const side of [-1,1]){
+    box(body,skin,[side*.13,.19,.015],[.105,.30,.115]);
+    const shoe=box(body,0x652832,[side*.13,.074,.104],[.18,.13,.26]);
+    shoe.rotation.y=side*.04;
+    box(body,0xa14b4f,[side*.13,.145,.13],[.14,.028,.12],false);
+  }
+
+  // Truncated low-poly yellow skirt with genuine small floral tesserae.
+  const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.17,.38,.72,10,1,false),gold);
+  skirt.position.y=.59;skirt.castShadow=true;skirt.receiveShadow=true;body.add(skirt);
+  const hem=new THREE.Mesh(new THREE.CylinderGeometry(.381,.405,.065,10),cream);
+  hem.position.y=.235;hem.castShadow=true;body.add(hem);
+  const bodice=new THREE.Mesh(new THREE.CylinderGeometry(.16,.19,.32,8),cream);
+  bodice.position.y=1.03;bodice.castShadow=true;body.add(bodice);
+
+  const floralColors=[0x9d4950,0xbd6662,0x607551,0x7e8c61];
+  for(let i=0;i<15;i++){
+    const a=.13+i*2.39996;
+    const y=.31+(i%4)*.12;
+    const r=.38-(y-.23)*(.21/.72);
+    const spot=new THREE.Mesh(new THREE.IcosahedronGeometry(.035+(i%3)*.008,0),
+      fabric(floralColors[i%floralColors.length]));
+    spot.position.set(Math.sin(a)*r,y,Math.cos(a)*r);
+    spot.scale.set(1,.77,.32);spot.rotation.y=a;
+    body.add(spot);
+  }
+
+  // Wine-red open-front long coat; the central gold dress remains visible.
+  const cape=new THREE.Group();body.add(cape);
+  const coat=new THREE.Mesh(new THREE.CylinderGeometry(.195,.40,.93,14,1,true,.61,Math.PI*2-1.22),burgundy);
+  coat.position.y=.72;coat.castShadow=true;coat.receiveShadow=true;cape.add(coat);
+  for(const side of [-1,1]){
+    const panel=box(cape,side<0?0x983a42:0x77333b,
+      [side*.195,.69,.19],[.13,.80,.10]);
+    panel.rotation.z=side*.065;
+    // Lapels, shoulders, and small cuffs keep the outline legible at pixel size.
+    const lapel=box(cape,coatTrim,[side*.14,1.095,.215],[.12,.19,.055],false);
+    lapel.rotation.z=-side*.24;
+    const sleeve=box(body,burgundy,[side*.29,.94,.02],[.16,.40,.19]);
+    sleeve.rotation.z=side*.14;
+    box(body,skin,[side*.33,.72,.06],[.12,.10,.12]);
+    box(cape,deepRed,[side*.18,.35,.22],[.06,.20,.06],false);
+  }
+
+  // Small face and asymmetric curled 1940s dark bob from the reference.
+  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.215,1),skin);
+  head.position.y=1.355;head.castShadow=true;body.add(head);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.245,10,6,0,Math.PI*2,0,Math.PI*.67),
+    fabric(0x222326));
+  hair.position.y=1.45;hair.castShadow=true;body.add(hair);
+  for(const side of [-1,1]){
+    for(let i=0;i<3;i++){
+      const curl=new THREE.Mesh(new THREE.IcosahedronGeometry(.085+(i%2)*.014,0),
+        fabric(i===1?0x313035:0x252529));
+      curl.position.set(side*(.208+i*.014),1.38-i*.10,.02+(i%2)*.05);
+      curl.castShadow=true;body.add(curl);
+    }
+  }
+  // Tiny claret collar detail, not a modern cape or fantasy armour.
+  box(body,0xa74d51,[0,1.20,.19],[.12,.055,.07],false);
+  return {body,cape,head,light:null};
 }
 
 export function createDiorama(canvas,maze) {
@@ -551,13 +605,25 @@ export function createDiorama(canvas,maze) {
   let screenWidth=0,screenHeight=0;
   const target=new THREE.Vector3();const lookAt=new THREE.Vector3();
   const direction=new THREE.Vector3(1,1,1).normalize();
+  // On portrait phones we pan after the character, never rotate the ISO camera.
+  let portraitFollow=false,cameraReady=false;
+  function playerFocal(){
+    const p=player.body.position;
+    return new THREE.Vector3(p.x,Math.max(-1.6,p.y*.48),p.z);
+  }
   function resize(){
     const w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight;
     if(w===screenWidth&&h===screenHeight)return;
     screenWidth=w;screenHeight=h;
     const aspect=w/h;
-    // Keep one fixed isometric camera on every screen size; only framing changes.
-    const vertical=aspect<.85?29:26;
+    const follow=aspect<.85;
+    if(!cameraReady||follow!==portraitFollow){
+      target.copy(follow?playerFocal():new THREE.Vector3());
+      cameraReady=true;
+    }
+    portraitFollow=follow;
+    // Portrait uses a closer crop around the avatar rather than cropping the whole diorama.
+    const vertical=portraitFollow?20.5:26;
     camera.left=-vertical*aspect/(2*zoom);camera.right=vertical*aspect/(2*zoom);
     camera.top=vertical/(2*zoom);camera.bottom=-vertical/(2*zoom);
     camera.updateProjectionMatrix();
@@ -592,9 +658,11 @@ export function createDiorama(canvas,maze) {
     exit.flame.position.y=.9+Math.sin(now*2.3)*.12;
     exit.flame.rotation.y+=dt*.35;
     exit.circle.rotation.z=now*.3;
-    // No screen-dependent camera rotation or player-follow behaviour.
-    const focal=new THREE.Vector3(0,0,0);
-    target.lerp(focal,Math.min(1,dt*2));
+    // Keep the true isometric direction fixed on both desktop and phones.
+    // On phones, smooth positional follow keeps the player visible on narrow screens.
+    const focal=portraitFollow?playerFocal():new THREE.Vector3(0,0,0);
+    const followRate=portraitFollow?6.5:2;
+    target.lerp(focal,1-Math.exp(-Math.max(0,dt)*followRate));
     camera.position.copy(target).addScaledVector(direction,43);
     lookAt.copy(target);camera.lookAt(lookAt);
     renderer.render(scene,camera);
