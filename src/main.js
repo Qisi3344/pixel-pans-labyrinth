@@ -41,7 +41,7 @@ function updateUI(){
  const near=maze.runes.find(r=>!r.solved&&distance(current,r)<=1);
  const hint=$('hint');
  if (near&&started&&!won){
-  $('hint-content').innerHTML=`符印 ${near.index+1}：石台旁有一道方位刻痕。按 <strong>E</strong> 观察符印。`;
+  $('hint-content').innerHTML=`看石台旁小石碑上的箭头：那就是机关要求的方位。按 <strong>E</strong> 旋转符印指针与它一致。`;
   hint.classList.add('visible');
  } else {hint.classList.remove('visible');}
 }

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
-import {ARCH,WELL,wellFloorY,spiralStep,spiralPosition,entranceAngle,isStairheadClearance} from './architecture.js';
+import {ARCH,WELL,spiralStep,visibleSpiralPosition,visibleWellFloorY,entranceAngle,isStairheadClearance} from './architecture.js';
 
 const PALETTE = {
   rock: [0x55615d,0x65726a,0x78857b,0x47524f,0x5d685f],
-  floor: [0x34423f,0x43534d,0x3d4b47,0x4c5c53,0x394944],
+  floor: [0x2e3936,0x3b4945,0x36413d,0x43514b,0x32413c],
   moss: [0x39594d,0x48674f,0x62785b,0x314b43],
   glass: 0xb8e9db,
 };
@@ -15,15 +15,15 @@ const spiralCells = new Map(WELL_ROUTE.map((cell,i)=>[id(cell.x,cell.z),i/(WELL_
 export const spiralProgress = cell => spiralCells.get(id(cell.x,cell.z));
 export const terrainY = cell => {
   const t=spiralProgress(cell);
-  return t===undefined?wellFloorY(Math.hypot(cell.x-CENTER,cell.z-CENTER)*CELL):spiralPosition(t).y;
+  return t===undefined?visibleWellFloorY(Math.hypot(cell.x-CENTER,cell.z-CENTER)*CELL):visibleSpiralPosition(t).y;
 };
 export const world = cell => {
   const t=spiralProgress(cell);
-  if(t!==undefined){const p=spiralPosition(t);return new THREE.Vector3(p.x,p.y,p.z);}
+  if(t!==undefined){const p=visibleSpiralPosition(t);return new THREE.Vector3(p.x,p.y,p.z);}
   return new THREE.Vector3((cell.x-origin)*CELL,terrainY(cell),(cell.z-origin)*CELL);
 };
 export const spiralWorldAt = progress => {
-  const p=spiralPosition(progress);
+  const p=visibleSpiralPosition(progress);
   return new THREE.Vector3(p.x,p.y,p.z);
 };
 function hash(x,z,seed=31) { const n=Math.sin((x+seed)*127.1+(z-seed)*311.7)*43758.5453;return n-Math.floor(n); }
@@ -48,6 +48,42 @@ function tuft(parent,x,z,size,shade) {
     const blade=new THREE.Mesh(new THREE.ConeGeometry(size*.27,size,3),material);
     blade.position.set((k-1)*size*.16,size*.36,Math.sin(k*3)*size*.1);
     blade.rotation.z=(k-1)*.3;grass.add(blade);
+  }
+}
+
+/** Low-poly creeping ivy, clinging to the camera-facing masonry surfaces. */
+function ivyOnStone(parent,x,z,height,seed){
+  const front=hash(seed,13)>.5;
+  const side=front?0:1,edge=CELL*.497+.025;
+  const start=new THREE.Vector3(x+(side?edge:(hash(seed,27)-.5)*CELL*.6),
+    height*.94,z+(front?edge:(hash(seed,31)-.5)*CELL*.6));
+  const tint=[0x344b3b,0x476447,0x5c7451][Math.floor(hash(seed,55)*3)];
+  let pos=start;
+  for(let k=0;k<4;k++){
+    const next=pos.clone();
+    if(front) next.x+=(hash(seed,k+90)-.44)*.28;
+    else next.z+=(hash(seed,k+90)-.44)*.28;
+    next.y-=height*(.19+hash(seed,k+65)*.045);
+    root(parent,pos,next,.025,tint);
+    // Subtle solid leaves rather than noisy flat decals.
+    const leaf=new THREE.Mesh(new THREE.TetrahedronGeometry(.095+hash(seed,k+20)*.045,0),mat(k%2?0x567854:0x3d5c45));
+    leaf.position.copy(next);
+    leaf.position.x+=side?.04:.07;
+    leaf.position.z+=front?.05:.03;
+    leaf.rotation.set(.42,k*1.9,.3);leaf.scale.set(1.35,.55,1);
+    parent.add(leaf);
+    pos=next;
+  }
+}
+function fernClump(parent,x,z,seed){
+  const group=new THREE.Group();group.position.set(x,.03,z);parent.add(group);
+  for(let k=0;k<5;k++){
+    const a=k*Math.PI*2/5+hash(seed,52);
+    const leaf=new THREE.Mesh(new THREE.ConeGeometry(.095,.43,3),mat(k%2?0x4f6947:0x657c52));
+    leaf.position.set(Math.cos(a)*.13,.18,Math.sin(a)*.13);
+    leaf.rotation.z=Math.cos(a)*.72;
+    leaf.rotation.x=-Math.sin(a)*.72;
+    group.add(leaf);
   }
 }
 function root(parent, start, end, radius=.17, color=0x2e3737) {
@@ -219,6 +255,8 @@ function ruinPerimeter(parent,radius,start){
 }
 function buildWell(parent){
   const well=new THREE.Group();parent.add(well);
+  // All rim, funnel, stairs and crypt are uniformly scaled around the origin.
+  well.scale.setScalar(WELL.visualScale);
   const outer=WELL.radius;
   // Genuine OPEN funnel. The upper mouth is narrower than the bottom,
   // leaving a dark 4.9-unit cut into the stage rather than a painted tile.
@@ -326,22 +364,33 @@ function makeRune(parent,rune,clickables){
   pointer.rotation.x=-Math.PI/2;pointer.position.y=.885;pivot.add(pointer);
   const gem=makeGlow(pivot,rune.color,.115,[0,1.18,0]);
   const light=new THREE.PointLight(rune.color,1.1,3.5,2);light.position.y=1.25;pivot.add(light);
-  // In-world stone clue replaces a UI text label. No puzzle state is altered.
-  box(pivot,0x233b32,[.57,.16,.36],[.55,.25,.46],false);
-  box(pivot,0x789082,[.57,.298,.36],[.49,.035,.40],false);
-  const carvedHeading=new THREE.Group();
-  carvedHeading.position.set(.57,.32,.36);
+  // A physical clue stone, large enough to read in the low-res world.
+  // Its engraved arrow points at the correct direction but the inspector does
+  // NOT show the answer. It is discovered before the player rotates the rune.
+  const clueStone=new THREE.Group();
+  clueStone.position.set(.79,0,-.37);pivot.add(clueStone);
+  box(clueStone,0x283e32,[0,.36,0],[.70,.65,.68]);
+  box(clueStone,0x78917b,[0,.71,0],[.72,.13,.71],false);
+  box(clueStone,0x3a5143,[0,.785,0],[.63,.035,.63],false);
+  const carvedHeading=new THREE.Group();carvedHeading.position.y=.812;
   carvedHeading.rotation.y=-rune.target*Math.PI/2;
-  pivot.add(carvedHeading);
+  clueStone.add(carvedHeading);
   const engraving=new THREE.Shape();
-  engraving.moveTo(0,.17);engraving.lineTo(.125,.015);
-  engraving.lineTo(.05,.015);engraving.lineTo(.05,-.15);
-  engraving.lineTo(-.05,-.15);engraving.lineTo(-.05,.015);
-  engraving.lineTo(-.125,.015);engraving.closePath();
+  engraving.moveTo(0,.30);engraving.lineTo(.20,.085);
+  engraving.lineTo(.08,.085);engraving.lineTo(.08,-.26);
+  engraving.lineTo(-.08,-.26);engraving.lineTo(-.08,.085);
+  engraving.lineTo(-.20,.085);engraving.closePath();
   const carvedArrow=new THREE.Mesh(new THREE.ShapeGeometry(engraving),
-    new THREE.MeshBasicMaterial({color:0x20382f,side:THREE.DoubleSide}));
-  carvedArrow.rotation.x=-Math.PI/2;
-  carvedHeading.add(carvedArrow);
+    new THREE.MeshBasicMaterial({color:0xb1c6a9,side:THREE.DoubleSide}));
+  carvedArrow.rotation.x=-Math.PI/2;carvedHeading.add(carvedArrow);
+  // Dark cuts around the compass stone emphasize the north/east/south/west frame.
+  for(let k=0;k<4;k++){
+    const theta=k*Math.PI/2;
+    const mark=box(clueStone,0x23372d,
+      [Math.sin(theta)*.255,.81,Math.cos(theta)*.255],
+      [.055,.019,.10],false);
+    mark.rotation.y=theta;
+  }
   pivot.traverse(o=>{if(o.isMesh){o.userData={kind:'rune',index:rune.index};clickables.push(o);}});
   return {pivot,ring,pointer,gem,light};
 }
@@ -409,10 +458,10 @@ export function createDiorama(canvas,maze) {
   const boardSize=(RUIN_RADIUS+.55)*CELL;
   // Circular cutaway: a thick annular island; the open centre exposes the spiral shaft.
   const annulus=new THREE.Shape();annulus.absarc(0,0,boardSize,0,Math.PI*2,false);
-  const hole=new THREE.Path();hole.absarc(0,0,WELL.radius+.04,0,Math.PI*2,true);annulus.holes.push(hole);
+  const hole=new THREE.Path();hole.absarc(0,0,WELL.radius*WELL.visualScale+.04,0,Math.PI*2,true);annulus.holes.push(hole);
   const strata=new THREE.ExtrudeGeometry(annulus,{depth:1.03,bevelEnabled:false,curveSegments:48});
   strata.rotateX(-Math.PI/2);
-  const island=new THREE.Mesh(strata,mat(0x46554f,{side:THREE.DoubleSide}));
+  const island=new THREE.Mesh(strata,mat(0x3e4b43,{side:THREE.DoubleSide}));
   island.position.y=-1.27;island.castShadow=true;island.receiveShadow=true;stage.add(island);
   const bottomLip=new THREE.Mesh(new THREE.TorusGeometry(boardSize,.21,5,58),mat(0x283b36));
   bottomLip.rotation.x=Math.PI/2;bottomLip.position.y=-1.16;stage.add(bottomLip);
@@ -424,7 +473,7 @@ export function createDiorama(canvas,maze) {
     if(!withinRuin(x,z))continue;
     const p=world({x,z});const h=hash(x,z);
     const solid=!maze.grid[z][x];
-    const inner=Math.hypot(p.x,p.z)<WELL.radius+.12;
+    const inner=Math.hypot(p.x,p.z)<WELL.radius*WELL.visualScale+.10;
     if(inner){
       // No square walls over the well, even if the logical tile is blocked.
       // Invisible collision/picking targets follow the descending path.
@@ -440,7 +489,7 @@ export function createDiorama(canvas,maze) {
     if(solid){
       // Low collapsed stones by the stairhead keep the upper spiral visible.
       // Original impassable grid cells remain impassable.
-      if(isStairheadClearance(p.x,p.z,CELL)){
+      if(isStairheadClearance(p.x,p.z,CELL) || Math.hypot(p.x,p.z)<WELL.radius*WELL.visualScale+CELL*1.42){
         const rubble=box(stage,PALETTE.rock[Math.floor(h*5)],
           [p.x,-.18,p.z],[CELL*.87,.20,CELL*.87],false);
         rubble.userData.kind='wall';
@@ -457,6 +506,8 @@ export function createDiorama(canvas,maze) {
         box(stage,0x334b41,[p.x+CELL*.23,height+.012,p.z-CELL*.23],[CELL*.26,.045,CELL*.22],false);
       }
       column.userData.kind='wall';
+      if(h>.78)ivyOnStone(stage,p.x,p.z,height,x*37+z*107);
+      if(h>.87)fernClump(stage,p.x+(hash(x,z,12)-.5)*.52,p.z+(hash(z,x,23)-.5)*.47,x*23+z);
     } else {
       const slab=box(stage,PALETTE.floor[Math.floor(h*5)],
         [p.x,p.y-.105,p.z],[CELL*.965,.22,CELL*.965],false);
@@ -464,9 +515,24 @@ export function createDiorama(canvas,maze) {
       if(hash(x,z,9)>.76 && !maze.runes.some(r=>r.x===x&&r.z===z)){
         tuft(stage,p.x+(h-.5)*.65,p.z+(hash(z,x)-.5)*.6,.19,PALETTE.moss[Math.floor(h*4)]);
       }
+      if(hash(x,z,48)>.90 && !maze.runes.some(r=>r.x===x&&r.z===z)){
+        fernClump(stage,p.x+.24,p.z-.21,x*19+z);
+      }
       if(hash(x,z,55)>.93) {
         box(stage,0x93a69b,[p.x-.27,.016,p.z+.26],[.23,.03,.06],false);
       }
+    }
+  }
+
+  // Narrow broken-stone causeway from the existing approach tile into the
+  // smaller well. The automatic descent walks over it before the first tread.
+  for(let i=0;i<7;i++){
+    const z=-5.00+i*.55;
+    const h=hash(i,45);
+    box(stage,[0x56675b,0x65766a,0x708174][i%3],
+      [(h-.5)*.05,-.125,z],[.90+(h-.5)*.09,.22,.51],false);
+    if(i===1||i===4){
+      tuft(stage,.36,z+.1,.15,0x405a43);
     }
   }
   // Sparse ruins and three old trees outside the footprint; no square border corners.

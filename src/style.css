@@ -33,3 +33,5 @@
 /* Hide manual movement guidance during the scripted trip down the well. */
 .auto-descending .touch-controls,.auto-descending .hint{opacity:0;pointer-events:none}
 .auto-descending .controls-copy{opacity:.25}
+
+/* More subdued moss-ground contrast, without lowering the existing lighting. */

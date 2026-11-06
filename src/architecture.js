@@ -2,6 +2,8 @@
 export const WELL = Object.freeze({
   radius: 3.55,
   rimOuter: 4.13,
+  // One-half sized 3D well, including stair geometry and the player's path.
+  visualScale: 0.5,
   depth: 4.90,
   stepCount: 52,
   turns: 2.15,
@@ -51,4 +53,14 @@ export function isStairheadClearance(x,z,cellSize=1.27){
  const a=Math.atan2(z,x);
  const delta=Math.atan2(Math.sin(a-WELL.startAngle),Math.cos(a-WELL.startAngle));
  return radius<WELL.rimOuter+cellSize*1.55 && Math.abs(delta)<.80;
+}
+
+/** Physical staircase route matches the scaled 3D well mesh. */
+export function visibleSpiralPosition(t){
+ const p=spiralPosition(t);
+ return {x:p.x*WELL.visualScale,y:p.y*WELL.visualScale,z:p.z*WELL.visualScale};
+}
+
+export function visibleWellFloorY(radius){
+ return wellFloorY(radius/WELL.visualScale)*WELL.visualScale;
 }
