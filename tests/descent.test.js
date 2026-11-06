@@ -31,6 +31,7 @@ test('auto descent only begins after all gates unlock at the mouth',()=>{
 });
 test('northern first flight clearance does not affect distant walls',()=>{
  assert.equal(isStairheadClearance(0,-WELL.rimOuter-CELL*.2,CELL),true);
+ assert.equal(isStairheadClearance(CELL*2,-CELL*4,CELL),true); // right-hand stone previously covered the top flight
  assert.equal(isStairheadClearance(WELL.rimOuter+CELL*.3,0,CELL),false);
  assert.equal(isStairheadClearance(0,-WELL.rimOuter-CELL*2,CELL),false);
 });

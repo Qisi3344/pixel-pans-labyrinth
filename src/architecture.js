@@ -50,5 +50,5 @@ export function isStairheadClearance(x,z,cellSize=1.27){
  const radius=Math.hypot(x,z);
  const a=Math.atan2(z,x);
  const delta=Math.atan2(Math.sin(a-WELL.startAngle),Math.cos(a-WELL.startAngle));
- return radius<WELL.rimOuter+cellSize*1.2 && Math.abs(delta)<.80;
+ return radius<WELL.rimOuter+cellSize*1.55 && Math.abs(delta)<.80;
 }
