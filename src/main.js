@@ -6,12 +6,14 @@ import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
 import {shouldStartDescent,spiralDescentRoute} from './descent.js';
 import {note,chime,toggleSound} from './audio.js';
 import {normalizeJoystick,joystickGridStep} from './joystick.js';
+import {normalizeMovementKey,lastHeldStep,stepDuration,advanceStep} from './walk.js';
 
 const $=id=>document.getElementById(id);
 const maze=generateMaze();
 const diorama=createDiorama($('world'),maze);
 let current={...maze.start}, moving=null, route=[],started=false,won=false,autoDescending=false;
 let autoRune=null,lastTime=0,lastNotice=0,tipTimeout=null;
+const heldMovementKeys=[]; // held state, not single keypress commands
 const inspector=createRuneInspector({
  onTurn:(index,direction)=>{
   const result=stepRune(maze,index,direction);
@@ -54,6 +56,7 @@ function startGame(){
 function interact(withIndex=null){
  if(!started||won||autoDescending||inspector.isOpen())return;
  releaseJoystick();
+ heldMovementKeys.length=0;
  const available=maze.runes.filter(r=>!r.solved&&distance(current,r)<=1);
  const rune=withIndex===null?available[0]:available.find(r=>r.index===withIndex);
  if(!rune){notice('还没靠近可操作的符印。试着沿岔路寻找石台。');return;}
@@ -71,13 +74,11 @@ function planTo(to){
  route=path.slice(1);autoRune=null;
  return true;
 }
-function moveTo(dx,dz){
- if(!started||won||moving||autoDescending||inspector.isOpen())return;
- const to={x:current.x+dx,z:current.z+dz};
- autoRune=null;route=[];
- const path=availablePath(maze,current,to);
- if(path&&path.length===2){route=[to];}
- else note(160,.06,'square',.009);
+// Manual controls are sampled each frame. Every attempted tile is still
+// checked against existing gates, walls, and legal adjacent grid links.
+function manualDirection(){
+ if(joystickPointer!==null)return joystickGridStep(joystickX,joystickY);
+ return lastHeldStep(heldMovementKeys);
 }
 // A floating analogue joystick is active only on touch-size layouts.
 // We preserve the original cell-based collision, auto-path and keyboard controls.
@@ -121,17 +122,6 @@ joystickPad.addEventListener('pointermove',event=>{
 joystickPad.addEventListener('pointerup',releaseJoystick);
 joystickPad.addEventListener('pointercancel',releaseJoystick);
 joystickPad.addEventListener('lostpointercapture',releaseJoystick);
-function driveJoystick(){
- if(joystickPointer===null||moving||route.length||won||autoDescending||inspector.isOpen())return;
- const step=joystickGridStep(joystickX,joystickY);
- if(!step)return;
- const to={x:current.x+step.dx,z:current.z+step.dz};
- // No pathfinding short-cuts: one legal neighbouring grid square per step.
- if(availablePath(maze,current,to)?.length===2){
-   route=[to];autoRune=null;
- }
-}
-
 function walkToRune(index){
  if(autoDescending)return;
  const rune=maze.runes[index];
@@ -143,6 +133,7 @@ function beginAutoDescent(){
  if(!shouldStartDescent(maze,current,autoDescending))return;
  autoDescending=true;
  releaseJoystick();
+ heldMovementKeys.length=0;
  route=spiralDescentRoute();
  autoRune=null;
  document.body.classList.add('auto-descending');
@@ -156,40 +147,56 @@ function wonGame(){
 }
 function update(now){
  const dt=Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
+ let distanceMoved=0;
  if(started&&!won&&!inspector.isOpen()){
-  if(!moving)beginAutoDescent();
-  driveJoystick();
-  if(!moving&&route.length){
-   const dest=route.shift();
-   if(availablePath(maze,current,dest)){
-    moving={from:{...current},to:dest,elapsed:0,
-      duration:(spiralProgress(current)!==undefined || spiralProgress(dest)!==undefined) ? .64 : .18};
+  // Carry remaining frame time across a tile seam, so long-press movement is
+  // one fluid walk rather than repeating stop / ease / restart every tile.
+  let timeLeft=dt, iterations=0;
+  while(timeLeft>0.000001 && iterations++<8 && !won && !inspector.isOpen()){
+   if(!moving){
+    beginAutoDescent();
+    const input=!autoDescending?manualDirection():null;
+    let dest=null;
+    if(input){
+      route=[];autoRune=null;
+      const candidate={x:current.x+input.dx,z:current.z+input.dz};
+      if(availablePath(maze,current,candidate)?.length===2)dest=candidate;
+    }else if(route.length){
+      const candidate=route.shift();
+      if(availablePath(maze,current,candidate)?.length===2)dest=candidate;
+      else route=[];
+    }
+    if(!dest)break;
+    const spiral=spiralProgress(current)!==undefined||spiralProgress(dest)!==undefined;
+    moving={from:{...current},to:{...dest},elapsed:0,duration:stepDuration(spiral)};
     const dx=dest.x-current.x,dz=dest.z-current.z;
     diorama.player.body.rotation.y=Math.atan2(dx,dz);
-   } else route=[];
-  }
-  if(moving){
-   moving.elapsed+=dt;
-   const t=Math.min(1,moving.elapsed/moving.duration),e=t*t*(3-2*t);
-   const a=vector(moving.from),b=vector(moving.to);
+   }
+   const p=advanceStep(moving.elapsed,moving.duration,timeLeft);
+   moving.elapsed=p.elapsed;timeLeft=p.remaining;
+   const position=diorama.player.body.position,old=position.clone();
+   const start=vector(moving.from),end=vector(moving.to);
    const stepA=spiralProgress(moving.from),stepB=spiralProgress(moving.to);
    if(stepA!==undefined&&stepB!==undefined){
-     diorama.player.body.position.copy(spiralWorldAt(stepA+(stepB-stepA)*e));
-     const tangent=spiralWorldAt(Math.min(.999,stepA+(stepB-stepA)*e+.008))
-       .sub(diorama.player.body.position);
-     diorama.player.body.rotation.y=Math.atan2(tangent.x,tangent.z);
-   }else diorama.player.body.position.lerpVectors(a,b,e);
-   diorama.player.body.position.y+=.13+Math.sin(Math.PI*t)*.075;
-   if(t>=1){
-    current={...moving.to};moving=null;
-    beginAutoDescent();
-    if(same(current,maze.exit)&&maze.gates.every(g=>g.open)){wonGame();}
-    if(route.length===0&&autoRune!==null&&distance(current,maze.runes[autoRune])<=1){const index=autoRune;autoRune=null;interact(index);}
-    updateUI();
+     position.copy(spiralWorldAt(stepA+(stepB-stepA)*p.t));
+     const tangent=spiralWorldAt(Math.min(.999,stepA+(stepB-stepA)*p.t+.006)).sub(position);
+     if(tangent.lengthSq()>.0000001)
+       diorama.player.body.rotation.y=Math.atan2(tangent.x,tangent.z);
+   }else position.lerpVectors(start,end,p.t);
+   position.y+=.13;
+   distanceMoved+=position.distanceTo(old);
+   if(p.finished){
+     current={...moving.to};moving=null;
+     beginAutoDescent();
+     if(same(current,maze.exit)&&maze.gates.every(g=>g.open))wonGame();
+     if(route.length===0&&autoRune!==null&&distance(current,maze.runes[autoRune])<=1){
+       const index=autoRune;autoRune=null;interact(index);
+     }
+     updateUI();
    }
   }
  }
- diorama.draw(now/1000,dt,current,Boolean(moving));
+ diorama.draw(now/1000,dt,current,Boolean(moving),distanceMoved);
  inspector.render(now/1000,dt);
  requestAnimationFrame(update);
 }
@@ -213,14 +220,32 @@ window.addEventListener('keydown',event=>{
   if(event.key==='ArrowRight'||event.key==='ArrowUp'){
    event.preventDefault();if(!event.repeat)inspector.rotate(1);return;
   }
-  return; // Never move the maze character or re-open a rune while focused.
+  return;
  }
  if(!started){if(event.key==='Enter')startGame();return;}
- if(autoDescending)return;
- if(event.repeat||won)return;
- const keys={ArrowUp:[0,-1],w:[0,-1],W:[0,-1],ArrowDown:[0,1],s:[0,1],S:[0,1],ArrowLeft:[-1,0],a:[-1,0],A:[-1,0],ArrowRight:[1,0],d:[1,0],D:[1,0]};
- if(keys[event.key])moveTo(...keys[event.key]);
+ const key=normalizeMovementKey(event.key);
+ if(key){
+  event.preventDefault();
+  if(!won&&!autoDescending){
+   if(!heldMovementKeys.includes(key))heldMovementKeys.push(key);
+   route=[];autoRune=null;
+  }
+  return;
+ }
+ if(event.repeat||won||autoDescending)return;
  if(['e','E',' ','Enter'].includes(event.key))interact();
+});
+window.addEventListener('keyup',event=>{
+ const key=normalizeMovementKey(event.key);
+ if(!key)return;
+ event.preventDefault();
+ const index=heldMovementKeys.indexOf(key);
+ if(index!==-1)heldMovementKeys.splice(index,1);
+});
+function releaseKeyboard(){heldMovementKeys.length=0;}
+window.addEventListener('blur',releaseKeyboard);
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){releaseKeyboard();releaseJoystick();}
 });
 let pointerStart=null;
 $('world').addEventListener('pointerdown',event=>{pointerStart={x:event.clientX,y:event.clientY};});
