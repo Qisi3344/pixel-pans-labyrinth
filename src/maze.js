@@ -8,17 +8,14 @@ export const RUIN_RADIUS = 9.0;
 // Ten consecutive grid checkpoints, projected onto the *visible* spiral steps.
 // Hand-cleared open stone courtyard around the upper-left/north side of the well.
 // These are the exact L-shaped tiles formerly covered by the tall wall band.
-// The first two cells stay blocked by visible root-filled cracks; these two
-// natural barriers preserve the three-gate puzzle without invisible walls.
+// Two stone walls at (6,6) and (7,6) preserve the three-gate puzzle.
 export const WELL_CLEARING_WALKABLE = Object.freeze([
   [6,7],[6,8],[6,9],[6,10],
   [7,7],[7,8],[7,9],[7,10],
   [8,6],[8,7],[8,10],
   [9,7],[10,7],
+  [6,11],[7,11],[8,11],[9,11],[10,11],
 ].map(([x,z])=>Object.freeze({x,z})));
-export const WELL_CLEARING_ROOTS = Object.freeze([
-  Object.freeze({x:6,z:6}),Object.freeze({x:7,z:6}),
-]);
 export const WELL_ROUTE = Object.freeze([
   {x:9,z:6},{x:10,z:6},{x:11,z:6},{x:11,z:7},{x:11,z:8},
   {x:11,z:9},{x:11,z:10},{x:10,z:10},{x:9,z:10},{x:9,z:9},
