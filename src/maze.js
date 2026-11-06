@@ -6,6 +6,19 @@ export const CELL = 1.27;
 export const CENTER = (SIZE - 1) / 2;
 export const RUIN_RADIUS = 9.0;
 // Ten consecutive grid checkpoints, projected onto the *visible* spiral steps.
+// Hand-cleared open stone courtyard around the upper-left/north side of the well.
+// These are the exact L-shaped tiles formerly covered by the tall wall band.
+// The first two cells stay blocked by visible root-filled cracks; these two
+// natural barriers preserve the three-gate puzzle without invisible walls.
+export const WELL_CLEARING_WALKABLE = Object.freeze([
+  [6,7],[6,8],[6,9],[6,10],
+  [7,7],[7,8],[7,9],[7,10],
+  [8,6],[8,7],[8,10],
+  [9,7],[10,7],
+].map(([x,z])=>Object.freeze({x,z})));
+export const WELL_CLEARING_ROOTS = Object.freeze([
+  Object.freeze({x:6,z:6}),Object.freeze({x:7,z:6}),
+]);
 export const WELL_ROUTE = Object.freeze([
   {x:9,z:6},{x:10,z:6},{x:11,z:6},{x:11,z:7},{x:11,z:8},
   {x:11,z:9},{x:11,z:10},{x:10,z:10},{x:9,z:10},{x:9,z:9},
@@ -126,6 +139,11 @@ export function generateMaze(seed = 132) {
     }
     return { ...choice,index,phase:[1,2,0][index],target:targets[index],solved:false,color:colors[index] };
   });
+  // The authored first chapter gets a readable open courtyard in front of the
+  // well. Do this AFTER choosing the original route, gates and rune placements,
+  // so no puzzle shifts and the mandatory west-side exploration is preserved.
+  // Other procedural seeds remain unchanged.
+  if(seed===132) for(const {x,z} of WELL_CLEARING_WALKABLE) grid[z][x]=true;
   return { grid,start,approach,exit,mainRoute,gates,runes,seed };
 }
 
