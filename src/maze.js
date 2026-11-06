@@ -1,8 +1,12 @@
-/** A seeded, guaranteed-solvable 19×19 perfect labyrinth with three progressive locks. */
+/** Seeded circular labyrinth: three ordered seals on the sole route to the central well. */
 export const SIZE = 19;
 export const SYMBOLS = ['↑', '→', '↓', '←'];
 export const DIRECTIONS = ['北', '东', '南', '西'];
 export const CELL = 1.27;
+export const CENTER = (SIZE - 1) / 2;
+export const RUIN_RADIUS = 9.0;
+// Del Toro-inspired circular footprint: no rectangular maze corners.
+export const withinRuin = (x, z) => Math.hypot(x - CENTER, z - CENTER) <= RUIN_RADIUS;
 const DELTAS = [[0,-1],[1,0],[0,1],[-1,0]];
 export const id = (x, z) => `${x},${z}`;
 export const same = (a, b) => a.x === b.x && a.z === b.z;
@@ -51,8 +55,8 @@ export function shortestPath(grid, start, end, blocked = new Set()) {
 export function generateMaze(seed = 140629) {
   const rand = random(seed);
   const grid = Array.from({length: SIZE}, () => Array(SIZE).fill(false));
-  const start = {x:1,z:SIZE-2};
-  const exit = {x:SIZE-2,z:1};
+  const start = {x:3,z:15}; // southwest entrance in the broken perimeter
+  const exit = {x:9,z:9};  // singular sacred center
   const stack = [start];
   grid[start.z][start.x] = true;
   // Recursive-backtracker without recursion: all carved cells form a tree.
@@ -60,7 +64,7 @@ export function generateMaze(seed = 140629) {
     const cell = stack[stack.length - 1];
     const choices = shuffle(DELTAS,rand)
       .map(([dx,dz])=>({ x:cell.x+2*dx,z:cell.z+2*dz,wx:cell.x+dx,wz:cell.z+dz }))
-      .filter(n=> inside(n.x,n.z) && !grid[n.z][n.x]);
+      .filter(n=> inside(n.x,n.z) && withinRuin(n.x,n.z) && withinRuin(n.wx,n.wz) && !grid[n.z][n.x]);
     if (!choices.length) { stack.pop(); continue; }
     const next = choices[0];
     grid[next.wz][next.wx] = true;

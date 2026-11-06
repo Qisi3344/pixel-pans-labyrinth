@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {generateMaze,availablePath,shortestPath,turnRune,SYMBOLS} from '../src/maze.js';
+import {generateMaze,availablePath,shortestPath,turnRune,SYMBOLS,withinRuin,CENTER} from '../src/maze.js';
 
 test('generator produces a reproducible valid route',()=>{
  const a=generateMaze(), b=generateMaze();
@@ -39,5 +39,14 @@ test('all gate progression remains valid across several deterministic seeds',()=
      while(!m.runes[i].solved) turnRune(m,i);
    }
    assert.ok(availablePath(m,m.start,m.exit),`seed ${seed}, exit`);
+ }
+});
+
+test('circular footprint has one central destination and its start inside the broken ring',()=>{
+ const m=generateMaze();
+ assert.deepEqual(m.exit,{x:CENTER,z:CENTER});
+ assert.ok(withinRuin(m.start.x,m.start.z));
+ for(let z=0;z<m.grid.length;z++) for(let x=0;x<m.grid[z].length;x++) {
+   if(m.grid[z][x]) assert.ok(withinRuin(x,z), `corridor outside circular island at ${x},${z}`);
  }
 });

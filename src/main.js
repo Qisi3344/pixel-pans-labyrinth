@@ -31,7 +31,7 @@ function updateUI(){
 }
 function startGame(){
  started=true;$('intro').classList.add('hidden');
- note(440,.15);notice('沿石砖前进。靠近符印后按 E 旋转。',4);
+ note(440,.15);notice('从断裂的石门走进圆形遗迹。靠近符印后按 E 旋转。',4);
  updateUI();
 }
 function interact(withIndex=null){
@@ -43,7 +43,7 @@ function interact(withIndex=null){
  note(solved?660:320,.17,solved?'sine':'triangle');
  if (solved) {
   chime();notice(`第 ${rune.index+1} 枚符印归位！远处有一道石门沉入地下。`,4);
-  if (maze.gates.every(g=>g.open))notice('三扇石门已解开。去往古井尽头，寻找出口。',5);
+  if (maze.gates.every(g=>g.open))notice('三道石门已下沉。循环形石壁走向中央深井。',5);
  } else notice(`符印转向 ${DIRECTIONS[rune.phase]}。石碑要求：${DIRECTIONS[rune.target]}。`,2.6);
  updateUI();
 }
@@ -90,7 +90,7 @@ function update(now){
    const t=Math.min(1,moving.elapsed/moving.duration),e=t*t*(3-2*t);
    const a=vector(moving.from),b=vector(moving.to);
    diorama.player.body.position.lerpVectors(a,b,e);
-   diorama.player.body.position.y=.13+Math.sin(Math.PI*t)*.11;
+   diorama.player.body.position.y=a.y+(b.y-a.y)*e+.13+Math.sin(Math.PI*t)*.11;
    if(t>=1){
     current={...moving.to};moving=null;
     if(same(current,maze.exit)&&maze.gates.every(g=>g.open)){wonGame();}
