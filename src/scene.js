@@ -222,8 +222,8 @@ function buildWell(parent){
   const outer=WELL.radius;
   // Genuine OPEN funnel. The upper mouth is narrower than the bottom,
   // leaving a dark 4.9-unit cut into the stage rather than a painted tile.
-  const wall=new THREE.Mesh(new THREE.CylinderGeometry(outer,4.19,WELL.depth,48,1,true),
-    mat(0x293b33,{side:THREE.DoubleSide}));
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(outer,4.19,WELL.depth,56,1,true),
+    mat(0x23352d,{side:THREE.DoubleSide}));
   wall.position.y=-WELL.depth/2-.13;
   wall.castShadow=true;wall.receiveShadow=true;well.add(wall);
   for(let layer=0;layer<7;layer++){
@@ -269,12 +269,12 @@ function buildWell(parent){
     const delta=(Math.PI*2*WELL.turns)/(WELL.stepCount-1);
     const inset=Math.max(.44,radius-width/2),outset=radius+width/2;
     const tread=stoneSector(well,inset,outset,angle-delta*.13,angle+delta*.98,
-      y,.20,[0xa1b3a3,0x899e8e,0x738b7d,0x99ac9b][i%4]);
+      y,.28,[0xb7c5b4,0x94a99a,0x7e9786,0xa6b7a4][i%4]);
     tread.material.emissive.setHex(0x213a2b);
     tread.material.emissiveIntensity=.18;
     // A darker vertical riser accent highlights the grade at small scale.
     if(i%3===0)stoneSector(well,inset+.025,outset-.03,angle+delta*.91,
-      angle+delta*1.02,y-.07,.11,0x2b4038);
+      angle+delta*1.02,y-.09,.15,0x263b31);
   }
   // A carved inner-edge seam reads as an unmistakable spiral even at
   // deliberately pixelated resolutions, without a flat overlay texture.
@@ -284,17 +284,25 @@ function buildWell(parent){
     const edge=radius-width/2+.04;
     stairLine.push(new THREE.Vector3(Math.cos(angle)*edge,y+.035,Math.sin(angle)*edge));
   }
-  const seam=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stairLine),148,.043,5,false),
-    new THREE.MeshBasicMaterial({color:0xc0d3bb}));
+  const seam=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stairLine),160,.06,6,false),
+    new THREE.MeshBasicMaterial({color:0xd7e6d4}));
   well.add(seam);
-  const wellFill=new THREE.PointLight(0xb6cbb8,.95,8,2);
-  wellFill.position.set(0,-.85,0);well.add(wellFill);
+  const wellFill=new THREE.PointLight(0xb6cbb8,1.35,10,2);
+  wellFill.position.set(0,-1.55,0);well.add(wellFill);
+  // The shaft must be a CLOSED dark cavity, not a hole through to the white stage.
+  // A full-radius floor also prevents daylight leaks between the lowest stairs.
+  const pitFloor=new THREE.Mesh(new THREE.CircleGeometry(4.30,64),
+    mat(0x10201b,{side:THREE.DoubleSide}));
+  pitFloor.rotation.x=-Math.PI/2;
+  pitFloor.position.y=-4.93;
+  pitFloor.receiveShadow=true;
+  well.add(pitFloor);
   // All the bottom detail lives far below the lip. No tall obelisk pokes
   // out and disguises the opening as an altar on a flat tiled platform.
   cylinder(well,mat(0x172522),1.36,1.46,.27,26,-4.66);
   cylinder(well,mat(0x3d5148),.72,.82,.18,11,-4.43);
-  const monolith=new THREE.Mesh(new THREE.CylinderGeometry(.19,.33,.91,5),mat(0x829080));
-  monolith.position.set(-.68,-3.90,.28);monolith.castShadow=true;well.add(monolith);
+  const monolith=new THREE.Mesh(new THREE.CylinderGeometry(.15,.26,.68,5),mat(0x829080));
+  monolith.position.set(-.68,-4.11,.28);monolith.castShadow=true;well.add(monolith);
   const sigil=new THREE.Mesh(new THREE.OctahedronGeometry(.115,0),
     new THREE.MeshBasicMaterial({color:0xa1daca}));
   sigil.position.set(-.68,-3.40,-.01);well.add(sigil);
@@ -371,14 +379,16 @@ export function createDiorama(canvas,maze) {
   renderer.toneMapping=THREE.NoToneMapping;
   const scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);
   const camera=new THREE.OrthographicCamera(-16,16,12,-12,.1,130);
-  camera.position.set(29,35,29);camera.lookAt(0,0,0);
+  // True isometric: equal world-axis projections; 45-degree yaw, 35.264-degree elevation.
+  camera.position.set(25,25,25);camera.lookAt(0,0,0);
   scene.add(new THREE.HemisphereLight(0xeaf9f5,0x34443d,1.55));
   const sun=new THREE.DirectionalLight(0xffffff,2.12);
   sun.position.set(-12,27,17);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   sun.shadow.camera.left=-23;sun.shadow.camera.right=23;sun.shadow.camera.top=23;sun.shadow.camera.bottom=-23;
   sun.shadow.camera.near=1;sun.shadow.camera.far=70;sun.shadow.bias=-.0005;scene.add(sun);
   const table=new THREE.Mesh(new THREE.PlaneGeometry(150,150),mat(0xffffff));
-  table.rotation.x=-Math.PI/2;table.position.y=-1.55;table.receiveShadow=true;scene.add(table);
+  // Keep the tabletop UNDER the entire 4.9-unit shaft; never bisect the stairs.
+  table.rotation.x=-Math.PI/2;table.position.y=-8.4;table.receiveShadow=true;scene.add(table);
   const stage=new THREE.Group();scene.add(stage);
   const boardSize=(RUIN_RADIUS+.55)*CELL;
   // Circular cutaway: a thick annular island; the open centre exposes the spiral shaft.
@@ -450,18 +460,18 @@ export function createDiorama(canvas,maze) {
   let zoom=1;
   let screenWidth=0,screenHeight=0;
   const target=new THREE.Vector3();const lookAt=new THREE.Vector3();
-  const direction=new THREE.Vector3(1,2.15,1).normalize();
+  const direction=new THREE.Vector3(1,1,1).normalize();
   function resize(){
     const w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight;
     if(w===screenWidth&&h===screenHeight)return;
     screenWidth=w;screenHeight=h;
-    const aspect=w/h,portrait=aspect<.85;
-    // Desktop sees the entire model; portrait uses an isometric follow-camera.
-    const vertical=portrait?18:26;
+    const aspect=w/h;
+    // Keep one fixed isometric camera on every screen size; only framing changes.
+    const vertical=aspect<.85?29:26;
     camera.left=-vertical*aspect/(2*zoom);camera.right=vertical*aspect/(2*zoom);
     camera.top=vertical/(2*zoom);camera.bottom=-vertical/(2*zoom);
     camera.updateProjectionMatrix();
-    const factor=portrait?2.35:2.15;
+    const factor=aspect<.85?2.35:2.15;
     renderer.setPixelRatio(1);
     renderer.setSize(Math.max(160,Math.floor(w/factor)),Math.max(170,Math.floor(h/factor)),false);
     renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';
@@ -492,9 +502,9 @@ export function createDiorama(canvas,maze) {
     exit.flame.position.y=.9+Math.sin(now*2.3)*.12;
     exit.flame.rotation.y+=dt*.35;
     exit.circle.rotation.z=now*.3;
-    const portrait=screenWidth/screenHeight<.85;
-    const focal=portrait?new THREE.Vector3(pos.x,.15,pos.z):new THREE.Vector3(0,0,0);
-    target.lerp(focal,Math.min(1,dt*(portrait?4:2)));
+    // No screen-dependent camera rotation or player-follow behaviour.
+    const focal=new THREE.Vector3(0,0,0);
+    target.lerp(focal,Math.min(1,dt*2));
     camera.position.copy(target).addScaledVector(direction,43);
     lookAt.copy(target);camera.lookAt(lookAt);
     renderer.render(scene,camera);
