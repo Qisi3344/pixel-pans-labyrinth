@@ -1,6 +1,6 @@
 import './style.css';
 import {generateMaze,availablePath,turnRune,SYMBOLS,DIRECTIONS,same,CELL} from './maze.js';
-import {createDiorama,world} from './scene.js';
+import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
 import {note,chime,toggleSound} from './audio.js';
 
 const $=id=>document.getElementById(id);
@@ -31,7 +31,7 @@ function updateUI(){
 }
 function startGame(){
  started=true;$('intro').classList.add('hidden');
- note(440,.15);notice('从断裂的石门走进圆形遗迹。靠近符印后按 E 旋转。',4);
+ note(440,.15);notice('穿过带石面孔的古老拱门。寻找三枚符印，沿螺旋石阶下到井底。',4);
  updateUI();
 }
 function interact(withIndex=null){
@@ -80,7 +80,8 @@ function update(now){
   if(!moving&&route.length){
    const dest=route.shift();
    if(availablePath(maze,current,dest)){
-    moving={from:{...current},to:dest,elapsed:0,duration:.18};
+    moving={from:{...current},to:dest,elapsed:0,
+      duration:(spiralProgress(current)!==undefined || spiralProgress(dest)!==undefined) ? .64 : .18};
     const dx=dest.x-current.x,dz=dest.z-current.z;
     diorama.player.body.rotation.y=Math.atan2(dx,dz);
    } else route=[];
@@ -89,8 +90,14 @@ function update(now){
    moving.elapsed+=dt;
    const t=Math.min(1,moving.elapsed/moving.duration),e=t*t*(3-2*t);
    const a=vector(moving.from),b=vector(moving.to);
-   diorama.player.body.position.lerpVectors(a,b,e);
-   diorama.player.body.position.y=a.y+(b.y-a.y)*e+.13+Math.sin(Math.PI*t)*.11;
+   const stepA=spiralProgress(moving.from),stepB=spiralProgress(moving.to);
+   if(stepA!==undefined&&stepB!==undefined){
+     diorama.player.body.position.copy(spiralWorldAt(stepA+(stepB-stepA)*e));
+     const tangent=spiralWorldAt(Math.min(.999,stepA+(stepB-stepA)*e+.008))
+       .sub(diorama.player.body.position);
+     diorama.player.body.rotation.y=Math.atan2(tangent.x,tangent.z);
+   }else diorama.player.body.position.lerpVectors(a,b,e);
+   diorama.player.body.position.y+=.13+Math.sin(Math.PI*t)*.075;
    if(t>=1){
     current={...moving.to};moving=null;
     if(same(current,maze.exit)&&maze.gates.every(g=>g.open)){wonGame();}

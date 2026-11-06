@@ -5,6 +5,11 @@ export const DIRECTIONS = ['北', '东', '南', '西'];
 export const CELL = 1.27;
 export const CENTER = (SIZE - 1) / 2;
 export const RUIN_RADIUS = 9.0;
+// Ten consecutive grid checkpoints, projected onto the *visible* spiral steps.
+export const WELL_ROUTE = Object.freeze([
+  {x:9,z:6},{x:10,z:6},{x:11,z:6},{x:11,z:7},{x:11,z:8},
+  {x:11,z:9},{x:11,z:10},{x:10,z:10},{x:9,z:10},{x:9,z:9},
+]);
 // Del Toro-inspired circular footprint: no rectangular maze corners.
 export const withinRuin = (x, z) => Math.hypot(x - CENTER, z - CENTER) <= RUIN_RADIUS;
 const DELTAS = [[0,-1],[1,0],[0,1],[-1,0]];
@@ -55,8 +60,11 @@ export function shortestPath(grid, start, end, blocked = new Set()) {
 export function generateMaze(seed = 140629) {
   const rand = random(seed);
   const grid = Array.from({length: SIZE}, () => Array(SIZE).fill(false));
-  const start = {x:3,z:15}; // southwest entrance in the broken perimeter
-  const exit = {x:9,z:9};  // singular sacred center
+  const start = {x:15,z:15}; // southeast-facing entrance, framed by the skull arch
+  const approach = {x:9,z:5}; // sole entrance to the sunken well
+  const exit = {x:9,z:9};  // the sacred centre at the base of the shaft
+  const restricted = new Set(WELL_ROUTE.flatMap(c => neighbours(c)
+    .filter(n => !same(n,approach)).map(n => id(n.x,n.z))));
   const stack = [start];
   grid[start.z][start.x] = true;
   // Recursive-backtracker without recursion: all carved cells form a tree.
@@ -64,16 +72,27 @@ export function generateMaze(seed = 140629) {
     const cell = stack[stack.length - 1];
     const choices = shuffle(DELTAS,rand)
       .map(([dx,dz])=>({ x:cell.x+2*dx,z:cell.z+2*dz,wx:cell.x+dx,wz:cell.z+dz }))
-      .filter(n=> inside(n.x,n.z) && withinRuin(n.x,n.z) && withinRuin(n.wx,n.wz) && !grid[n.z][n.x]);
+      .filter(n=> inside(n.x,n.z) && withinRuin(n.x,n.z) && withinRuin(n.wx,n.wz)
+        && Math.hypot(n.x-CENTER,n.z-CENTER)>=3.95
+        && Math.hypot(n.wx-CENTER,n.wz-CENTER)>=3.95
+        && !restricted.has(id(n.x,n.z)) && !restricted.has(id(n.wx,n.wz))
+        && !grid[n.z][n.x]);
     if (!choices.length) { stack.pop(); continue; }
     const next = choices[0];
     grid[next.wz][next.wx] = true;
     grid[next.z][next.x] = true;
     stack.push({ x:next.x,z:next.z });
   }
-  const mainRoute = shortestPath(grid,start,exit);
-  if (!mainRoute || mainRoute.length < 15) throw new Error('Maze path unexpectedly too short');
-  const positions = [0.26, 0.52, 0.78].map(t=>Math.min(mainRoute.length-3,Math.max(3, Math.floor((mainRoute.length-1)*t))));
+  // The outer puzzle is a tree.  Only one hand-carved path enters the stone
+  // shaft; it doubles back in a rough spiral before reaching the floor.
+  // Keeping it outside the random maze protects the funnel silhouette and
+  // prevents short-cuts around the three puzzle gates.
+  const outerRoute = shortestPath(grid,start,approach);
+  if (!outerRoute || outerRoute.length < 15) throw new Error('Outer route unexpectedly short');
+  for (const cell of WELL_ROUTE) grid[cell.z][cell.x]=true;
+  const mainRoute = [...outerRoute,...WELL_ROUTE];
+  // All three gate stones live in the outer maze, away from the well opening.
+  const positions = [0.23, 0.48, 0.74].map(t=>Math.min(outerRoute.length-3,Math.max(3, Math.floor((outerRoute.length-1)*t))));
   const gateCells = positions.map(i=>mainRoute[i]);
   const routeIndex = new Map(mainRoute.map((cell,i)=>[id(cell.x,cell.z),i]));
   const gates = gateCells.map((cell,index)=>({ ...cell,index,open:false }));
@@ -106,7 +125,7 @@ export function generateMaze(seed = 140629) {
     }
     return { ...choice,index,phase:[1,2,0][index],target:targets[index],solved:false,color:colors[index] };
   });
-  return { grid,start,exit,mainRoute,gates,runes,seed };
+  return { grid,start,approach,exit,mainRoute,gates,runes,seed };
 }
 
 export function availablePath(maze,from,to) {
