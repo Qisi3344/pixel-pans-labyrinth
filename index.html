@@ -43,40 +43,15 @@
       <button class="touch-right" data-move="1,0" aria-label="向东移动">→</button>
       <button class="touch-act" id="touch-interact" aria-label="观察符印">✦<small>交互</small></button>
     </div>
-    <section id="rune-inspector" class="rune-inspector is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="rune-inspector-title">
+    <section id="rune-inspector" class="rune-inspector is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="符印特写解谜">
       <div class="rune-inspector-shade" aria-hidden="true"></div>
-      <div class="rune-inspector-panel">
-        <header class="rune-inspector-header">
-          <div class="rune-inspector-heading">
-            <div class="rune-eyebrow">ANCIENT RUNE · EXAMINE &amp; ROTATE</div>
-            <h2 id="rune-inspector-title">苔之印</h2>
-            <span id="rune-inspector-number" class="rune-number">01 / 03</span>
-          </div>
-          <button type="button" id="rune-inspector-close" class="rune-close" aria-label="退出符印特写">✕ <span>退出</span></button>
-        </header>
-        <div class="rune-inspector-content">
-          <div class="rune-inspector-viewport" id="rune-inspector-view">
-            <div class="rune-viewport-halo" aria-hidden="true"></div>
-            <canvas id="rune-inspector-canvas" role="img" aria-label="可以用鼠标或手指左右拖动旋转的三维符印石盘"></canvas>
-            <div class="rune-inspector-orient" id="rune-inspector-orient" aria-hidden="true">↑</div>
-            <div class="rune-drag-hint">⇆ &nbsp;拖动符印旋转</div>
-          </div>
-          <div class="rune-inspector-details">
-            <div class="rune-legend">STONE INSCRIPTION / 石碑铭文</div>
-            <p class="rune-instruction">将符印转至石碑所刻的方位。<br>听见石门回应，封印才会解除。</p>
-            <div class="rune-directions">
-              <div class="rune-direction"><span>当前朝向 / NOW</span><strong id="rune-current">→ 东</strong></div>
-              <div class="rune-directions-line" aria-hidden="true"></div>
-              <div class="rune-direction rune-direction-target"><span>目标朝向 / TARGET</span><strong id="rune-target">↓ 南</strong></div>
-            </div>
-            <p class="rune-inspector-status" id="rune-inspector-status" aria-live="polite">拖动石盘，让指针归位。</p>
-            <div class="rune-rotate-controls">
-              <button type="button" id="rune-left" class="rune-rotate" aria-label="向左旋转九十度"><span>↶</span> 向左转</button>
-              <button type="button" id="rune-right" class="rune-rotate" aria-label="向右旋转九十度">向右转 <span>↷</span></button>
-            </div>
-            <div class="rune-keyboard-hint">方向键 ← → 旋转 &nbsp;·&nbsp; Esc / E 保存并退出</div>
-          </div>
+      <div class="rune-inspector-solo">
+        <div class="rune-inspector-viewport" id="rune-inspector-view" tabindex="-1" aria-label="拖动符印，旋转至石碑暗示的方位">
+          <canvas id="rune-inspector-canvas" role="img" aria-label="可拖动旋转的三维符印石盘"></canvas>
+          <span class="rune-inspector-orient" id="rune-inspector-orient" aria-hidden="true">↑</span>
         </div>
+        <p class="rune-inspector-soft-hint" id="rune-inspector-soft-hint" aria-hidden="true">左右拖动 · ← → 旋转 · Esc / E 退出 · 触屏点暗处退出</p>
+        <span class="rune-sr-only" id="rune-inspector-status" role="status" aria-live="polite"></span>
       </div>
     </section>
     <div class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">

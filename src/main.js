@@ -1,5 +1,5 @@
 import './style.css';
-import {generateMaze,availablePath,SYMBOLS,DIRECTIONS,same,CELL} from './maze.js';
+import {generateMaze,availablePath,same,CELL} from './maze.js';
 import {stepRune} from './rune-turn.js';
 import {createRuneInspector} from './rune-inspector.js';
 import {createDiorama,world,spiralProgress,spiralWorldAt} from './scene.js';
@@ -14,12 +14,9 @@ const inspector=createRuneInspector({
  onTurn:(index,direction)=>{
   const result=stepRune(maze,index,direction);
   if(result.changed){
-   note(result.solved?740:direction>0?440:380,result.solved?.22:.095,result.solved?'sine':'triangle',result.solved?.048:.018);
-   if(result.solved){
-    chime();
-    notice(`第 ${index+1} 枚符印归位！远处的石门正在下沉。`,4);
-    if(maze.gates.every(g=>g.open))notice('三道石门已下沉。沿螺旋石阶走向中央深井。',5);
-   }
+   // A single crisp latch sound on success; no popup gives away the answer.
+   if(result.solved)note(980,.10,'triangle',.065);
+   else note(direction>0?440:380,.09,'triangle',.018);
    updateUI();
   }
   return result;
@@ -43,7 +40,7 @@ function updateUI(){
  const near=maze.runes.find(r=>!r.solved&&distance(current,r)<=1);
  const hint=$('hint');
  if (near&&started&&!won){
-  $('hint-content').innerHTML=`符印 ${near.index+1}：石碑刻着「<strong>${DIRECTIONS[near.target]}</strong>」。当前指向 <strong>${SYMBOLS[near.phase]}</strong>，旋转至正确方向。`;
+  $('hint-content').innerHTML=`符印 ${near.index+1}：石台旁有一道方位刻痕。按 <strong>E</strong> 观察符印。`;
   hint.classList.add('visible');
  } else {hint.classList.remove('visible');}
 }

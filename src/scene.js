@@ -326,6 +326,22 @@ function makeRune(parent,rune,clickables){
   pointer.rotation.x=-Math.PI/2;pointer.position.y=.885;pivot.add(pointer);
   const gem=makeGlow(pivot,rune.color,.115,[0,1.18,0]);
   const light=new THREE.PointLight(rune.color,1.1,3.5,2);light.position.y=1.25;pivot.add(light);
+  // In-world stone clue replaces a UI text label. No puzzle state is altered.
+  box(pivot,0x233b32,[.57,.16,.36],[.55,.25,.46],false);
+  box(pivot,0x789082,[.57,.298,.36],[.49,.035,.40],false);
+  const carvedHeading=new THREE.Group();
+  carvedHeading.position.set(.57,.32,.36);
+  carvedHeading.rotation.y=-rune.target*Math.PI/2;
+  pivot.add(carvedHeading);
+  const engraving=new THREE.Shape();
+  engraving.moveTo(0,.17);engraving.lineTo(.125,.015);
+  engraving.lineTo(.05,.015);engraving.lineTo(.05,-.15);
+  engraving.lineTo(-.05,-.15);engraving.lineTo(-.05,.015);
+  engraving.lineTo(-.125,.015);engraving.closePath();
+  const carvedArrow=new THREE.Mesh(new THREE.ShapeGeometry(engraving),
+    new THREE.MeshBasicMaterial({color:0x20382f,side:THREE.DoubleSide}));
+  carvedArrow.rotation.x=-Math.PI/2;
+  carvedHeading.add(carvedArrow);
   pivot.traverse(o=>{if(o.isMesh){o.userData={kind:'rune',index:rune.index};clickables.push(o);}});
   return {pivot,ring,pointer,gem,light};
 }

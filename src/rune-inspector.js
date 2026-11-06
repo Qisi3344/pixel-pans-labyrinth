@@ -1,10 +1,9 @@
 /** Shared diegetic 3D close-up for all three rune puzzles. No maze logic lives here. */
 import * as THREE from 'three';
-import {DIRECTIONS,SYMBOLS} from './maze.js';
+import {SYMBOLS} from './maze.js';
 
 const $=id=>document.getElementById(id);
-const COLORS=['#a8dcc4','#c6b1f1','#ebce95'];
-const NAMES=['苔之印','月之印','灰烬印'];
+const COLORS=[0xa1d5b9,0x8bc9ba,0x8ab8a9];
 const QUARTER=Math.PI/2;
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const stone=(color,options={})=>new THREE.MeshStandardMaterial({color,roughness:.88,metalness:.025,flatShading:true,...options});
@@ -58,9 +57,9 @@ function createModel(scene){
    const x=Math.cos(theta)*.93,z=Math.sin(theta)*.93;
    const leaf=new THREE.Mesh(new THREE.TetrahedronGeometry(.17,0),stone(0x96b69a));
    leaf.position.set(x,.50,z);leaf.rotation.set(.3,theta,.38);variants[0].add(leaf);
-   const moon=new THREE.Mesh(new THREE.TorusGeometry(.13,.032,5,14,Math.PI*1.5),stone(0xc5b6de));
+   const moon=new THREE.Mesh(new THREE.TorusGeometry(.13,.032,5,14,Math.PI*1.5),stone(0x8aafa2));
    moon.position.set(x,.50,z);moon.rotation.y=theta;variants[1].add(moon);
-   const ember=new THREE.Mesh(new THREE.OctahedronGeometry(.15,0),stone(0xd6b879));
+   const ember=new THREE.Mesh(new THREE.OctahedronGeometry(.15,0),stone(0x719b84));
    ember.position.set(x,.49,z);ember.scale.y=1.4;variants[2].add(ember);
  }
  const accentLight=new THREE.PointLight(0xa8dcc4,1.4,4);
@@ -75,11 +74,8 @@ export function createRuneInspector({onTurn,onClose}){
  const modal=$('rune-inspector');
  const canvas=$('rune-inspector-canvas');
  const view=$('rune-inspector-view');
- const closeButton=$('rune-inspector-close');
- const leftButton=$('rune-left');
- const rightButton=$('rune-right');
- const currentLabel=$('rune-current');
- const targetLabel=$('rune-target');
+ const marker=$('rune-inspector-orient');
+ const hint=$('rune-inspector-soft-hint');
  const status=$('rune-inspector-status');
  const scene=new THREE.Scene();
  const camera=new THREE.OrthographicCamera(-2.25,2.25,2.05,-2.05,.1,40);
@@ -91,7 +87,7 @@ export function createRuneInspector({onTurn,onClose}){
  rimLight.position.set(4,4,-6);scene.add(rimLight);
  const model=createModel(scene);
  let renderer=null,active=null,angle=0,targetAngle=0,drag=null,previousFocus=null,closeTimer=null;
- let lastButtonTime=0,solved=false;
+ let solved=false;
  function ensureRenderer(){
    if(renderer)return;
    renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:false,powerPreference:'low-power'});
@@ -111,44 +107,37 @@ export function createRuneInspector({onTurn,onClose}){
    camera.top=2.12;camera.bottom=-2.12;
    camera.updateProjectionMatrix();
  }
- function updateLabels(){
-   if(!active)return;
-   const phase=active.phase;
-   currentLabel.textContent=`${SYMBOLS[phase]} ${DIRECTIONS[phase]}`;
-   targetLabel.textContent=`${SYMBOLS[active.target]} ${DIRECTIONS[active.target]}`;
-   $('rune-inspector-orient').textContent=SYMBOLS[phase];
+ function updateMarker(){
+   if(active)marker.textContent=SYMBOLS[active.phase];
  }
  function open(rune){
    if(!rune||rune.solved||active)return;
-   clearTimeout(closeTimer);
+   clearTimeout(closeTimer);closeTimer=null;
    active=rune;solved=false;drag=null;
    previousFocus=document.activeElement;
    angle=targetAngle=-rune.phase*QUARTER;
    model.pointer.rotation.y=angle;
-   model.accentLight.color.setHex(rune.color);
-   model.centerpiece.material.color.setHex(rune.color);
-   model.centerpiece.material.emissive.setHex(rune.color);
+   const color=COLORS[rune.index]??COLORS[0];
+   model.accentLight.color.setHex(color);
+   model.centerpiece.material.color.setHex(color);
+   model.centerpiece.material.emissive.setHex(color);
    model.variants.forEach((group,index)=>{group.visible=index===rune.index;});
-   const hex=COLORS[rune.index]||COLORS[0];
-   modal.style.setProperty('--rune-accent',hex);
-   $('rune-inspector-title').textContent=NAMES[rune.index]||'古老符印';
-   $('rune-inspector-number').textContent=`0${rune.index+1} / 03`;
-   status.textContent='触摸符印，或拖动石盘，让指针转向石碑指示的方向。';
-   modal.classList.remove('is-hidden','is-solved');
-   modal.setAttribute('aria-hidden','false');
-   document.body.classList.add('rune-inspecting');
-   leftButton.disabled=false;rightButton.disabled=false;
-   updateLabels();resize();
-   closeButton.focus({preventScroll:true});
+   status.textContent="拖动旋转符印，石碑上有方位刻痕。";
+   modal.classList.remove("is-hidden","is-solved");
+   modal.setAttribute("aria-hidden","false");
+   document.body.classList.add("rune-inspecting");
+   updateMarker();resize();
+   hint.style.animation="none";void hint.offsetWidth;hint.style.animation="";
+   view.focus({preventScroll:true});
  }
  function close(){
    if(!active)return;
    clearTimeout(closeTimer);closeTimer=null;
    active=null;solved=false;drag=null;
-   modal.classList.add('is-hidden');
-   modal.classList.remove('is-solved');
-   modal.setAttribute('aria-hidden','true');
-   document.body.classList.remove('rune-inspecting');
+   modal.classList.add("is-hidden");
+   modal.classList.remove("is-solved");
+   modal.setAttribute("aria-hidden","true");
+   document.body.classList.remove("rune-inspecting");
    if(previousFocus&&document.contains(previousFocus))previousFocus.focus({preventScroll:true});
    previousFocus=null;
    onClose?.();
@@ -158,25 +147,19 @@ export function createRuneInspector({onTurn,onClose}){
    const result=onTurn(active.index,direction);
    if(!result?.changed)return false;
    targetAngle-=direction*QUARTER;
-   updateLabels();
+   updateMarker();
    if(result.solved){
      solved=true;
-     modal.classList.add('is-solved');
-     leftButton.disabled=true;rightButton.disabled=true;
-     status.textContent='✦ 封印归位，石门正在沉入地下……';
-     closeTimer=setTimeout(close,1450);
+     modal.classList.add("is-solved");
+     status.textContent="封印归位。石门正在下沉。";
+     closeTimer=setTimeout(close,1150);
    }else{
-     status.textContent=`咔哒——符印指向${DIRECTIONS[active.phase]}。继续寻找正确方向。`;
+     status.textContent="符印转到"+SYMBOLS[active.phase]+"方向。";
    }
    return true;
  }
- function rotateByButton(direction){
-   if(performance.now()-lastButtonTime<120)return;
-   lastButtonTime=performance.now();rotate(direction);
- }
- leftButton.addEventListener('click',()=>rotateByButton(-1));
- rightButton.addEventListener('click',()=>rotateByButton(1));
- closeButton.addEventListener('click',close);
+ function rotateByInput(direction){rotate(direction);}
+ modal.querySelector(".rune-inspector-shade").addEventListener("click",close);
  let pointerId=null;
  view.addEventListener('pointerdown',event=>{
    if(!active||solved||event.button!==0)return;
@@ -213,8 +196,11 @@ export function createRuneInspector({onTurn,onClose}){
    if(!drag&&Math.abs(angle-targetAngle)<.002)angle=targetAngle;
    model.pointer.rotation.y=angle;
    model.centerpiece.rotation.y=time*.25;
-   model.stageGlow.material.opacity=.15+.06*Math.sin(time*2.2);
+   const breath=.5+.5*Math.sin(time*1.9);
+   model.accentLight.intensity=solved?3.8:1.05+breath*.42;
+   model.centerpiece.material.emissiveIntensity=solved?2.6:.23+breath*.25;
+   model.stageGlow.material.opacity=solved?.52:.13+breath*.09;
    renderer.render(scene,camera);
  }
- return {open,close,rotate:rotateByButton,render,resize,isOpen:()=>Boolean(active)};
+ return {open,close,rotate:rotateByInput,render,resize,isOpen:()=>Boolean(active)};
 }
