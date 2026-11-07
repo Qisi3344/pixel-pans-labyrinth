@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {dampHeading} from '../src/chapter3-scene.js';
 import {readFileSync} from 'node:fs';
 import {
  HALL,TABLE,START,FOOD,DOOR,MONSTER_START,PLAYER_SPEED,HUNTER_SPEED,
@@ -124,4 +125,15 @@ test('UI integrates touch controls, pencil tracing and movie-story reveal',()=>{
  assert.match(scene,/function chalkPortal/);
  assert.match(style,/touch-action:none/);
  assert.match(chapter2,/href="\?stage=3"/,'Chapter II completion should link to III');
+});
+
+test('scene heading rotation is browser-safe and wraps across +/- PI',()=>{
+ const from=Math.PI-.08,to=-Math.PI+.08;
+ const next=dampHeading(from,to,10,.08);
+ assert.ok(next>from&&next<from+.17,'shortest rotation must not spin the long way');
+ assert.ok(dampHeading(0,0,6,.016)===0);
+ const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
+ assert.equal(scene.includes('THREE.MathUtils.dampAngle('),false,
+  'a nonexistent MathUtils method would crash the entire game at first render');
+ assert.equal(typeof dampHeading,'function');
 });
