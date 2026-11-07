@@ -16,17 +16,30 @@ document.body.innerHTML=`
     <div class="root-meter"><span>已献祭魔石</span><b id="root-offerings">0 / 3</b></div>
     <div class="root-status" id="root-status">循着树根，寻找第一颗魔石。</div><button id="root-enter-guide" type="button" class="root-enter-guide">↳ 前往树洞 <small>自动行走并进入</small></button><button id="amber-guide" class="root-amber-guide" type="button">✦ 寻找琥珀魔石 <small>自动沿通道前往</small></button>
   </aside>
-  <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div><div class="root-amber-marker" id="amber-marker" aria-hidden="true"><strong>✦ 琥珀魔石</strong><small>金色岔路尽头</small></div>
+  <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div>
+  <div class="root-cinema" id="root-cinema" aria-live="polite" aria-atomic="true">
+    <span class="root-cinema-mark">✦</span><span id="root-cinema-caption">古树正在苏醒</span>
+  </div><div class="root-amber-marker" id="amber-marker" aria-hidden="true"><strong>✦ 琥珀魔石</strong><small>金色岔路尽头</small></div>
   <section class="root-bottom"><div class="root-keys">WASD / 方向键 移动　·　E 交互　·　点击石道自动行走</div><a href="?stage=1" class="root-back">← 第一章</a></section>
   <div class="root-touch"><div id="root-pad" class="root-pad" role="group" aria-label="拖动虚拟摇杆移动"><div class="root-knob" id="root-knob"></div></div><button id="root-act" class="root-act" type="button">✦<small>交互</small></button></div>
   <div class="root-overlay" id="root-intro" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✧　✦</div><small>CHAPTER II · BENEATH THE ANCIENT FIG</small><h2>巨树之腹</h2><p>石井的尽头，长着一棵正在死去的树。<br/>地下深处有三颗魔石，<br/>还有一个饥饿的守护者。</p><button id="root-start" type="button">探索巨树 ↗</button><footer>3D PIXEL DIORAMA · CUTAWAY ROOT WORLD</footer></div></div>
-  <div class="root-overlay hidden" id="root-win" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✦　✦</div><small>THE HEART BEATS AGAIN</small><h2>枯树复苏</h2><p>三颗魔石消失在巨蟾蜍的腹中。<br/>金色钥匙从黑暗里浮现。<br/>树根深处，第一次有了春天。</p><button id="root-repeat" type="button">再次探索 ↻</button><footer><a href="?stage=1">返回第一章</a></footer></div></div>
+  <div class="root-overlay root-win-overlay hidden" id="root-win" role="dialog" aria-modal="true" aria-label="第二章通关">
+    <div class="root-card">
+      <div class="root-orn">✦　✦　✦</div>
+      <small>CHAPTER II · COMPLETE</small>
+      <h2>获得黄金钥匙</h2>
+      <p>巨树再一次萌发新芽。</p>
+      <button id="root-review" type="button">重看 3D 结算演出 ↻</button>
+      <button id="root-repeat" type="button" class="secondary-end">重新探索第二章</button>
+      <footer><a href="?stage=1">返回第一章</a></footer>
+    </div>
+   </div>
 </main>`;
 const $=id=>document.getElementById(id);
 const state=newChapter(),view=createTreeScene($('root-world'),state);
 let started=false,active=null,queue=[],last=0,lastMove=0,tipTimer=null;
 let keyboard=new Set(),pointer=null,stickX=0,stickY=0,elapsed=0;
-let outside=true,exteriorGoal=null,waypointPending=false;
+let outside=true,exteriorGoal=null,waypointPending=false,finaleCompleted=false,finaleStep='';
 const physicalKey={
  KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'arrowup',ArrowLeft:'arrowleft',ArrowDown:'arrowdown',ArrowRight:'arrowright',
@@ -108,11 +121,26 @@ function action(){
   case 'stone':note(660,.19,'triangle',.042);tip(result.index===2?'琥珀魔石已获得！金光消失，前往巨蟾蜍。':'获得第 '+(result.index+1)+' 颗魔石。它在掌心微微发光。');break;
   case 'boulder':note(186,.35,'sawtooth',.018);tip('石块被推向侧面。通往树心的路打开了。');break;
   case 'need-stones':note(170,.15,'triangle',.02);tip('巨蟾蜍等待着三颗魔石。还差 '+result.remaining+' 颗。');break;
-  case 'offering':note(330,.19,'sine',.035);tip('蟾蜍吞下魔石。还要再喂 '+(3-result.count)+' 颗。');break;
-  case 'victory':chime();tip('金色钥匙出现了！巨树正在苏醒。',5500);setTimeout(()=>$('root-win').classList.remove('hidden'),1400);break;
+  case 'offering':
+   view.playOffering(result.count-1);
+   note(330,.19,'sine',.035);
+   tip('魔石真的飞向蟾蜍口中。还要再投喂 '+(3-result.count)+' 颗。');
+   break;
+  case 'victory':
+   beginFinale();
+   break;
   default:tip('这里没有可操作的东西。去探索另一处根脉。');
  }
  drawHUD();
+}
+function beginFinale(){
+ queue=[];active=null;waypointPending=false;keyboard.clear();
+ if(pointer!==null)release();
+ view.startFinale();
+ $('root-game').classList.add('playing-finale');
+ $('root-cinema').classList.add('visible');
+ finaleStep='';finaleCompleted=false;
+ note(392,.4,'sine',.035);
 }
 function follow(destination){
  if(outside||!started||state.won||active)return;
@@ -146,7 +174,12 @@ function direction(){
 }
 function begin(){started=true;$('root-intro').classList.add('hidden');$('root-act').innerHTML='↳<small>进入</small>';note(440,.17);tip('走进树干中央的黑色洞口即可进入，也可点击洞口自动走入。',5000);}
 $('root-start').addEventListener('click',begin);
-$('root-repeat').addEventListener('click',()=>location.reload());
+$('root-repeat').addEventListener('click',()=>{
+  location.href='?stage=2';
+});
+$('root-review').addEventListener('click',()=>{
+  location.href='?stage=2&previewFinale=1';
+});
 $('root-reset').addEventListener('click',()=>location.reload());
 $('root-more').addEventListener('click',()=>view.setZoom(1.22));
 $('root-less').addEventListener('click',()=>view.setZoom(.84));
@@ -262,7 +295,21 @@ function frame(now){
    }
   }
  }
- view.draw(now/1000,dt,distance);
+ const ending=view.draw(now/1000,dt,distance);
+ if(ending.active){
+  if(ending.step!==finaleStep){
+   finaleStep=ending.step;
+   $('root-cinema-caption').textContent=ending.caption;
+   if(ending.step==='awaken')note(220,.30,'triangle',.027);
+   if(ending.step==='key')chime();
+   if(ending.step==='spring')chime();
+  }
+  if(ending.done&&!finaleCompleted){
+   finaleCompleted=true;
+   $('root-cinema').classList.remove('visible');
+   $('root-win').classList.remove('hidden');
+  }
+ }
  const marker=$('amber-marker');
  const anchored=(!outside&&!state.stones[2])?view.stoneScreenPosition(2):null;
  if(anchored&&anchored.onScreen){
@@ -274,4 +321,19 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 drawHUD();
+
+// A reproducible presentation/QA URL. It previews the actual in-engine
+// sequence (not a video file or text-only ending) without replaying the level.
+if(new URLSearchParams(location.search).get('previewFinale')==='1'){
+ begin();
+ outside=false;
+ state.node=TOAD_NODE;state.stones.fill(true);
+ state.boulderMoved=true;state.offerings=3;state.won=true;
+ view.setArea('interior');
+ view.player.position.copy(point(TOAD_NODE));
+ $('root-game').classList.remove('is-forest');
+ $('root-act').innerHTML='✦<small>交互</small>';
+ drawHUD();
+ beginFinale();
+}
 
