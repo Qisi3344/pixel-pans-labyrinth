@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
 import {NODES,EDGES,STONE_NODES,rootOpen} from './chapter2-logic.js';
 const mat=(c,extra={})=>new THREE.MeshLambertMaterial({color:c,flatShading:true,...extra});
@@ -39,7 +40,8 @@ export function createTreeScene(canvas,state){
  const fill=new THREE.PointLight(0xaab9a6,1.6,18);fill.position.set(2,-.4,8);scene.add(fill);
  const camera=new THREE.OrthographicCamera(-13,13,9,-9,.1,120);
  const direction=new THREE.Vector3(1,1.05,1.3).normalize();
- const focus=new THREE.Vector3(0,-1.7,0);let width=-1,height=-1,zoom=1,portrait=false;
+ const focus=new THREE.Vector3(0,-1.7,0);
+ let width=-1,height=-1,zoom=1,portrait=false,cameraReady=false;
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),mat(0xffffff));ground.rotation.x=-Math.PI/2;ground.position.y=-5.7;ground.receiveShadow=true;scene.add(ground);
  const stage=new THREE.Group();scene.add(stage);
  // Cutaway earth: uninterrupted back shell, open front, no occluding fake facade.
@@ -170,17 +172,43 @@ export function createTreeScene(canvas,state){
   width=-1;resize();
  }
  const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+ // Read CSS viewport dimensions from the parent rather than from a canvas
+ // whose internal pixel resolution is deliberately reduced for pixel art.
  function resize(){
-  const w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight;
-  if(w===width&&h===height)return;
-  width=w;height=h;portrait=w/h<.85;
-  const vertical=area==='exterior'?(portrait?19.5:20.7):(portrait?15:20);
-  camera.left=-vertical*w/h/(2*zoom);camera.right=vertical*w/h/(2*zoom);
-  camera.top=vertical/(2*zoom);camera.bottom=-vertical/(2*zoom);camera.updateProjectionMatrix();
-  const factor=portrait?2.15:2.05;renderer.setSize(Math.max(160,Math.floor(w/factor)),Math.max(160,Math.floor(h/factor)),false);
-  canvas.style.width='100%';canvas.style.height='100%';
+  const holder=canvas.parentElement;
+  const rect=holder?.getBoundingClientRect();
+  const w=Math.max(1,Math.round(rect?.width||window.innerWidth));
+  const h=Math.max(1,Math.round(rect?.height||window.innerHeight));
+  const resized=w!==width||h!==height;
+  const framing=chapterFraming({
+    width:w,height:h,area,zoom,hero:player.position,entrance:exterior.entrance
+  });
+  const rotated=framing.portrait!==portrait;
+  portrait=framing.portrait;
+  if(resized||rotated||!cameraReady){
+   width=w;height=h;
+   // Recenter immediately across desktop/mobile transitions. Otherwise the
+   // easing camera can point at empty space for several frames on orientation change.
+   focus.set(framing.focus.x,framing.focus.y,framing.focus.z);
+   cameraReady=true;
+   const divisor=portrait?2.05:2.10;
+   renderer.setPixelRatio(1);
+   renderer.setSize(
+    Math.max(128,Math.round(w/divisor)),
+    Math.max(128,Math.round(h/divisor)),false
+   );
+   canvas.style.width='100%';canvas.style.height='100%';
+  }
+  // Recompute the world-space view as the player travels. Dynamic orthographic
+  // bounds keep the player and tree entrance visible in any portrait aspect.
+  if(Math.abs(camera.left-framing.left)>.02||Math.abs(camera.top-framing.top)>.02){
+   camera.left=framing.left;camera.right=framing.right;
+   camera.top=framing.top;camera.bottom=framing.bottom;
+   camera.updateProjectionMatrix();
+  }
+  return framing;
  }
- function setZoom(n){zoom=THREE.MathUtils.clamp(n,.8,1.7);width=-1;resize();}
+ function setZoom(n){zoom=THREE.MathUtils.clamp(n,.8,1.7);resize();}
  function pick(x,y){
   const rect=canvas.getBoundingClientRect();
   mouse.set((x-rect.left)*2/rect.width-1,1-(y-rect.top)*2/rect.height);
@@ -192,7 +220,7 @@ export function createTreeScene(canvas,state){
   return hit.object.userData??null;
  }
  function draw(seconds,dt,travel){
-  resize();
+  const framing=resize();
   rootPivot.rotation.z=rootOpen(state.time)?-.62:0;
   rootGate.scale.y=rootOpen(state.time)?.28:1;
   boulder.position.x=state.boulderMoved?7.5:5;
@@ -211,10 +239,10 @@ export function createTreeScene(canvas,state){
   arms[0].rotation.x=walking?-Math.sin(gait)*.33:0;
   arms[1].rotation.x=walking?Math.sin(gait)*.33:0;
   rig.position.y=walking?Math.abs(Math.sin(gait))*.055:0;
-  const point=area==='exterior'
-    ? (portrait?new THREE.Vector3(player.position.x*.39,1.8,player.position.z*.31):new THREE.Vector3(0,1.85,0))
-    : (portrait?new THREE.Vector3(player.position.x,-1.3,player.position.z):new THREE.Vector3(0,-.9,0));
-  focus.lerp(point,1-Math.exp(-dt*(portrait?5:2.5)));
+  const point=new THREE.Vector3(
+    framing.focus.x,framing.focus.y,framing.focus.z
+  );
+  focus.lerp(point,1-Math.exp(-Math.max(dt,.016)*(portrait?8:3.8)));
   camera.position.copy(focus).addScaledVector(direction,33);camera.lookAt(focus);
   renderer.render(scene,camera);
  }
