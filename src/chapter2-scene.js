@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createExterior} from './chapter2-exterior.js';
 import {NODES,EDGES,STONE_NODES,rootOpen} from './chapter2-logic.js';
 const mat=(c,extra={})=>new THREE.MeshLambertMaterial({color:c,flatShading:true,...extra});
 const geoBox=new THREE.BoxGeometry(1,1,1);
@@ -43,8 +44,8 @@ export function createTreeScene(canvas,state){
  const stage=new THREE.Group();scene.add(stage);
  // Cutaway earth: uninterrupted back shell, open front, no occluding fake facade.
  block(stage,0x313d39,[0,-4.25,0],[21.2,2.2,10.2]);
- block(stage,0x596957,[0,-.90,.9],[21.5,.8,10.5]);
- block(stage,0x879684,[0,-.43,.9],[21.2,.16,10.2]);
+ // The original two giant opaque slabs covered every playable tunnel and avatar.
+ // Remove both: underground is entered later as a separately revealed diorama.
  for(let i=0;i<39;i++){
   const x=-10.2+(i%13)*1.68,z=4.65-(Math.floor(i/13))*.56;
   block(stage,[0x4c5d4c,0x596759,0x3e4e47][i%3],[x,-2.25,z],[1.58,2.2,.53],(i%3-1)*.05);
@@ -64,6 +65,7 @@ export function createTreeScene(canvas,state){
   [[3.1,5.65,-.35],[4.9,7,.1],.26,.11]
  ];
  for(const [a,b,r1,r2] of trunkSections)rod(trunk,bark,a,b,r1,r2,8);
+ trunk.visible=false; // inside: no decorative canopy occluding the tunnel.
  for(let k=0;k<14;k++){
   const a=k*2.39996,r=2.2+(k%4)*.62;
   leaf(trunk,Math.cos(a)*r,6.5+(k%5)*.34,Math.sin(a)*1.4,.75+(k%3)*.13,[0x435a4b,0x536c58,0x64785a][k%3]);
@@ -129,25 +131,50 @@ export function createTreeScene(canvas,state){
  rod(goldKey,0xe7c986,[0,-.26,0],[0,-1.0,0],.065,.065);
  block(goldKey,0xe7c986,[.14,-.82,0],[.24,.12,.13]);
  block(goldKey,0xe7c986,[.14,-.61,0],[.24,.12,.13]);
- // Red dress and actual two-leg walk cycle, matching the chapter-one character.
- const player=new THREE.Group();player.position.copy(pos(0));stage.add(player);
+ // Chapter II: Ofelia-inspired black dress, pale apron straps and a tiny storybook.
+ // Reparent the avatar to scene, so it remains visible when the two worlds switch.
+ const player=new THREE.Group();player.position.copy(pos(0));scene.add(player);
  const rig=new THREE.Group();player.add(rig);
  const legs=[-.12,.12].map(x=>{
   const leg=block(rig,0x313334,[x,.32,0],[.14,.59,.19]);return leg;
  });
- const skirt=new THREE.Mesh(new THREE.ConeGeometry(.42,.8,7),mat(0x932f39));skirt.position.y=.83;skirt.rotation.y=.5;skirt.castShadow=true;rig.add(skirt);
- const torso=block(rig,0xa43640,[0,1.18,0],[.36,.53,.26]);
+ const skirt=new THREE.Mesh(new THREE.ConeGeometry(.42,.8,7),mat(0x272d30));skirt.position.y=.83;skirt.rotation.y=.5;skirt.castShadow=true;rig.add(skirt);
+ const torso=block(rig,0x2a3031,[0,1.18,0],[.36,.53,.26]);
  const head=sphere(rig,0xd0b7a8,.24,[0,1.64,0],1);
  const hair=sphere(rig,0x292a2b,.27,[0,1.79,.07],1);hair.scale.set(1.12,.63,1);
- const arms=[-.28,.28].map(x=>block(rig,0xb1434b,[x,1.1,0],[.16,.5,.17]));
- const lantern=sphere(rig,0xf3d6a3,.12,[.37,.72,.0],0);
+ const arms=[-.28,.28].map(x=>block(rig,0x31383a,[x,1.1,0],[.16,.5,.17]));
+ // Small costume details are actual meshes, not painted sprite planes.
+ block(rig,0xd6d9c9,[-.15,1.2,.144],[.105,.45,.06],-.12);
+ block(rig,0xd6d9c9,[.15,1.2,.144],[.105,.45,.06],.12);
+ block(rig,0xe7e5d9,[0,1.41,.158],[.33,.085,.08]);
+ block(rig,0xe3e3d8,[0,1.07,.17],[.17,.30,.04]);
+ // A small dark-blue book held in front of the character, matching the still.
+ const book=block(rig,0x596c78,[.36,.87,.26],[.28,.35,.08],-.25);
+ book.rotation.x=-.23;
+ const lantern=sphere(rig,0xf3d6a3,.07,[-.35,.77,.08],0);
  const glow=new THREE.PointLight(0xf2d5a3,.7,3);glow.position.set(.37,.72,0);rig.add(glow);
+ const exterior=createExterior(scene);
+ let area='exterior';
+ stage.visible=false;
+ player.position.set(exterior.spawn.x,exterior.height(exterior.spawn.x,exterior.spawn.z)+.035,exterior.spawn.z);
+ player.rotation.y=1.95;
+ function setArea(next){
+  if(next===area)return;
+  if(next!=='exterior'&&next!=='interior')throw new Error('Unknown area '+next);
+  area=next;
+  stage.visible=area==='interior';
+  exterior.group.visible=area==='exterior';
+  if(area==='interior')player.position.copy(pos(state.node));
+  else player.position.set(exterior.spawn.x,exterior.height(exterior.spawn.x,exterior.spawn.z)+.035,exterior.spawn.z);
+  focus.set(0,area==='exterior'?1.8:-1,0);
+  width=-1;resize();
+ }
  const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
  function resize(){
   const w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight;
   if(w===width&&h===height)return;
   width=w;height=h;portrait=w/h<.85;
-  const vertical=portrait?15:20;
+  const vertical=area==='exterior'?(portrait?19.5:20.7):(portrait?15:20);
   camera.left=-vertical*w/h/(2*zoom);camera.right=vertical*w/h/(2*zoom);
   camera.top=vertical/(2*zoom);camera.bottom=-vertical/(2*zoom);camera.updateProjectionMatrix();
   const factor=portrait?2.15:2.05;renderer.setSize(Math.max(160,Math.floor(w/factor)),Math.max(160,Math.floor(h/factor)),false);
@@ -158,8 +185,11 @@ export function createTreeScene(canvas,state){
   const rect=canvas.getBoundingClientRect();
   mouse.set((x-rect.left)*2/rect.width-1,1-(y-rect.top)*2/rect.height);
   ray.setFromCamera(mouse,camera);
-  const hit=ray.intersectObjects(clickable,false)[0];
-  return hit?.object.userData??null;
+  const hit=ray.intersectObjects(area==='exterior'?[exterior.hit,exterior.floor]:clickable,false)[0];
+  if(!hit)return null;
+  if(area==='exterior'&&hit.object===exterior.floor)
+    return {kind:'ground',x:hit.point.x,z:hit.point.z};
+  return hit.object.userData??null;
  }
  function draw(seconds,dt,travel){
   resize();
@@ -181,11 +211,13 @@ export function createTreeScene(canvas,state){
   arms[0].rotation.x=walking?-Math.sin(gait)*.33:0;
   arms[1].rotation.x=walking?Math.sin(gait)*.33:0;
   rig.position.y=walking?Math.abs(Math.sin(gait))*.055:0;
-  const point=portrait?new THREE.Vector3(player.position.x,-1.3,player.position.z):new THREE.Vector3(0,-.9,0);
+  const point=area==='exterior'
+    ? (portrait?new THREE.Vector3(player.position.x*.39,1.8,player.position.z*.31):new THREE.Vector3(0,1.85,0))
+    : (portrait?new THREE.Vector3(player.position.x,-1.3,player.position.z):new THREE.Vector3(0,-.9,0));
   focus.lerp(point,1-Math.exp(-dt*(portrait?5:2.5)));
   camera.position.copy(focus).addScaledVector(direction,33);camera.lookAt(focus);
   renderer.render(scene,camera);
  }
  resize();draw(0,.016,0);
- return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,dispose(){renderer.dispose();}};
+ return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,setArea,exterior,dispose(){renderer.dispose();}};
 }
