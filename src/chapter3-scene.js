@@ -7,6 +7,12 @@ import {HALL,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS} f
 const MAT=new Map(), BOX=new THREE.BoxGeometry(1,1,1);
 const color=c=>{if(!MAT.has(c))MAT.set(c,new THREE.MeshLambertMaterial({color:c,flatShading:true}));return MAT.get(c);};
 const ink=c=>new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide});
+// Three.MathUtils has damp() but NO dampAngle(). Interpolate the wrapped
+// shortest angular arc ourselves; keep this browser-safe on every frame.
+export function dampHeading(current,target,lambda,dt){
+ const delta=Math.atan2(Math.sin(target-current),Math.cos(target-current));
+ return current+delta*(1-Math.exp(-lambda*Math.max(0,dt)));
+}
 const clamp=(n)=>Math.max(0,Math.min(1,n));
 const smooth=(t)=>{const x=clamp(t);return x*x*(3-2*x);};
 const rnd=n=>{const v=Math.sin(n*127.17+87.1)*43758.54;return v-Math.floor(v)};
@@ -215,7 +221,7 @@ function buildPaleMan(scene){
   rig.rotation.z=active?Math.sin(time*6)*.065:Math.sin(time*1.0)*.014;
   const dx=state.player.x-state.monster.x,dz=state.player.z-state.monster.z;
   if(active||awakening>.3){
-   root.rotation.y=THREE.MathUtils.dampAngle(root.rotation.y,Math.atan2(dx,dz),5,dt);
+   root.rotation.y=dampHeading(root.rotation.y,Math.atan2(dx,dz),5,dt);
   }else root.rotation.y=-1.25;
   for(let k=0;k<2;k++){
    const sign=k===0?-1:1;
@@ -344,7 +350,7 @@ export function createBanquetScene(canvas,state){
   resize();
   const p=player.body.position;
   p.set(state.player.x,.03,state.player.z);
-  player.body.rotation.y=THREE.MathUtils.dampAngle(player.body.rotation.y,
+  player.body.rotation.y=dampHeading(player.body.rotation.y,
     state.face??player.body.rotation.y,12,dt);
   animatePlayer(player,dt,distance,distance>.0001);
   if(state.phase==='caught'){
