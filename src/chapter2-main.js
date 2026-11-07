@@ -2,6 +2,7 @@ import './chapter2-style.css';
 import {NODES,STONE_NODES,TOAD_NODE,newChapter,step,interact,findPath,nextDirection,rootOpen,edgeAccessible} from './chapter2-logic.js';
 import {createTreeScene} from './chapter2-scene.js';
 import {note,chime,toggleSound} from './audio.js';
+import {nearEntrance,stepOnEarth,directionTo,distance2d} from './chapter2-overworld.js';
 
 document.title='巨树之腹 | 石之迷宫 · 第二章';
 document.body.innerHTML=`
@@ -25,12 +26,18 @@ const $=id=>document.getElementById(id);
 const state=newChapter(),view=createTreeScene($('root-world'),state);
 let started=false,active=null,queue=[],last=0,lastMove=0,tipTimer=null;
 let keyboard=new Set(),pointer=null,stickX=0,stickY=0,elapsed=0;
+let outside=true,exteriorGoal=null;
+$('root-game').classList.add('is-forest');
 const point=n=>view.pos(n);
 function tip(message,delay=3200){
  const el=$('root-tip');el.textContent=message;el.classList.add('show');
  clearTimeout(tipTimer);tipTimer=setTimeout(()=>el.classList.remove('show'),delay);
 }
 function drawHUD(){
+ if(outside){
+  $('root-status').textContent='黑暗的裂口藏在巨树根部。走近树洞，按 E 进入，或直接点击洞口。';
+  return;
+ }
  document.querySelectorAll('#root-stones span').forEach((element,i)=>{
   element.classList.toggle('got',state.stones[i]);
   element.textContent=(state.stones[i]?'◆ ':'◇ ')+['苔绿魔石','紫晶魔石','琥珀魔石'][i];
@@ -45,8 +52,22 @@ function drawHUD(){
  else if(node===10&&state.stones.every(Boolean))status='按 E 将三颗魔石送进蟾蜍的嘴里。';
  $('root-status').textContent=status;
 }
+function enterTree(){
+ if(!outside)return;
+ outside=false;exteriorGoal=null;keyboard.clear();
+ if(pointer!==null)release();
+ view.setArea('interior');$('root-game').classList.remove('is-forest');
+ note(360,.27,'triangle',.028);
+ tip('奥菲莉娅俯身钻入树洞。地底盘绕着会收缩的根须……',5000);
+ drawHUD();
+}
 function action(){
  if(!started||active||state.won)return;
+ if(outside){
+  if(nearEntrance(view.player.position,view.exterior.entrance))enterTree();
+  else tip('先走到树干中间的黑色洞口。点击洞口也能自动走过去。',3400);
+  return;
+ }
  const result=interact(state);
  switch(result.type){
   case 'stone':note(660,.19,'triangle',.042);tip('获得第 '+(result.index+1)+' 颗魔石。它在掌心微微发光。');break;
@@ -59,7 +80,7 @@ function action(){
  drawHUD();
 }
 function follow(destination){
- if(!started||state.won||active)return;
+ if(outside||!started||state.won||active)return;
  const path=findPath(state,state.node,destination);
  if(!path){tip('这段根脉还不能通行。观察收缩的树根或搬动石块。');return;}
  queue=path.slice(1);
@@ -78,7 +99,7 @@ function direction(){
  if(Math.hypot(dx,dz)<.3)return null;
  const length=Math.hypot(dx,dz);return nextDirection(state,dx/length,dz/length);
 }
-function begin(){started=true;$('root-intro').classList.add('hidden');note(440,.17);tip('第一颗魔石藏在左侧洞穴的尽头。',4400);}
+function begin(){started=true;$('root-intro').classList.add('hidden');note(440,.17);tip('沿着枯木、青苔和盘根前进，找到树干中央的洞口。',5000);}
 $('root-start').addEventListener('click',begin);
 $('root-repeat').addEventListener('click',()=>location.reload());
 $('root-reset').addEventListener('click',()=>location.reload());
@@ -98,7 +119,7 @@ function release(event){
  if(pointer===null||(event&&event.pointerId!==pointer))return;
  pointer=null;stickX=0;stickY=0;$('root-knob').style.transform='translate(-50%,-50%)';
 }
-pad.addEventListener('pointerdown',event=>{if(!started||pointer!==null)return;pointer=event.pointerId;pad.setPointerCapture(pointer);padMove(event);queue=[];});
+pad.addEventListener('pointerdown',event=>{if(!started||pointer!==null)return;pointer=event.pointerId;pad.setPointerCapture(pointer);padMove(event);queue=[];exteriorGoal=null;});
 pad.addEventListener('pointermove',event=>{if(event.pointerId===pointer)padMove(event);});
 pad.addEventListener('pointerup',release);pad.addEventListener('pointercancel',release);
 pad.addEventListener('lostpointercapture',release);
@@ -106,7 +127,7 @@ window.addEventListener('keydown',event=>{
  const k=event.key.toLowerCase();
  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))event.preventDefault();
  if(!started){if(k==='enter')begin();return;}
- if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keyboard.add(k);queue=[];}
+ if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keyboard.add(k);queue=[];exteriorGoal=null;}
  else if(['e',' ','enter'].includes(k)&&!event.repeat)action();
 });
 window.addEventListener('keyup',event=>keyboard.delete(event.key.toLowerCase()));
@@ -119,6 +140,14 @@ $('root-world').addEventListener('pointerup',event=>{
  tap=null;
  const hit=view.pick(event.clientX,event.clientY);
  if(!hit)return;
+ if(outside){
+  if(hit.kind==='entrance'){
+   exteriorGoal={...view.exterior.entrance};tip('奥菲莉娅正在走向树洞……',2200);
+  } else if(hit.kind==='ground'&&view.exterior.walkable(hit.x,hit.z)){
+   exteriorGoal={x:hit.x,z:hit.z};
+  }
+  return;
+ }
  if(hit.kind==='node')follow(hit.index);
  if(hit.kind==='stone')follow(STONE_NODES[hit.index]);
  if(hit.kind==='toad')follow(TOAD_NODE);
@@ -129,23 +158,48 @@ function frame(now){
  const dt=Math.min(.05,last?(now-last)/1000:.016);last=now;
  let distance=0;
  if(started&&!state.won){
-  state.time+=dt;
-  if(!active&&queue.length){const n=queue[0];if(edgeAccessible(state,state.node,n)){active={from:state.node,to:queue.shift(),progress:0};}}
-  if(!active&&(!queue.length)&&now-lastMove>235){
-   const n=direction();
-   if(n!==null){active={from:state.node,to:n,progress:0};}
-  }
-  if(active){
-   const prev=view.player.position.clone();
-   active.progress=Math.min(1,active.progress+dt/0.43);
-   const a=point(active.from),b=point(active.to),t=active.progress;
-   const smooth=t*t*(3-2*t);
-   view.player.position.lerpVectors(a,b,smooth);
-   view.player.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
-   distance=view.player.position.distanceTo(prev);
-   if(t>=1){
-    step(state,active.to);active=null;lastMove=now;drawHUD();
-    if(state.node===TOAD_NODE)tip('巨蟾蜍就在面前。按 E 与它互动。',2500);
+  if(outside){
+   const hero=view.player.position;
+   let dx=stickX,dz=stickY;
+   if(keyboard.has('w')||keyboard.has('arrowup'))dz=-1;
+   if(keyboard.has('s')||keyboard.has('arrowdown'))dz=1;
+   if(keyboard.has('a')||keyboard.has('arrowleft'))dx=-1;
+   if(keyboard.has('d')||keyboard.has('arrowright'))dx=1;
+   if(Math.hypot(dx,dz)<.18&&exteriorGoal){
+    const dir=directionTo(hero,exteriorGoal);dx=dir.x;dz=dir.z;
+   }
+   const position=stepOnEarth(hero,dx,dz,dt,view.exterior.walkable);
+   const oldX=hero.x,oldZ=hero.z;
+   hero.set(position.x,view.exterior.height(position.x,position.z)+.035,position.z);
+   distance=Math.hypot(hero.x-oldX,hero.z-oldZ);
+   if(distance>.0001)hero.rotation.y=Math.atan2(dx,dz);
+   if(exteriorGoal&&distance2d(hero,exteriorGoal)<.38){
+    const goalIsDoor=distance2d(exteriorGoal,view.exterior.entrance)<.20;
+    exteriorGoal=null;
+    if(goalIsDoor&&nearEntrance(hero,view.exterior.entrance))enterTree();
+   }
+  } else {
+   state.time+=dt;
+   if(!active&&queue.length){
+    const n=queue[0];
+    if(edgeAccessible(state,state.node,n))active={from:state.node,to:queue.shift(),progress:0};
+   }
+   if(!active&&!queue.length&&now-lastMove>235){
+    const n=direction();
+    if(n!==null)active={from:state.node,to:n,progress:0};
+   }
+   if(active){
+    const prev=view.player.position.clone();
+    active.progress=Math.min(1,active.progress+dt/0.43);
+    const a=point(active.from),b=point(active.to),t=active.progress;
+    const smooth=t*t*(3-2*t);
+    view.player.position.lerpVectors(a,b,smooth);
+    view.player.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
+    distance=view.player.position.distanceTo(prev);
+    if(t>=1){
+     step(state,active.to);active=null;lastMove=now;drawHUD();
+     if(state.node===TOAD_NODE)tip('巨蟾蜍就在面前。按 E 与它互动。',2500);
+    }
    }
   }
  }
