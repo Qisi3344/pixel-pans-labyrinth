@@ -1,10 +1,11 @@
 /** Shared diegetic 3D close-up for all three rune puzzles. No maze logic lives here. */
 import * as THREE from 'three';
 import {SYMBOLS} from './maze.js';
+import {COMPASS_SYMBOLS,QUARTER_TURN,headingAngle,headingPosition} from './rune-orientation.js';
 
 const $=id=>document.getElementById(id);
 const COLORS=[0xa1d5b9,0x8bc9ba,0x8ab8a9];
-const QUARTER=Math.PI/2;
+const QUARTER=QUARTER_TURN;
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const stone=(color,options={})=>new THREE.MeshStandardMaterial({color,roughness:.88,metalness:.025,flatShading:true,...options});
 
@@ -27,15 +28,35 @@ function createModel(scene){
  cylinder(root,.69,.72,.06,16,1.145,light);
  torus(root,.75,.05,1.175,0xb8c5ad);
  torus(root,.55,.025,1.192,0x3c4a41);
- // Physical compass markers stay stationary while the arrow rotates.
- const marks=[];
+ // FOUR engraved cardinal symbols are fixed to the stone itself; the
+ // central pointer is the only rotating component. Never mark the target.
  for(let i=0;i<4;i++){
-   const a=i*QUARTER;
-   const marker=new THREE.Mesh(new THREE.OctahedronGeometry(i===0?.086:.055,0),
-     stone(i===0?0xf6dfb3:0x536459));
-   marker.position.set(Math.sin(a)*.65,1.23,-Math.cos(a)*.65);
-   marker.scale.y=.33;root.add(marker);marks.push(marker);
+   const {x,z}=headingPosition(i,.955);
+   const medallion=new THREE.Mesh(new THREE.CylinderGeometry(.195,.195,.018,12),
+     stone(i===0?0x4a6353:0x30483d));
+   medallion.position.set(x,1.195,z);root.add(medallion);
+   const glyph=document.createElement('canvas');
+   glyph.width=glyph.height=128;
+   const ink=glyph.getContext('2d');
+   ink.clearRect(0,0,128,128);
+   ink.font='bold 94px "Arial Unicode MS","Segoe UI Symbol",sans-serif';
+   ink.textAlign='center';ink.textBaseline='middle';
+   ink.fillStyle=i===0?'#e6d9af':'#bad7c2';
+   ink.fillText(COMPASS_SYMBOLS[i],64,67);
+   const texture=new THREE.CanvasTexture(glyph);
+   texture.colorSpace=THREE.SRGBColorSpace;
+   texture.magFilter=THREE.NearestFilter;
+   texture.minFilter=THREE.LinearFilter;
+   const plaque=new THREE.Mesh(new THREE.PlaneGeometry(.32,.32),
+     new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+   plaque.rotation.x=-Math.PI/2;
+   plaque.position.set(x,1.212,z);
+   root.add(plaque);
  }
+ // The golden north marker distinguishes world bearings even in isometric view.
+ const north=headingPosition(0,.735);
+ const key=new THREE.Mesh(new THREE.OctahedronGeometry(.07,0),stone(0xe6d9af));
+ key.position.set(north.x,1.235,north.z);key.scale.y=.25;root.add(key);
  const pointer=new THREE.Group();pointer.position.y=1.22;root.add(pointer);
  // Arrow points north (-Z) at phase 0. Rotating around Y yields four true headings.
  const arrow=new THREE.Shape();
@@ -115,14 +136,14 @@ export function createRuneInspector({onTurn,onClose}){
    clearTimeout(closeTimer);closeTimer=null;
    active=rune;solved=false;drag=null;
    previousFocus=document.activeElement;
-   angle=targetAngle=-rune.phase*QUARTER;
+   angle=targetAngle=headingAngle(rune.phase);
    model.pointer.rotation.y=angle;
    const color=COLORS[rune.index]??COLORS[0];
    model.accentLight.color.setHex(color);
    model.centerpiece.material.color.setHex(color);
    model.centerpiece.material.emissive.setHex(color);
    model.variants.forEach((group,index)=>{group.visible=index===rune.index;});
-   status.textContent="拖动旋转符印，石碑上有方位刻痕。";
+   status.textContent="观察石碑箭头，再旋转指针对准石盘上相同的方向刻度。";
    modal.classList.remove("is-hidden","is-solved");
    modal.setAttribute("aria-hidden","false");
    document.body.classList.add("rune-inspecting");

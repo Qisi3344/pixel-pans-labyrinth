@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {headingAngle,headingPosition} from './rune-orientation.js';
 import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
 import {ARCH,WELL,spiralStep,visibleSpiralPosition,visibleWellFloorY,entranceAngle} from './architecture.js';
 
@@ -360,8 +361,14 @@ function makeRune(parent,rune,clickables){
   arrow.moveTo(0,.25);arrow.lineTo(.16,.02);arrow.lineTo(.065,.02);
   arrow.lineTo(.065,-.19);arrow.lineTo(-.065,-.19);arrow.lineTo(-.065,.02);
   arrow.lineTo(-.16,.02);arrow.closePath();
-  const pointer=new THREE.Mesh(new THREE.ShapeGeometry(arrow),new THREE.MeshBasicMaterial({color:rune.color,side:THREE.DoubleSide,depthTest:true}));
-  pointer.rotation.x=-Math.PI/2;pointer.position.y=.885;pivot.add(pointer);
+  // A Y-axis rotating compass assembly. A mesh rotated on Z would not
+  // match the inspector/engraving: it caused visually contradictory bearings.
+  const pointer=new THREE.Group();pointer.position.y=.885;pivot.add(pointer);
+  const arrowMesh=new THREE.Mesh(new THREE.ShapeGeometry(arrow),
+    new THREE.MeshBasicMaterial({color:rune.color,side:THREE.DoubleSide,depthTest:true}));
+  arrowMesh.rotation.x=-Math.PI/2;
+  pointer.add(arrowMesh);
+  pointer.rotation.y=headingAngle(rune.phase);
   const gem=makeGlow(pivot,rune.color,.115,[0,1.18,0]);
   const light=new THREE.PointLight(rune.color,1.1,3.5,2);light.position.y=1.25;pivot.add(light);
   // A physical clue stone, large enough to read in the low-res world.
@@ -373,7 +380,7 @@ function makeRune(parent,rune,clickables){
   box(clueStone,0x78917b,[0,.71,0],[.72,.13,.71],false);
   box(clueStone,0x3a5143,[0,.785,0],[.63,.035,.63],false);
   const carvedHeading=new THREE.Group();carvedHeading.position.y=.812;
-  carvedHeading.rotation.y=-rune.target*Math.PI/2;
+  carvedHeading.rotation.y=headingAngle(rune.target);
   clueStone.add(carvedHeading);
   const engraving=new THREE.Shape();
   engraving.moveTo(0,.30);engraving.lineTo(.20,.085);
@@ -662,7 +669,7 @@ export function createDiorama(canvas,maze) {
     player.cape.rotation.z=weight*.026*Math.sin(gait+.7);
     for(let i=0;i<3;i++){
       const rune=maze.runes[i], v=visuals.runes[i],gate=visuals.gates[i];
-      v.pointer.rotation.z=-(rune.phase*Math.PI/2);
+      v.pointer.rotation.y=headingAngle(rune.phase);
       v.gem.position.y=1.18+Math.sin(now*2.7+i)*.10;
       v.gem.rotation.y+=dt*.6;
       v.ring.material.color.setHex(rune.solved?0x75a092:rune.color);
