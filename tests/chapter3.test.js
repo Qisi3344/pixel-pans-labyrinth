@@ -133,7 +133,5 @@ test('scene heading rotation is browser-safe and wraps across +/- PI',()=>{
  assert.ok(next>from&&next<from+.17,'shortest rotation must not spin the long way');
  assert.ok(dampHeading(0,0,6,.016)===0);
  const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
- assert.doesNotMatch(scene,/THREE\\.MathUtils\\.dampAngle\\(/,
-  'Three.js MathUtils has no dampAngle: this would crash the whole imported game');
- assert.equal(typeof dampHeading,'function');
+ assert.equal(scene.includes('THREE.MathUtils.dampAngle('),false,\n  'a nonexistent MathUtils method would crash the entire game at first render');\n assert.equal(typeof dampHeading,'function');
 });
