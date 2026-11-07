@@ -322,7 +322,11 @@ export function createBanquetScene(canvas,state){
    const p=state.player;
    focus.set(p.x,1.4,p.z);
   }
-  const halfV=(portrait?17.6:19.7)/(2*zoom);
+  // Ease in for the palm-eye reveal, ease out before the chase starts.
+  const reveal=state.phase==='awakening'
+   ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
+  const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55);
+  const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
   camera.top=halfV;camera.bottom=-halfV;
   camera.updateProjectionMatrix();
