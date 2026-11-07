@@ -67,7 +67,7 @@ test('chase only catches within range and results in an explicit lose state',()=
  s.monster={x:s.player.x+.25,z:s.player.z+.15};
  assert.equal(attemptCatch(s),true);
  assert.equal(s.phase,'caught');
- tickBanquet(s,.9);
+ for(let i=0;i<9;i++)tickBanquet(s,.1);
  assert.ok(s.deathTime>.8);
  assert.equal(startDrawing(s),false);
 });
