@@ -168,3 +168,7 @@ html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .root-cinema,.root-cinema.visible{transition:none!important}
 }
+
+/* Explicit chapter 3 link appears after the tree's cinematic ending. */
+.root-next-chapter{display:block;padding:13px 12px;margin:9px 0 10px;background:#3d5947;color:#fff9e9;text-align:center;text-decoration:none;font-size:12px;letter-spacing:.08em;border-radius:5px}
+.root-next-chapter:hover,.root-next-chapter:focus-visible{background:#607765}
