@@ -51,6 +51,8 @@ const view=createBanquetScene($('pale-world'),state);
 let started=false,last=0,currentTime=0,moveDistance=0,navPath=[],navAction=null;
 let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
+// The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
+const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 let drawPointer=null,drawPrevious=null;
 const movementCodes={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
@@ -299,6 +301,8 @@ function drivePlayer(dt){
  return moved;
 }
 function driveHunter(dt){
+ // Deterministic pointer-drawing QA can run without a five-second death timer.
+ if(QA_CHALK_PREVIEW&&state.phase==='drawing')return;
  if(!['chase','drawing'].includes(state.phase))return;
  huntTime-=dt;
  if(huntTime<=0||!huntPath.length){
