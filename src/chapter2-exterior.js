@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 // CHAPTER II · A real forest-floor diorama. No image planes or foliage balls.
 // Everything here is geometry: irregular soil strata, moss, roots, bark,
@@ -213,11 +214,44 @@ function hollowAncientTree(group){
  hit.position.set(0,1.15,1.72);hit.userData={kind:'entrance'};tree.add(hit);
  return {hit,entrance:{x:0,z:2.60}};
 }
+/** Merge only static decoration, preserving the raycastable terrain and entrance.
+ * Thousands of grass/fern cylinders previously produced thousands of draw
+ * calls + shadow passes on a phone, making movement appear to freeze.
+ */
+function batchStaticDecoration(group,protectedMeshes) {
+ group.updateMatrixWorld(true);
+ const buckets=new Map();
+ group.traverse(mesh=>{
+  if(!mesh.isMesh||protectedMeshes.has(mesh))return;
+  if(!mesh.material?.isMeshLambertMaterial||mesh.material.transparent)return;
+  const attrs=Object.keys(mesh.geometry.attributes).sort().map(k=>{
+   const a=mesh.geometry.attributes[k];return k+':'+a.itemSize+':'+a.normalized;
+  }).join(',');
+  const key=mesh.material.uuid+'|'+Boolean(mesh.geometry.index)+'|'+attrs;
+  let bucket=buckets.get(key);
+  if(!bucket){bucket={material:mesh.material,parts:[],meshes:[]};buckets.set(key,bucket);}
+  const geometry=mesh.geometry.clone();geometry.applyMatrix4(mesh.matrixWorld);
+  bucket.parts.push(geometry);bucket.meshes.push(mesh);
+ });
+ let batches=0;
+ for(const bucket of buckets.values()){
+  if(bucket.parts.length<4)continue;
+  const merged=mergeGeometries(bucket.parts,false);
+  if(!merged){bucket.parts.forEach(p=>p.dispose());continue;}
+  bucket.meshes.forEach(m=>m.parent.remove(m));
+  const mesh=new THREE.Mesh(merged,bucket.material);
+  mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);batches++;
+  bucket.parts.forEach(p=>p.dispose());
+ }
+ return batches;
+}
 export function createExterior(scene){
  const group=new THREE.Group();scene.add(group);
  const floor=woodlandFloor(group);
  const tree=hollowAncientTree(group);
- const spawn={x:-5.1,z:4.7};
+ batchStaticDecoration(group,new Set([floor,tree.hit]));
+ // Start well inside the forest: walking north, south, east or west is possible.
+ const spawn={x:-4.2,z:3.8};
  // A sketchbook held by the miniature character is added in the shared player rig.
  // Surface collision keeps walking above the 3D soil, not inside the rock cut.
  function walkable(x,z){
