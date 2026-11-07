@@ -203,7 +203,7 @@ function update(now){
 requestAnimationFrame(update);
 
 $('begin').addEventListener('click',startGame);
-$('play-again').addEventListener('click',()=>location.reload());
+$('play-again').addEventListener('click',()=>{location.href='?stage=2';});
 $('restart').addEventListener('click',()=>location.reload());
 $('interact').addEventListener('click',()=>interact());
 $('touch-interact').addEventListener('click',()=>interact());
