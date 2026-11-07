@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
+import {createChapter2Ending} from './chapter2-ending.js';
 import {createCavern} from './chapter2-cavern.js';
 import {NODES,EDGES,STONE_NODES,rootOpen} from './chapter2-logic.js';
 const mat=(c,extra={})=>new THREE.MeshLambertMaterial({color:c,flatShading:true,...extra});
@@ -119,6 +120,10 @@ export function createTreeScene(canvas,state){
  const avatar=createPlayer(scene,pos(0));
  const player=avatar.body;
  const exterior=createExterior(scene);
+ const ending=createChapter2Ending({
+   stage,toad,jaw,belly,goldKey,player,exterior,
+   onExterior:()=>setArea('exterior')
+ });
  let area='exterior';
  stage.visible=false;
  player.position.set(exterior.spawn.x,exterior.height(exterior.spawn.x,exterior.spawn.z)+.035,exterior.spawn.z);
@@ -143,9 +148,18 @@ export function createTreeScene(canvas,state){
   const w=Math.max(1,Math.round(rect?.width||window.innerWidth));
   const h=Math.max(1,Math.round(rect?.height||window.innerHeight));
   const resized=w!==width||h!==height;
-  const framing=chapterFraming({
+  let framing=chapterFraming({
     width:w,height:h,area,zoom,hero:player.position,entrance:exterior.entrance
   });
+  // Reframe on the toad's face and the physical golden key during the finale.
+  // The portrait formula reserves enough horizontal space for both.
+  const cinematic=ending.state();
+  if(cinematic.active&&area==='interior'){
+    const aspect=w/h,vertical=Math.max(13.6,8.8/aspect);
+    const halfY=vertical/(2*zoom),halfX=halfY*aspect;
+    framing={...framing,left:-halfX,right:halfX,top:halfY,bottom:-halfY,
+      focus:{x:7.25,y:-1.25,z:1}};
+  }
   const rotated=framing.portrait!==portrait;
   portrait=framing.portrait;
   if(resized||rotated||!cameraReady){
@@ -183,7 +197,6 @@ export function createTreeScene(canvas,state){
   return hit.object.userData??null;
  }
  function draw(seconds,dt,travel){
-  const framing=resize();
   rootPivot.rotation.z=rootOpen(state.time)?-.62:0;
   rootGate.scale.y=rootOpen(state.time)?.28:1;
   boulder.position.x=state.boulderMoved?7.5:5;
@@ -199,7 +212,10 @@ export function createTreeScene(canvas,state){
   });
   toad.position.y=-2.5+Math.sin(seconds*1.6)*.065;
   jaw.rotation.z=state.offerings?Math.sin(seconds*3)*.19:Math.sin(seconds*1.4)*.035;
-  goldKey.visible=state.won;goldKey.rotation.y+=dt*.55;
+  // The ending owns the key, jaw and revival animations; the ordinary game
+  // must not accidentally reveal the key immediately when state.won flips.
+  const cinematic=ending.update(dt);
+  const framing=resize();
   animatePlayer(avatar,dt,travel);
   const point=new THREE.Vector3(
     framing.focus.x,framing.focus.y,framing.focus.z
@@ -207,6 +223,7 @@ export function createTreeScene(canvas,state){
   focus.lerp(point,1-Math.exp(-Math.max(dt,.016)*(portrait?8:3.8)));
   camera.position.copy(focus).addScaledVector(direction,33);camera.lookAt(focus);
   renderer.render(scene,camera);
+  return cinematic;
  }
  resize();draw(0,.016,0);
  function stoneScreenPosition(index){
@@ -221,5 +238,10 @@ export function createTreeScene(canvas,state){
     onScreen:Math.abs(p.x)<.94&&Math.abs(p.y)<.83};
  }
  return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,setArea,
-  exterior,stoneScreenPosition,dispose(){renderer.dispose();}};
+  exterior,stoneScreenPosition,
+  playOffering:index=>ending.playOffering(index),
+  startFinale:()=>ending.start(),
+  getFinale:()=>ending.state(),
+  dispose(){renderer.dispose();}
+ };
 }
