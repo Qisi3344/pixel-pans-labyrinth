@@ -30,7 +30,7 @@ document.body.innerHTML=`
       <h2>获得黄金钥匙</h2>
       <p>巨树再一次萌发新芽。</p>
       <button id="root-review" type="button">重看 3D 结算演出 ↻</button>
-      <button id="root-repeat" type="button" class="secondary-end">重新探索第二章</button>
+      <a href="?stage=3" class="root-next-chapter">进入第三章 · 苍白盛宴 ↗</a><button id="root-repeat" type="button" class="secondary-end">重新探索第二章</button>
       <footer><a href="?stage=1">返回第一章</a></footer>
     </div>
    </div>
