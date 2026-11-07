@@ -210,8 +210,8 @@ function hollowAncientTree(group){
   bent(tree,[[dx*.38,.48,0],[dx*.7,.19,dz*.5],[dx,.05,dz]],[.63,.43,.19],[BARK[0],BARK[2]]);
  }
  // Hit target is physically positioned over the opening and invisible visually.
- const hit=new THREE.Mesh(new THREE.PlaneGeometry(1.82,2.55),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
- hit.position.set(0,1.15,1.72);hit.userData={kind:'entrance'};tree.add(hit);
+ const hit=new THREE.Mesh(new THREE.PlaneGeometry(3.25,3.2),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+ hit.position.set(0,1.5,2.15);hit.userData={kind:'entrance'};tree.add(hit);
  return {hit,entrance:{x:0,z:2.00}};
 }
 /** Merge only static decoration, preserving the raycastable terrain and entrance.
