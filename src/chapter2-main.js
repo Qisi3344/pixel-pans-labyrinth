@@ -49,7 +49,7 @@ function applyExteriorMovement(dx,dz,seconds){
  const next=stepOnEarth(hero,dx,dz,seconds,view.exterior.walkable);
  hero.set(next.x,view.exterior.height(next.x,next.z)+.035,next.z);
  const moved=Math.hypot(hero.x-startX,hero.z-startZ);
- if(moved>.0001)hero.rotation.y=Math.atan2(dx,dz);
+ if(moved>.0001)view.player.rotation.y=Math.atan2(dx,dz);
  return moved;
 }
 $('root-game').classList.add('is-forest');
