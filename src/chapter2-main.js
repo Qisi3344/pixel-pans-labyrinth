@@ -2,7 +2,7 @@ import './chapter2-style.css';
 import {NODES,STONE_NODES,TOAD_NODE,newChapter,step,interact,findPath,nextDirection,rootOpen,edgeAccessible} from './chapter2-logic.js';
 import {createTreeScene} from './chapter2-scene.js';
 import {note,chime,toggleSound} from './audio.js';
-import {nearEntrance,stepOnEarth,directionTo,distance2d} from './chapter2-overworld.js';
+import {nearEntrance,atTreeMouth,stepOnEarth,directionTo,distance2d} from './chapter2-overworld.js';
 
 document.title='巨树之腹 | 石之迷宫 · 第二章';
 document.body.innerHTML=`
@@ -60,7 +60,7 @@ function tip(message,delay=3200){
 }
 function drawHUD(){
  if(outside){
-  $('root-status').textContent='黑暗的裂口藏在巨树根部。走近树洞，按 E 进入，或直接点击洞口。';
+  $('root-status').textContent='走进树干中央的黑色洞口即可进入。也可点击洞口，或靠近后按 E / 进入。';
   return;
  }
  document.querySelectorAll('#root-stones span').forEach((element,i)=>{
@@ -82,6 +82,7 @@ function enterTree(){
  outside=false;exteriorGoal=null;keyboard.clear();
  if(pointer!==null)release();
  view.setArea('interior');$('root-game').classList.remove('is-forest');
+ $('root-act').innerHTML='✦<small>交互</small>';
  note(360,.27,'triangle',.028);
  tip('奥菲莉娅俯身钻入树洞。地底盘绕着会收缩的根须……',5000);
  drawHUD();
@@ -124,7 +125,7 @@ function direction(){
  if(Math.hypot(dx,dz)<.3)return null;
  const length=Math.hypot(dx,dz);return nextDirection(state,dx/length,dz/length);
 }
-function begin(){started=true;$('root-intro').classList.add('hidden');note(440,.17);tip('沿着枯木、青苔和盘根前进，找到树干中央的洞口。',5000);}
+function begin(){started=true;$('root-intro').classList.add('hidden');$('root-act').innerHTML='↳<small>进入</small>';note(440,.17);tip('走进树干中央的黑色洞口即可进入，也可点击洞口自动走入。',5000);}
 $('root-start').addEventListener('click',begin);
 $('root-repeat').addEventListener('click',()=>location.reload());
 $('root-reset').addEventListener('click',()=>location.reload());
@@ -200,7 +201,8 @@ function frame(now){
     const dir=directionTo(hero,exteriorGoal);dx=dir.x;dz=dir.z;
    }
    distance=applyExteriorMovement(dx,dz,dt);
-   if(exteriorGoal&&distance2d(hero,exteriorGoal)<.38){
+   if(atTreeMouth(hero,view.exterior.entrance))enterTree();
+   else if(exteriorGoal&&distance2d(hero,exteriorGoal)<.38){
     const goalIsDoor=distance2d(exteriorGoal,view.exterior.entrance)<.20;
     exteriorGoal=null;
     if(goalIsDoor&&nearEntrance(hero,view.exterior.entrance))enterTree();
@@ -235,3 +237,4 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 drawHUD();
+

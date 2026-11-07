@@ -3,6 +3,10 @@ export const APPROACH_SPEED = 2.85;
 export const ENTRY_RADIUS = 1.25;
 export const distance2d = (a,b) => Math.hypot(a.x-b.x,a.z-b.z);
 export const nearEntrance = (position,entrance) => distance2d(position,entrance)<=ENTRY_RADIUS;
+// Enter through the centre of the mouth before reaching the solid trunk.
+// The wider interaction radius still allows E/the touch button nearby.
+export const atTreeMouth = (position,entrance) =>
+ Math.abs(position.x-entrance.x)<=.65 && Math.abs(position.z-entrance.z)<=.45;
 
 export function normalizedInput(dx,dz) {
  const l=Math.hypot(dx,dz);
@@ -23,3 +27,4 @@ export function directionTo(from,to) {
  const dx=to.x-from.x,dz=to.z-from.z;
  return normalizedInput(dx,dz);
 }
+

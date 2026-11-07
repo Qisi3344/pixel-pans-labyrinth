@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createPlayer,animatePlayer} from './player.js';
 import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
 import {NODES,EDGES,STONE_NODES,rootOpen} from './chapter2-logic.js';
@@ -133,28 +134,9 @@ export function createTreeScene(canvas,state){
  rod(goldKey,0xe7c986,[0,-.26,0],[0,-1.0,0],.065,.065);
  block(goldKey,0xe7c986,[.14,-.82,0],[.24,.12,.13]);
  block(goldKey,0xe7c986,[.14,-.61,0],[.24,.12,.13]);
- // Chapter II: Ofelia-inspired black dress, pale apron straps and a tiny storybook.
- // Reparent the avatar to scene, so it remains visible when the two worlds switch.
- const player=new THREE.Group();player.position.copy(pos(0));scene.add(player);
- const rig=new THREE.Group();player.add(rig);
- const legs=[-.12,.12].map(x=>{
-  const leg=block(rig,0x313334,[x,.32,0],[.14,.59,.19]);return leg;
- });
- const skirt=new THREE.Mesh(new THREE.ConeGeometry(.42,.8,7),mat(0x272d30));skirt.position.y=.83;skirt.rotation.y=.5;skirt.castShadow=true;rig.add(skirt);
- const torso=block(rig,0x2a3031,[0,1.18,0],[.36,.53,.26]);
- const head=sphere(rig,0xd0b7a8,.24,[0,1.64,0],1);
- const hair=sphere(rig,0x292a2b,.27,[0,1.79,.07],1);hair.scale.set(1.12,.63,1);
- const arms=[-.28,.28].map(x=>block(rig,0x31383a,[x,1.1,0],[.16,.5,.17]));
- // Small costume details are actual meshes, not painted sprite planes.
- block(rig,0xd6d9c9,[-.15,1.2,.144],[.105,.45,.06],-.12);
- block(rig,0xd6d9c9,[.15,1.2,.144],[.105,.45,.06],.12);
- block(rig,0xe7e5d9,[0,1.41,.158],[.33,.085,.08]);
- block(rig,0xe3e3d8,[0,1.07,.17],[.17,.30,.04]);
- // A small dark-blue book held in front of the character, matching the still.
- const book=block(rig,0x596c78,[.36,.87,.26],[.28,.35,.08],-.25);
- book.rotation.x=-.23;
- const lantern=sphere(rig,0xf3d6a3,.07,[-.35,.77,.08],0);
- const glow=new THREE.PointLight(0xf2d5a3,.7,3);glow.position.set(.37,.72,0);rig.add(glow);
+ // One shared character and walking rig across both chapters.
+ const avatar=createPlayer(scene,pos(0));
+ const player=avatar.body;
  const exterior=createExterior(scene);
  let area='exterior';
  stage.visible=false;
@@ -232,13 +214,7 @@ export function createTreeScene(canvas,state){
   toad.position.y=-2.5+Math.sin(seconds*1.6)*.065;
   jaw.rotation.z=state.offerings?Math.sin(seconds*3)*.19:Math.sin(seconds*1.4)*.035;
   goldKey.visible=state.won;goldKey.rotation.y+=dt*.55;
-  const walking=travel>.0001;
-  const gait=seconds*10;
-  legs[0].rotation.x=walking?Math.sin(gait)*.45:0;
-  legs[1].rotation.x=walking?-Math.sin(gait)*.45:0;
-  arms[0].rotation.x=walking?-Math.sin(gait)*.33:0;
-  arms[1].rotation.x=walking?Math.sin(gait)*.33:0;
-  rig.position.y=walking?Math.abs(Math.sin(gait))*.055:0;
+  animatePlayer(avatar,dt,travel);
   const point=new THREE.Vector3(
     framing.focus.x,framing.focus.y,framing.focus.z
   );

@@ -212,7 +212,7 @@ function hollowAncientTree(group){
  // Hit target is physically positioned over the opening and invisible visually.
  const hit=new THREE.Mesh(new THREE.PlaneGeometry(1.82,2.55),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
  hit.position.set(0,1.15,1.72);hit.userData={kind:'entrance'};tree.add(hit);
- return {hit,entrance:{x:0,z:2.60}};
+ return {hit,entrance:{x:0,z:2.00}};
 }
 /** Merge only static decoration, preserving the raycastable terrain and entrance.
  * Thousands of grass/fern cylinders previously produced thousands of draw
@@ -261,3 +261,4 @@ export function createExterior(scene){
  }
  return {group,hit:tree.hit,floor,entrance:tree.entrance,spawn,height:h,walkable};
 }
+

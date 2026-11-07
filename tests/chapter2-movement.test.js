@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {stepOnEarth,nearEntrance} from '../src/chapter2-overworld.js';
+import {stepOnEarth,nearEntrance,atTreeMouth,directionTo} from '../src/chapter2-overworld.js';
 
 // Execute the actual shared keyboard/joystick movement handler. A position
 // has set(), x/y/z, but only the player object has a rotation transform.
@@ -37,4 +37,23 @@ test('joystick frames can reach the tree entrance; idle and blocked movement sta
  assert.equal(position.x,before.x);
  assert.equal(position.z,before.z);
  assert.equal(view.player.rotation.y,facing);
+});
+
+test('walking and click-to-walk reach the automatic entry before trunk collision',()=>{
+ const exterior=readFileSync(new URL('../src/chapter2-exterior.js',import.meta.url),'utf8');
+ const entrance=JSON.parse(exterior.match(/entrance:(\{x:0,z:[\d.]+\})/)[1].replace(/([xz]):/g,'"$1":'));
+ const collision=exterior.match(/function walkable\(x,z\)\{([\s\S]*?)\n \}/)[1];
+ const canWalk=new Function('x','z',collision);
+ for(const start of [{x:-4.2,z:3.8},{x:0,z:2.65},{x:.5,z:2.6}]){
+  let position={...start},entered=false;
+  for(let frame=0;frame<300;frame++){
+   const d=directionTo(position,entrance);
+   position=stepOnEarth(position,d.x,d.z,1/60,canWalk);
+   if(atTreeMouth(position,entrance)){entered=true;break;}
+  }
+  assert.ok(entered,'must enter before being stopped by bark');
+ }
+ assert.equal(atTreeMouth({x:1.3,z:2},entrance),false,'side of trunk is not a doorway');
+ assert.equal(atTreeMouth({x:0,z:-.5},entrance),false,'back of tree is not a doorway');
+ assert.match(source,/if\(atTreeMouth\(hero,view.exterior.entrance\)\)enterTree\(\)/);
 });
