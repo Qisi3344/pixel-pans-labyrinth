@@ -110,6 +110,27 @@ export function createChapter2Ending({stage,toad,jaw,belly,goldKey,player,exteri
   new THREE.MeshBasicMaterial({color:0xf0d19a,transparent:true,opacity:.55,depthWrite:false}));
  halo.visible=false;stage.add(halo);
  const spring=makeSpring(exterior);
+ // An upright, unmistakable 3D golden key persists in the revived forest.
+ // It is separate from the underground key reveal, so the reward isn't lost
+ // the instant the camera cuts back to the exterior.
+ const exteriorKey=new THREE.Group();exteriorKey.visible=false;
+ exterior.group.add(exteriorKey);
+ exteriorKey.position.set(-2.7,2.25,3.15);
+ const golden=new THREE.MeshBasicMaterial({color:0xf9d17a,side:THREE.DoubleSide});
+ const keyRing=new THREE.Mesh(new THREE.TorusGeometry(.47,.095,8,24),golden);
+ keyRing.position.y=.37;exteriorKey.add(keyRing);
+ const keyShaft=new THREE.Mesh(new THREE.CylinderGeometry(.082,.095,1.3,8),golden);
+ keyShaft.position.y=-.56;exteriorKey.add(keyShaft);
+ const toothA=new THREE.Mesh(new THREE.BoxGeometry(.41,.15,.17),golden);
+ toothA.position.set(.18,-.90,0);exteriorKey.add(toothA);
+ const toothB=new THREE.Mesh(new THREE.BoxGeometry(.35,.15,.17),golden);
+ toothB.position.set(.16,-1.16,0);exteriorKey.add(toothB);
+ const amulet=new THREE.Mesh(new THREE.OctahedronGeometry(.19,0),
+  new THREE.MeshBasicMaterial({color:0xffedaf}));
+ amulet.position.y=.37;exteriorKey.add(amulet);
+ const trophyLight=new THREE.PointLight(0xffd784,0,5.4,2);
+ trophyLight.position.y=.20;exteriorKey.add(trophyLight);
+ let ambient=0;
  function playOffering(index){
   if(index<0||index>2||active&&index!==2)return;
   if(offering&&offering.index===index)return;
@@ -124,6 +145,7 @@ export function createChapter2Ending({stage,toad,jaw,belly,goldKey,player,exteri
   {active:false,time:0,step:'idle',caption:'',exterior:false,done:false};}
  function update(dt){
   const delta=Math.min(.10,Math.max(0,Number(dt)||0));
+  ambient+=delta;
   if(offering){
    offering.time+=delta;
    const {index,time}=offering,part=jewels[index];
@@ -140,7 +162,7 @@ export function createChapter2Ending({stage,toad,jaw,belly,goldKey,player,exteri
    }
   }
   if(!active){
-   goldKey.visible=false;halo.visible=false;
+   goldKey.visible=false;halo.visible=false;exteriorKey.visible=false;
    glow.intensity=0;bellyGlow.material.opacity=0;keyLight.intensity=0;
    return state();
   }
@@ -155,16 +177,25 @@ export function createChapter2Ending({stage,toad,jaw,belly,goldKey,player,exteri
   const keyStart=1.8,keyEnd=5.10;
   const reveal=smooth((elapsed-keyStart)/1.55);
   goldKey.visible=elapsed>=keyStart&&elapsed<keyEnd;
-  goldKey.position.set(8.10,-2.43+reveal*2.6,.9);
+  goldKey.position.set(8.15,-2.28+reveal*3.45,2.18);
   goldKey.rotation.y=elapsed*1.10;
-  goldKey.scale.setScalar(.12+reveal*.9);
+  goldKey.scale.setScalar(.3+reveal*1.65);
   keyLight.position.copy(goldKey.position);
   keyLight.intensity=(1-smooth((elapsed-4.50)/.5))*reveal*2.2;
   halo.visible=goldKey.visible;halo.position.copy(goldKey.position);
   halo.rotation.x=-Math.PI/2;halo.scale.setScalar(.65+reveal*.65);
   if(phase.exterior&&!cut){cut=true;onExterior();}
   spring.update(elapsed);
+  const showTrophy=phase.exterior;
+  exteriorKey.visible=showTrophy;
+  if(showTrophy){
+   const grow=smooth((elapsed-5.2)/1.5);
+   exteriorKey.position.y=1.8+.8*grow+.10*Math.sin(ambient*2.6);
+   exteriorKey.rotation.y=ambient*.92;
+   exteriorKey.scale.setScalar(.25+grow*1.18);
+   trophyLight.intensity=.6+grow*1.8;
+  } else trophyLight.intensity=0;
   return state();
  }
- return {playOffering,start,update,state,spring};
+ return {playOffering,start,update,state,spring,exteriorKey};
 }
