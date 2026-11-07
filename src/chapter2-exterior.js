@@ -99,7 +99,7 @@ function fern(parent,x,z,s,seed){
  }
 }
 function woodlandFloor(group){
- surface(group);
+ const earth=surface(group);
  // Organic earth, no big clean empty green tabletop. A walkable worn trail
  // approaches the split trunk; material patches mix soil, stones, roots and moss.
  const trail=[[-5.0,5.0],[-4.0,4.35],[-2.9,3.7],[-1.8,3.0],[-.75,2.4],[0,2.05]];
@@ -162,6 +162,7 @@ function woodlandFloor(group){
   const stem=twig(group,[x,y,z],[x,y+.12,z],.035,.028,0x8c8a74,5);
   const cap=shard(group,0x9f9276,[x,y+.15,z],[.15,.065,.13],0);
  }
+ return earth;
 }
 function hollowAncientTree(group){
  const tree=new THREE.Group();tree.position.y=h(0,0);group.add(tree);
@@ -214,7 +215,7 @@ function hollowAncientTree(group){
 }
 export function createExterior(scene){
  const group=new THREE.Group();scene.add(group);
- woodlandFloor(group);
+ const floor=woodlandFloor(group);
  const tree=hollowAncientTree(group);
  const spawn={x:-5.1,z:4.7};
  // A sketchbook held by the miniature character is added in the shared player rig.
@@ -224,5 +225,5 @@ export function createExterior(scene){
   if(Math.abs(x)<1.65 && z<1.8 && z>-.95)return false;
   return true;
  }
- return {group,hit:tree.hit,entrance:tree.entrance,spawn,height:h,walkable};
+ return {group,hit:tree.hit,floor,entrance:tree.entrance,spawn,height:h,walkable};
 }
