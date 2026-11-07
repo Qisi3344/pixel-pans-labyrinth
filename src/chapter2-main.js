@@ -19,7 +19,7 @@ document.body.innerHTML=`
   <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div>
   <section class="root-bottom"><div class="root-keys">WASD / 方向键 移动　·　E 交互　·　点击石道自动行走</div><a href="?stage=1" class="root-back">← 第一章</a></section>
   <div class="root-touch"><div id="root-pad" class="root-pad" role="group" aria-label="拖动虚拟摇杆移动"><div class="root-knob" id="root-knob"></div></div><button id="root-act" class="root-act" type="button">✦<small>交互</small></button></div>
-  <div class="root-overlay" id="root-intro" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✧　✦</div><small>CHAPTER II · BENEATH THE ANCIENT FIG</small><h2>巨树之腹</h2><p>石井的尽头，长着一棵正在死去的树。<br/>地下深处有三颗魔石，<br/>还有一个饥饿的守护者。</p><button id="root-start" type="button">进入树洞 ↗</button><footer>3D PIXEL DIORAMA · CUTAWAY ROOT WORLD</footer></div></div>
+  <div class="root-overlay" id="root-intro" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✧　✦</div><small>CHAPTER II · BENEATH THE ANCIENT FIG</small><h2>巨树之腹</h2><p>石井的尽头，长着一棵正在死去的树。<br/>地下深处有三颗魔石，<br/>还有一个饥饿的守护者。</p><button id="root-start" type="button">探索巨树 ↗</button><footer>3D PIXEL DIORAMA · CUTAWAY ROOT WORLD</footer></div></div>
   <div class="root-overlay hidden" id="root-win" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✦　✦</div><small>THE HEART BEATS AGAIN</small><h2>枯树复苏</h2><p>三颗魔石消失在巨蟾蜍的腹中。<br/>金色钥匙从黑暗里浮现。<br/>树根深处，第一次有了春天。</p><button id="root-repeat" type="button">再次探索 ↻</button><footer><a href="?stage=1">返回第一章</a></footer></div></div>
 </main>`;
 const $=id=>document.getElementById(id);
@@ -27,6 +27,31 @@ const state=newChapter(),view=createTreeScene($('root-world'),state);
 let started=false,active=null,queue=[],last=0,lastMove=0,tipTimer=null;
 let keyboard=new Set(),pointer=null,stickX=0,stickY=0,elapsed=0;
 let outside=true,exteriorGoal=null;
+const physicalKey={
+ KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
+ ArrowUp:'arrowup',ArrowLeft:'arrowleft',ArrowDown:'arrowdown',ArrowRight:'arrowright',
+ KeyE:'e',Enter:'enter',Space:' '
+};
+function normalizedKey(event){
+ return physicalKey[event.code] || (event.key||'').toLowerCase();
+}
+function exteriorAxis(){
+ let dx=stickX,dz=stickY;
+ if(keyboard.has('w')||keyboard.has('arrowup'))dz=-1;
+ if(keyboard.has('s')||keyboard.has('arrowdown'))dz=1;
+ if(keyboard.has('a')||keyboard.has('arrowleft'))dx=-1;
+ if(keyboard.has('d')||keyboard.has('arrowright'))dx=1;
+ return {dx,dz};
+}
+function applyExteriorMovement(dx,dz,seconds){
+ const hero=view.player.position;
+ const startX=hero.x,startZ=hero.z;
+ const next=stepOnEarth(hero,dx,dz,seconds,view.exterior.walkable);
+ hero.set(next.x,view.exterior.height(next.x,next.z)+.035,next.z);
+ const moved=Math.hypot(hero.x-startX,hero.z-startZ);
+ if(moved>.0001)hero.rotation.y=Math.atan2(dx,dz);
+ return moved;
+}
 $('root-game').classList.add('is-forest');
 const point=n=>view.pos(n);
 function tip(message,delay=3200){
@@ -124,13 +149,23 @@ pad.addEventListener('pointermove',event=>{if(event.pointerId===pointer)padMove(
 pad.addEventListener('pointerup',release);pad.addEventListener('pointercancel',release);
 pad.addEventListener('lostpointercapture',release);
 window.addEventListener('keydown',event=>{
- const k=event.key.toLowerCase();
- if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))event.preventDefault();
+ const k=normalizedKey(event);
+ const movement=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
+ if([...movement,' '].includes(k))event.preventDefault();
  if(!started){if(k==='enter')begin();return;}
- if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keyboard.add(k);queue=[];exteriorGoal=null;}
- else if(['e',' ','enter'].includes(k)&&!event.repeat)action();
+ if(movement.includes(k)){
+  const firstPress=!keyboard.has(k);
+  keyboard.add(k);queue=[];exteriorGoal=null;
+  // Frame-only polling can miss quick keyboard taps, especially on a slow
+  // mobile GPU. Give each real key-down a visible first step immediately.
+  if(outside&&firstPress){
+   const axis=exteriorAxis();
+   const moved=applyExteriorMovement(axis.dx,axis.dz,.145);
+   if(moved<.005)tip('前方是树根或地形边缘，换个方向试试。',1650);
+  }
+ } else if(['e',' ','enter'].includes(k)&&!event.repeat)action();
 });
-window.addEventListener('keyup',event=>keyboard.delete(event.key.toLowerCase()));
+window.addEventListener('keyup',event=>keyboard.delete(normalizedKey(event)));
 window.addEventListener('blur',()=>{keyboard.clear();release();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keyboard.clear();release();}});
 let tap=null;
@@ -155,24 +190,16 @@ $('root-world').addEventListener('pointerup',event=>{
 $('root-world').addEventListener('wheel',event=>{event.preventDefault();view.setZoom(event.deltaY>0?.88:1.16);},{passive:false});
 window.addEventListener('resize',view.resize);
 function frame(now){
- const dt=Math.min(.05,last?(now-last)/1000:.016);last=now;
+ const dt=Math.min(.10,last?(now-last)/1000:.016);last=now;
  let distance=0;
  if(started&&!state.won){
   if(outside){
    const hero=view.player.position;
-   let dx=stickX,dz=stickY;
-   if(keyboard.has('w')||keyboard.has('arrowup'))dz=-1;
-   if(keyboard.has('s')||keyboard.has('arrowdown'))dz=1;
-   if(keyboard.has('a')||keyboard.has('arrowleft'))dx=-1;
-   if(keyboard.has('d')||keyboard.has('arrowright'))dx=1;
+   let {dx,dz}=exteriorAxis();
    if(Math.hypot(dx,dz)<.18&&exteriorGoal){
     const dir=directionTo(hero,exteriorGoal);dx=dir.x;dz=dir.z;
    }
-   const position=stepOnEarth(hero,dx,dz,dt,view.exterior.walkable);
-   const oldX=hero.x,oldZ=hero.z;
-   hero.set(position.x,view.exterior.height(position.x,position.z)+.035,position.z);
-   distance=Math.hypot(hero.x-oldX,hero.z-oldZ);
-   if(distance>.0001)hero.rotation.y=Math.atan2(dx,dz);
+   distance=applyExteriorMovement(dx,dz,dt);
    if(exteriorGoal&&distance2d(hero,exteriorGoal)<.38){
     const goalIsDoor=distance2d(exteriorGoal,view.exterior.entrance)<.20;
     exteriorGoal=null;
