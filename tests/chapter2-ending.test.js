@@ -63,6 +63,9 @@ test('the camera transitions to living exterior exactly once and foliage grows v
  assert.equal(getCuts(),1);
  assert.equal(ending.spring.group.visible,true);
  assert.equal(goldKey.visible,false,'key shot ends before tree revival');
+ assert.equal(ending.exteriorKey.visible,true,'a real 3D golden reward must remain visible outdoors');
+ assert.ok(ending.exteriorKey.children.some(o=>o.isMesh&&o.geometry.type==='TorusGeometry'),
+  'visible outdoor trophy contains the 3D golden key ring');
  advance(ending,3.4);
  assert.equal(getCuts(),1,'do not switch scenes repeatedly');
  const expanded=ending.spring.leaves.filter(l=>l.mesh.scale.x>.1);
@@ -71,6 +74,8 @@ test('the camera transitions to living exterior exactly once and foliage grows v
  assert.ok(grass.length>10,'ground sprouts must grow as real meshes');
  assert.ok(exterior.group.children.includes(ending.spring.group));
  assert.equal(advance(ending,2).done,true,'victory modal should wait until 3D animation ends');
+ assert.equal(ending.exteriorKey.visible,true,'gold key must remain visible behind the final dialog');
+ assert.ok(ending.exteriorKey.scale.x>1,'key must remain big enough to spot');
 });
 
 test('the game UI waits for the ending and allows a reproducible cinematic replay',()=>{
