@@ -2,7 +2,9 @@
 // its dependencies, and its CSS. import(chapterVariable) is NOT analyzable.
 // Keep the original chapter 1 DOM and instantiate chapter 2 only on ?stage=2.
 const stage = new URLSearchParams(window.location.search).get('stage');
-const loading = stage === '2'
+const loading = stage === '3'
+  ? import('./chapter3-main.js')
+  : stage === '2'
   ? import('./chapter2-main.js')
   : import('./main.js');
 
