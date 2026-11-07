@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
+import {createCavern} from './chapter2-cavern.js';
 import {NODES,EDGES,STONE_NODES,rootOpen} from './chapter2-logic.js';
 const mat=(c,extra={})=>new THREE.MeshLambertMaterial({color:c,flatShading:true,...extra});
 const geoBox=new THREE.BoxGeometry(1,1,1);
@@ -45,49 +46,9 @@ export function createTreeScene(canvas,state){
  let width=-1,height=-1,zoom=1,portrait=false,cameraReady=false;
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),mat(0xffffff));ground.rotation.x=-Math.PI/2;ground.position.y=-5.7;ground.receiveShadow=true;scene.add(ground);
  const stage=new THREE.Group();scene.add(stage);
- // Cutaway earth: uninterrupted back shell, open front, no occluding fake facade.
- block(stage,0x313d39,[0,-4.25,0],[21.2,2.2,10.2]);
- // The original two giant opaque slabs covered every playable tunnel and avatar.
- // Remove both: underground is entered later as a separately revealed diorama.
- for(let i=0;i<39;i++){
-  const x=-10.2+(i%13)*1.68,z=4.65-(Math.floor(i/13))*.56;
-  block(stage,[0x4c5d4c,0x596759,0x3e4e47][i%3],[x,-2.25,z],[1.58,2.2,.53],(i%3-1)*.05);
- }
- // Numerous true 3D wooden roots extend from canopy through the soil cut.
- const trunk=new THREE.Group();trunk.position.set(-.6,0,0);stage.add(trunk);
- const bark=0x41423c;
- const trunkSections=[
-  [[0,-.55,0],[.07,1.6,.04],1.45,1.12],
-  [[.07,1.6,.04],[-.5,3.75,-.15],1.12,.82],
-  [[-.5,3.75,-.15],[-.7,5.7,-.25],.84,.52],
-  [[-.15,3.1,-.06],[-3.6,5.3,.20],.54,.23],
-  [[-.2,3.6,-.12],[3.35,5.8,-.35],.57,.28],
-  [[-.65,5.35,-.25],[-2.0,7.8,-1.2],.5,.24],
-  [[-.65,5.35,-.25],[1.35,8.4,.3],.47,.18],
-  [[-3.4,5.2,.2],[-4.5,6.7,.75],.22,.12],
-  [[3.1,5.65,-.35],[4.9,7,.1],.26,.11]
- ];
- for(const [a,b,r1,r2] of trunkSections)rod(trunk,bark,a,b,r1,r2,8);
- trunk.visible=false; // inside: no decorative canopy occluding the tunnel.
- for(let k=0;k<14;k++){
-  const a=k*2.39996,r=2.2+(k%4)*.62;
-  leaf(trunk,Math.cos(a)*r,6.5+(k%5)*.34,Math.sin(a)*1.4,.75+(k%3)*.13,[0x435a4b,0x536c58,0x64785a][k%3]);
- }
- // Tree roots are bundled at multiple depths; the main cavity remains readable.
- for(let i=0;i<14;i++){
-  const a=i*2.399963,side=i%2?1:-1,x=side*(1.1+i*.38),z=2.4+Math.sin(a)*1.8;
-  rod(stage,[0x3a3d37,0x515347,0x333a34][i%3],[Math.sin(a)*.62,-.7,.3],[x,-3.4,z],.19+(i%3)*.09,.07);
- }
- // Winding stone-and-mud route is a continuous excavated tunnel, not floating markers.
- for(const [a,b] of EDGES){
-  const p=pos(a),q=pos(b),delta=q.clone().sub(p),len=delta.length();
-  const tile=block(stage,0x35483f,[(p.x+q.x)/2,-3.02,(p.z+q.z)/2],[len+.7,.24,1.25],-Math.atan2(delta.z,delta.x));
-  tile.material=mat([0x435449,0x4c5e51,0x3b4b42][(a+b)%3]);
-  for(let t=0;t<3;t++){
-   const at=p.clone().lerp(q,(t+.3)/3);
-   block(stage,0x607166,[at.x,-2.86,at.z+.37],[.42,.04,.16],.11*t);
-  }
- }
+ // The underground is a real organic miniature cave, not a giant box.
+ // The open upper/front side keeps Ofelia and all three passage branches visible.
+ const cavern=createCavern(stage);
  const clickable=[];
  for(let i=0;i<NODES.length;i++){
   const p=pos(i);
@@ -102,14 +63,34 @@ export function createTreeScene(canvas,state){
  const boulder=new THREE.Group();boulder.position.set(5,-2.33,1);stage.add(boulder);
  const rock=sphere(boulder,0x77796b,.67,[0,0,0],0);rock.scale.set(1.15,.86,.9);
  const rockCap=block(boulder,0x4f5c53,[.15,.53,-.09],[.6,.14,.37],.2);
- // Three luminous stones stand on distinct side passages.
+ // Three distinct side grottoes. The amber gem is at node #11 (4,3),
+ // branching off the junction BEFORE the boulder/toad, not behind the boss.
  const stoneModels=STONE_NODES.map((n,i)=>{
-  const p=pos(n),group=new THREE.Group();group.position.set(p.x,-2.37,p.z);stage.add(group);
-  disk(group,0x62695a,0,-.31,0,.52);
-  const gem=sphere(group,[0xb5dfc2,0xc2b2e8,0xe4c88e][i],.29,[0,.28,0],0);
-  const halo=new THREE.PointLight([0xa9e2bc,0xb8a6e5,0xe4c487][i],1.3,3);halo.position.y=.44;group.add(halo);
-  group.traverse(o=>{if(o.isMesh){o.userData={kind:'stone',index:i};clickable.push(o);}});
-  return {group,gem,halo};
+  const p=pos(n),group=new THREE.Group();
+  group.position.set(p.x,-2.55,p.z);stage.add(group);
+  const color=[0x9edeb5,0xbcb0f5,0xffd077][i];
+  disk(group,0x5d6758,0,-.25,0,.75);
+  const plinth=new THREE.Mesh(new THREE.CylinderGeometry(.33,.41,.55,7),mat(0x748073));
+  plinth.position.y=.07;plinth.castShadow=true;group.add(plinth);
+  const gem=new THREE.Mesh(new THREE.OctahedronGeometry(i===2?.55:.43,0),
+    new THREE.MeshBasicMaterial({color}));
+  gem.position.set(0,.74,0);group.add(gem);
+  const collar=new THREE.Mesh(new THREE.TorusGeometry(i===2?.70:.54,.045,6,28),
+    new THREE.MeshBasicMaterial({color}));
+  collar.rotation.x=-Math.PI/2;collar.position.y=.35;group.add(collar);
+  const halo=new THREE.PointLight(color,i===2?2.0:1.35,i===2?6.5:4,2);
+  halo.position.set(0,.88,0);group.add(halo);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.18,.42,i===2?3.2:2.0,10,1,true),
+    new THREE.MeshBasicMaterial({color,transparent:true,opacity:i===2?.19:.10,
+      depthWrite:false,depthTest:true,side:THREE.DoubleSide}));
+  beam.position.y=i===2?2.05:1.6;group.add(beam);
+  const star=new THREE.Mesh(new THREE.OctahedronGeometry(i===2?.19:.13,0),
+    new THREE.MeshBasicMaterial({color}));
+  star.position.y=i===2?3.65:2.70;group.add(star);
+  group.traverse(o=>{
+    if(o.isMesh){o.userData={kind:'stone',index:i};clickable.push(o);}
+  });
+  return {group,gem,collar,halo,beam,star};
  });
  // The ancient toad is a volumetric low-poly creature with articulated mouth.
  const toad=new THREE.Group();toad.position.set(8.7,-2.5,1);toad.rotation.y=-.4;stage.add(toad);
@@ -207,9 +188,14 @@ export function createTreeScene(canvas,state){
   rootGate.scale.y=rootOpen(state.time)?.28:1;
   boulder.position.x=state.boulderMoved?7.5:5;
   boulder.rotation.z=state.boulderMoved?-.65:0;
-  stoneModels.forEach((s,i)=>{
-   s.group.visible=!state.stones[i];s.gem.rotation.y=seconds*.6;
-   s.gem.position.y=.28+Math.sin(seconds*2+i)*.075;
+  stoneModels.forEach((stone,i)=>{
+   stone.group.visible=!state.stones[i];
+   stone.gem.rotation.y=seconds*.7+i;
+   stone.gem.position.y=.74+.10*Math.sin(seconds*2+i);
+   stone.collar.rotation.z=seconds*.23;
+   stone.star.rotation.y=seconds*.65;
+   stone.star.position.y=(i===2?3.65:2.70)+Math.sin(seconds*1.7+i)*.12;
+   stone.halo.intensity=(i===2?2.1:1.4)+Math.sin(seconds*2.2+i)*.2;
   });
   toad.position.y=-2.5+Math.sin(seconds*1.6)*.065;
   jaw.rotation.z=state.offerings?Math.sin(seconds*3)*.19:Math.sin(seconds*1.4)*.035;
@@ -223,5 +209,17 @@ export function createTreeScene(canvas,state){
   renderer.render(scene,camera);
  }
  resize();draw(0,.016,0);
- return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,setArea,exterior,dispose(){renderer.dispose();}};
+ function stoneScreenPosition(index){
+  const gem=stoneModels[index];
+  if(!gem||!gem.group.visible||area!=='interior')return null;
+  const p=gem.star.getWorldPosition(new THREE.Vector3());
+  camera.updateMatrixWorld();
+  p.project(camera);
+  if(p.z>=1||p.z<=-1)return null;
+  const rect=canvas.getBoundingClientRect();
+  return {x:(p.x+1)*rect.width*.5,y:(1-p.y)*rect.height*.5,
+    onScreen:Math.abs(p.x)<.94&&Math.abs(p.y)<.83};
+ }
+ return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,setArea,
+  exterior,stoneScreenPosition,dispose(){renderer.dispose();}};
 }

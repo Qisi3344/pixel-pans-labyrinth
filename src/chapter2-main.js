@@ -14,9 +14,9 @@ document.body.innerHTML=`
   <aside class="root-inventory"><div class="root-label">INVENTORY</div>
     <div class="stone-row" id="root-stones"><span>◇ 苔绿魔石</span><span>◇ 紫晶魔石</span><span>◇ 琥珀魔石</span></div>
     <div class="root-meter"><span>已献祭魔石</span><b id="root-offerings">0 / 3</b></div>
-    <div class="root-status" id="root-status">循着树根，寻找第一颗魔石。</div>
+    <div class="root-status" id="root-status">循着树根，寻找第一颗魔石。</div><button id="amber-guide" class="root-amber-guide" type="button">✦ 寻找琥珀魔石 <small>自动沿通道前往</small></button>
   </aside>
-  <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div>
+  <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div><div class="root-amber-marker" id="amber-marker" aria-hidden="true"><strong>✦ 琥珀魔石</strong><small>金色岔路尽头</small></div>
   <section class="root-bottom"><div class="root-keys">WASD / 方向键 移动　·　E 交互　·　点击石道自动行走</div><a href="?stage=1" class="root-back">← 第一章</a></section>
   <div class="root-touch"><div id="root-pad" class="root-pad" role="group" aria-label="拖动虚拟摇杆移动"><div class="root-knob" id="root-knob"></div></div><button id="root-act" class="root-act" type="button">✦<small>交互</small></button></div>
   <div class="root-overlay" id="root-intro" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✧　✦</div><small>CHAPTER II · BENEATH THE ANCIENT FIG</small><h2>巨树之腹</h2><p>石井的尽头，长着一棵正在死去的树。<br/>地下深处有三颗魔石，<br/>还有一个饥饿的守护者。</p><button id="root-start" type="button">探索巨树 ↗</button><footer>3D PIXEL DIORAMA · CUTAWAY ROOT WORLD</footer></div></div>
@@ -26,7 +26,7 @@ const $=id=>document.getElementById(id);
 const state=newChapter(),view=createTreeScene($('root-world'),state);
 let started=false,active=null,queue=[],last=0,lastMove=0,tipTimer=null;
 let keyboard=new Set(),pointer=null,stickX=0,stickY=0,elapsed=0;
-let outside=true,exteriorGoal=null;
+let outside=true,exteriorGoal=null,waypointPending=false;
 const physicalKey={
  KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'arrowup',ArrowLeft:'arrowleft',ArrowDown:'arrowdown',ArrowRight:'arrowright',
@@ -60,9 +60,11 @@ function tip(message,delay=3200){
 }
 function drawHUD(){
  if(outside){
+  $('amber-guide').hidden=true;
   $('root-status').textContent='走进树干中央的黑色洞口即可进入。也可点击洞口，或靠近后按 E / 进入。';
   return;
  }
+ $('amber-guide').hidden=state.stones[2];
  document.querySelectorAll('#root-stones span').forEach((element,i)=>{
   element.classList.toggle('got',state.stones[i]);
   element.textContent=(state.stones[i]?'◆ ':'◇ ')+['苔绿魔石','紫晶魔石','琥珀魔石'][i];
@@ -71,8 +73,9 @@ function drawHUD(){
  const node=state.node;
  let status='沿着地下根脉探索，寻找魔石。';
  if(STONE_NODES.some((n,i)=>n===node&&!state.stones[i])) status='魔石就在这里。按 E 拾取。';
- else if(node===8&&!state.boulderMoved)status='沉重的石块堵住了前路。按 E 推动。';
- else if(node===10)status='面对蟾蜍。集齐魔石后按 E 一颗颗投喂。';
+ else if(node===8&&!state.stones[2])status='这里有两条路：金色碎石指向前侧的琥珀洞室。先拿魔石，再推动巨石去见蟾蜍。';
+ else if(node===8&&!state.boulderMoved)status='巨石挡住去往蟾蜍的通道，按 E 推开；琥珀魔石在另一条支路。';
+ else if(node===10&&!state.stones.every(Boolean))status='巨蟾蜍还不肯吐出钥匙。回头检查未探索的岔路与魔石。';
  else if(node===4&&!rootOpen(state.time))status='树根收缩！等待它舒展开，再向前穿过。';
  else if(node===10&&state.stones.every(Boolean))status='按 E 将三颗魔石送进蟾蜍的嘴里。';
  $('root-status').textContent=status;
@@ -96,7 +99,7 @@ function action(){
  }
  const result=interact(state);
  switch(result.type){
-  case 'stone':note(660,.19,'triangle',.042);tip('获得第 '+(result.index+1)+' 颗魔石。它在掌心微微发光。');break;
+  case 'stone':note(660,.19,'triangle',.042);tip(result.index===2?'琥珀魔石已获得！金光消失，前往巨蟾蜍。':'获得第 '+(result.index+1)+' 颗魔石。它在掌心微微发光。');break;
   case 'boulder':note(186,.35,'sawtooth',.018);tip('石块被推向侧面。通往树心的路打开了。');break;
   case 'need-stones':note(170,.15,'triangle',.02);tip('巨蟾蜍等待着三颗魔石。还差 '+result.remaining+' 颗。');break;
   case 'offering':note(330,.19,'sine',.035);tip('蟾蜍吞下魔石。还要再喂 '+(3-result.count)+' 颗。');break;
@@ -108,8 +111,18 @@ function action(){
 function follow(destination){
  if(outside||!started||state.won||active)return;
  const path=findPath(state,state.node,destination);
- if(!path){tip('这段根脉还不能通行。观察收缩的树根或搬动石块。');return;}
+ if(!path){
+  if(destination===STONE_NODES[2]&&!state.stones[2]){
+   waypointPending=true;
+   tip('通往琥珀魔石的树根暂时收缩了，等它松开后会继续寻路。',3400);
+  }else tip('这段根脉还不能通行。观察收缩的树根或搬动石块。');
+  return;
+ }
+ waypointPending=false;
  queue=path.slice(1);
+ if(destination===STONE_NODES[2]){
+  tip('沿着金色地面印记走，到琥珀洞室后按 E 拾取魔石。',4200);
+ }
 }
 function tryMove(to){
  if(to===null||active||state.won)return;
@@ -132,6 +145,11 @@ $('root-reset').addEventListener('click',()=>location.reload());
 $('root-more').addEventListener('click',()=>view.setZoom(1.22));
 $('root-less').addEventListener('click',()=>view.setZoom(.84));
 $('root-act').addEventListener('click',action);
+$('amber-guide').addEventListener('click',()=>{
+ if(outside||state.stones[2])return;
+ if(state.node===STONE_NODES[2]){tip('魔石就在面前！按 E 或点击交互按钮拾取。');return;}
+ follow(STONE_NODES[2]);
+});
 $('root-sound').addEventListener('click',()=>{const on=toggleSound();$('root-sound').style.opacity=on?'1':'.4';});
 const pad=$('root-pad');
 function padMove(event){
@@ -209,6 +227,10 @@ function frame(now){
    }
   } else {
    state.time+=dt;
+   if(waypointPending && rootOpen(state.time) && !active){
+    const p=findPath(state,state.node,STONE_NODES[2]);
+    if(p){queue=p.slice(1);waypointPending=false;}
+   }
    if(!active&&queue.length){
     const n=queue[0];
     if(edgeAccessible(state,state.node,n))active={from:state.node,to:queue.shift(),progress:0};
@@ -227,12 +249,20 @@ function frame(now){
     distance=view.player.position.distanceTo(prev);
     if(t>=1){
      step(state,active.to);active=null;lastMove=now;drawHUD();
+     if(state.node===STONE_NODES[2]&&!state.stones[2])tip('琥珀魔石就在眼前！按 E 拾取它。',4400);
      if(state.node===TOAD_NODE)tip('巨蟾蜍就在面前。按 E 与它互动。',2500);
     }
    }
   }
  }
  view.draw(now/1000,dt,distance);
+ const marker=$('amber-marker');
+ const anchored=(!outside&&!state.stones[2])?view.stoneScreenPosition(2):null;
+ if(anchored&&anchored.onScreen){
+  marker.classList.add('visible');
+  marker.style.left=anchored.x+'px';
+  marker.style.top=anchored.y+'px';
+ }else marker.classList.remove('visible');
  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
