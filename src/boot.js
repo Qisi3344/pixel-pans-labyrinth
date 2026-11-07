@@ -16,5 +16,12 @@ loading.catch((error) => {
     'z-index:9999;padding:18px 24px;background:white;color:#36493e;' +
     'border:1px solid #b8cbbd;font:14px system-ui,sans-serif;text-align:center;';
   message.textContent = '场景加载失败，请刷新页面后重试。';
+  // Enable readable error details only when intentionally testing with ?debug=1.
+  if (new URLSearchParams(location.search).get('debug') === '1') {
+    const diagnostic = document.createElement('pre');
+    diagnostic.style.cssText = 'max-width:86vw;max-height:34vh;overflow:auto;font:12px monospace;text-align:left;white-space:pre-wrap;';
+    diagnostic.textContent = String(error?.stack || error?.message || error);
+    message.appendChild(diagnostic);
+  }
   document.body.appendChild(message);
 });
