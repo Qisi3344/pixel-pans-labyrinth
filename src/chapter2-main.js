@@ -14,7 +14,7 @@ document.body.innerHTML=`
   <aside class="root-inventory"><div class="root-label">INVENTORY</div>
     <div class="stone-row" id="root-stones"><span>◇ 苔绿魔石</span><span>◇ 紫晶魔石</span><span>◇ 琥珀魔石</span></div>
     <div class="root-meter"><span>已献祭魔石</span><b id="root-offerings">0 / 3</b></div>
-    <div class="root-status" id="root-status">循着树根，寻找第一颗魔石。</div><button id="amber-guide" class="root-amber-guide" type="button">✦ 寻找琥珀魔石 <small>自动沿通道前往</small></button>
+    <div class="root-status" id="root-status">循着树根，寻找第一颗魔石。</div><button id="root-enter-guide" type="button" class="root-enter-guide">↳ 前往树洞 <small>自动行走并进入</small></button><button id="amber-guide" class="root-amber-guide" type="button">✦ 寻找琥珀魔石 <small>自动沿通道前往</small></button>
   </aside>
   <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div><div class="root-amber-marker" id="amber-marker" aria-hidden="true"><strong>✦ 琥珀魔石</strong><small>金色岔路尽头</small></div>
   <section class="root-bottom"><div class="root-keys">WASD / 方向键 移动　·　E 交互　·　点击石道自动行走</div><a href="?stage=1" class="root-back">← 第一章</a></section>
@@ -59,6 +59,7 @@ function tip(message,delay=3200){
  clearTimeout(tipTimer);tipTimer=setTimeout(()=>el.classList.remove('show'),delay);
 }
 function drawHUD(){
+ $('root-enter-guide').hidden=!outside;
  if(outside){
   $('amber-guide').hidden=true;
   $('root-status').textContent='走进树干中央的黑色洞口即可进入。也可点击洞口，或靠近后按 E / 进入。';
@@ -90,11 +91,16 @@ function enterTree(){
  tip('奥菲莉娅俯身钻入树洞。地底盘绕着会收缩的根须……',5000);
  drawHUD();
 }
+function guideToTree(){
+ if(!started||!outside||state.won)return;
+ exteriorGoal={...view.exterior.entrance};
+ tip('奥菲莉娅会自动走向黑色树洞，到达后进入地下。',3900);
+}
 function action(){
  if(!started||active||state.won)return;
  if(outside){
   if(nearEntrance(view.player.position,view.exterior.entrance))enterTree();
-  else tip('先走到树干中间的黑色洞口。点击洞口也能自动走过去。',3400);
+  else guideToTree();
   return;
  }
  const result=interact(state);
@@ -145,6 +151,7 @@ $('root-reset').addEventListener('click',()=>location.reload());
 $('root-more').addEventListener('click',()=>view.setZoom(1.22));
 $('root-less').addEventListener('click',()=>view.setZoom(.84));
 $('root-act').addEventListener('click',action);
+$('root-enter-guide').addEventListener('click',guideToTree);
 $('amber-guide').addEventListener('click',()=>{
  if(outside||state.stones[2])return;
  if(state.node===STONE_NODES[2]){tip('魔石就在面前！按 E 或点击交互按钮拾取。');return;}
@@ -196,7 +203,7 @@ $('root-world').addEventListener('pointerup',event=>{
  if(!hit)return;
  if(outside){
   if(hit.kind==='entrance'){
-   exteriorGoal={...view.exterior.entrance};tip('奥菲莉娅正在走向树洞……',2200);
+   guideToTree();
   } else if(hit.kind==='ground'&&view.exterior.walkable(hit.x,hit.z)){
    exteriorGoal={x:hit.x,z:hit.z};
   }
