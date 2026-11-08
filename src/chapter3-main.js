@@ -17,10 +17,6 @@ document.body.innerHTML=[
   '<header class="pale-header"><div class="pale-brand"><small>CHAPTER III · THE FORBIDDEN BANQUET</small><h1>苍白盛宴 <em>/ 03</em></h1>',
    '<p>席间的食物，究竟是为谁准备的？</p></div>',
    '<div class="pale-tools"><button id="pale-zoom-out" title="缩小">−</button><button id="pale-zoom-in" title="放大">+</button><button id="pale-sound" title="音效">♫</button><button id="pale-reset" title="重开">↻</button></div></header>',
-  '<aside class="pale-side"><small>THE SECOND TRIAL · THE DAGGER</small><h2 id="pale-objective">穿过古老石廊</h2><p id="pale-description">魔法粉笔门在身后，前方还有一段很长的甬道。</p>',
-   '<div class="pale-danger" id="pale-danger"><span></span><div><b>它苏醒了</b><small>别让它靠近！回到椅子旁，在天花板画出逃生门。</small></div></div>',
-   '<div class="pale-timer" id="pale-timer"></div><div class="pale-relic-hint" id="pale-relic-hint">⚷ 黄金钥匙 · 待寻找锁孔</div>',
-  '</aside>',
   '<div id="pale-tip" class="pale-tip" role="status" aria-live="polite"></div>',
   '<div id="pale-escape-guide" class="pale-escape-guide" aria-live="polite"><strong>← 原路冲回旧木椅</strong><div class="pale-escape-track"><span id="pale-escape-fill"></span></div><small id="pale-escape-distance">沿长廊撤退</small></div>',
   '<div class="pale-bottom"><div>WASD / 方向键移动　·　E 交互　·　鼠标点击地面寻路</div><a href="?stage=2">← 巨树之腹</a></div>',
@@ -128,47 +124,16 @@ $('pale-fresco-modal').addEventListener('click',e=>{
 function updateHUD(){
  const phase=state.phase;
  const inPassage=zone(state.player)==='passage';
- let title=inPassage?'先四处看看吧':state.hasDagger?'这场宴席有些不对劲':'金色钥匙在掌心发烫';
- let desc=inPassage?'看看墙壁、石拱和旧木椅。石廊尽头似乎还有东西。':
-  (state.hasDagger?'这项试炼的匕首已经到手。桌上的食物却仍散发甜香。':
-   '墙边有三个封住的小石柜，其中一个锁孔像是等待着黄金钥匙。');
- if(phase==='invitation'&&currentTime<monsterClueUntil){
-  title='他好像在沉睡……';
-  desc='苍白的身影坐在宴席尽头，低垂着头，一动不动。';
- }
- if(phase==='invitation'&&inspectedShoes&&currentTime<shoeClueUntil){
-  title='这些都是小孩的鞋子……';
-  desc='有鞋带、有搭扣，鞋底磨得很旧。为什么会被丢在宴会厅的角落？';
- }
- if(phase==='awakening'){
-  title='它在苏醒';desc='两只掌心的眼睛正缓缓升到额头的位置。';
- }else if(phase==='chase'){
-  title=inPassage?'不要停！沿石廊继续跑':'绕开长桌！逃回石廊';
-  desc=state.sealed?'入口消失了！跑回旧木椅，踩上去画天花板出口。':
-   '入口正在关闭！沿来路返回椅子，准备画头顶的门。';
- }else if(phase==='climbing'){
-  title='爬上木椅！';desc='奥菲莉娅踩上摇晃的椅子，伸手够向头顶的天花板。';
- }else if(phase==='drawing'){
-  title='在天花板画门！';desc='从左下角沿四条边描完整个四边形。怪物还在逼近。';
- }else if(phase==='caught'){
-  title='被苍白怪抓住了';desc='它伸出手把奥菲莉娅提到面前……';
- }else if(phase==='escape'||phase==='escaped'){
-  title='天花板出口打开了';desc='奥菲莉娅正在从椅子上爬向头顶洞口。';
- }
- $('pale-objective').textContent=title;
- $('pale-description').textContent=desc;
  $('pale-game').dataset.phase=phase;
  const chased=['chase','climbing','drawing','caught'].includes(phase);
- $('pale-danger').classList.toggle('active',chased);
  $('pale-escape-guide').classList.toggle('active',chased);
  const remaining=Math.max(0,Math.ceil(SEAL_SECONDS-state.chaseTime));
- $('pale-timer').textContent=['chase','climbing','drawing'].includes(phase)?
-   state.sealed?'⌛ 粉笔门已关闭 · 必须重新描画':'⌛ 沙漏：'+remaining+' 秒后入口消失':'';
  const span=Math.abs(FOOD.x-DOOR.x);
  const progress=Math.max(0,Math.min(1,(FOOD.x-state.player.x)/span));
  $('pale-escape-fill').style.width=(progress*100).toFixed(1)+'%';
  $('pale-escape-distance').textContent=
-  Math.ceil(distance(state.player,DOOR))+' 米 · '+(inPassage?'直走，出口在前方':'先离开宴会厅');
+  Math.ceil(distance(state.player,DOOR))+' 米 · '+
+  (state.sealed?'入口已关闭 · 快画门':remaining+' 秒后入口关闭');
  const canDagger=phase==='invitation'&&!state.hasDagger&&
   distance(state.player,DAGGER_POINT)<DAGGER_RADIUS;
  const canEat=phase==='invitation'&&state.hasDagger&&distance(state.player,FOOD)<1.55;
@@ -189,7 +154,6 @@ function updateHUD(){
  actionButton.style.display=(canDagger||canEat||canDraw)?'':'none';
  $('pale-act').innerHTML=phase==='drawing'?'✎<small>画门中</small>':
   canDagger?'⚷<small>开柜</small>':canEat?'🍇<small>吃一口</small>':canDraw?'🪑<small>爬椅子</small>':'✦<small>交互</small>';
- $('pale-relic-hint').textContent=state.hasDagger?'✢ 祭仪匕首 · 已取得':'⚷ 黄金钥匙 · 寻找被锁的石柜';
 }
 function start(){
  if(started)return;started=true;$('pale-intro').classList.add('hidden');
