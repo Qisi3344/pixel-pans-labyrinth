@@ -87,7 +87,7 @@ test('each ending has a blood path FROM Ofelia at the stone lip INTO the same sp
  const script=read('../src/chapter4-scene.js');
  assert.ok(script.includes('FINAL_BLOOD_STAND'));
  assert.ok(script.includes('sceneActor=cinematic'));
- assert.ok(script.includes('maze.well.setBloodProgress(bloodProgress)'));
+ assert.ok(script.includes('maze.well.setBloodProgress(cinematic?'));
 });
 
 test('Vidal is grounded inside the circular arena and invisible before he arrives',()=>{
@@ -95,7 +95,7 @@ test('Vidal is grounded inside the circular arena and invisible before he arrive
   'captain spawn must be INSIDE the stage edge');
  const scene=read('../src/chapter4-scene.js');
  assert.ok(scene.includes('vidal.root.visible=chase||'));
- assert.ok(scene.includes("state.elapsed>=23"));
+ assert.ok(scene.includes("state.elapsed>=24"));
  assert.ok(scene.includes('animateVidal(vidal,d,strideDistance,aiming)'));
  assert.ok(scene.includes('new THREE.OrthographicCamera('));
 });
