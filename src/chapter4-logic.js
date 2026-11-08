@@ -9,7 +9,7 @@ export const FINAL_ALTAR=Object.freeze({x:1.1,z:-.65});
 export const FINAL_START=Object.freeze({x:-9.65,z:7.2});
 export const VIDAL_START=Object.freeze({x:-11.8,z:8.45});
 export const FINAL_CHOICE_RADIUS=2.15;
-export const FINAL_CINEMATIC=Object.freeze({mercy:8.7,offering:7.9});
+export const FINAL_CINEMATIC=Object.freeze({mercy:15.35,offering:14.20});
 export const FINAL_OUTCOMES=Object.freeze({
  mercy:Object.freeze({
   id:'mercy',title:'无辜之血',subtitle:'原片结局 · 守护',
