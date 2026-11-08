@@ -128,7 +128,7 @@ test('UI integrates touch controls, pencil tracing and movie-story reveal',()=>{
  assert.match(scene,/function buildPaleMan/);
  assert.match(scene,/function chalkPortal/);
  assert.match(style,/touch-action:none/);
- assert.match(chapter2,/href="\?stage=3"/,'Chapter II completion should link to III');
+ assert.match(chapter2,/href="\?stage=3&flow=1"/,'Chapter II completion should link to III within campaign');
 });
 
 test('scene heading rotation is browser-safe and wraps across +/- PI',()=>{
@@ -175,8 +175,8 @@ test('third chapter invites free exploration instead of sending the player direc
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
  assert.ok(main.includes('✧ 先四处看看吧'));
- assert.ok(main.includes("actionButton.hidden=!(canEat||canDraw)"));
- assert.ok(main.includes("actionButton.style.display=(canEat||canDraw)?'':'none'"));
+ assert.ok(main.includes("actionButton.hidden=!(canDagger||canEat||canDraw)"));
+ assert.ok(main.includes("actionButton.style.display=(canDagger||canEat||canDraw)?'':'none'"));
  assert.ok(!main.includes("前往盛宴 ↗"));
  assert.ok(main.includes("if(hit.kind==='monster')"));
  assert.ok(main.includes("showSleepingObservation();return;"));
