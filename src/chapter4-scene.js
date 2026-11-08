@@ -4,6 +4,7 @@ import {FINAL_START,FINAL_ALTAR,FINAL_BLOOD_STAND,VIDAL_START,CHAPTER4_TIME_LIMI
 import {FINAL_FAUN_POSITION} from './chapter4-maze-layout.js';
 import {buildFirstMazeCenterFragment} from './chapter4-maze-center.js';
 import {buildFinalSpiralWell,createFinalStageWithCutout} from './chapter4-well.js';
+import {FINAL_CUES,VIDAL_CINEMATIC_ENTRY,normalizedBeat} from './chapter4-cinematic.js';
 
 const mat=(color,opt={})=>new THREE.MeshLambertMaterial({color,flatShading:true,...opt});
 const box=(root,color,x,y,z,w,h,d,shadow=true)=>{
@@ -51,6 +52,7 @@ function buildFaun(root,x,y,z){
  box(ritualBlade,0xb7a16b,0,.045,0,.32,.067,.12);
  const blade=new THREE.Mesh(new THREE.ConeGeometry(.10,.54,4),
   mat(0xcbd0c8));blade.position.y=.32;ritualBlade.add(blade);
+ body.userData.ritualBlade=ritualBlade;
  body.rotation.y=-.22;
  return body;
 }
@@ -369,6 +371,30 @@ export function createFinalScene(canvas,state){
  const baby=babyModel(hero.rig);
  baby.position.set(.22,1.06,.33);baby.scale.setScalar(.78);
  hero.arms[0].rotation.x=-.57;hero.arms[1].rotation.x=-.48;
+ // The alternate ending must SHOW the stolen ritual knife being raised.
+ // Reuse the Faun's dagger design, attached to Ofelia's articulated hand.
+ const ceremonyKnife=new THREE.Group();
+ ceremonyKnife.name='Ofelia-held-ritual-knife';
+ ceremonyKnife.position.set(.045,-.46,.15);
+ ceremonyKnife.rotation.z=.18;
+ hero.arms[1].add(ceremonyKnife);
+ box(ceremonyKnife,0x533d34,0,-.10,0,.10,.28,.09);
+ box(ceremonyKnife,0xb7a16b,0,.05,0,.29,.065,.13);
+ const knifeBlade=new THREE.Mesh(new THREE.ConeGeometry(.12,.57,4),
+  mat(0xc9d1cc));knifeBlade.position.y=.37;ceremonyKnife.add(knifeBlade);
+ ceremonyKnife.visible=false;
+ // A non-graphic ruby glow marks the moment the magic accepts a drop.
+ // It is separate from, and followed by, the visible blood-to-stairs path.
+ const ritualGlow=new THREE.Group();
+ ritualGlow.name='ritual-at-well-lip';
+ ritualGlow.position.set(FINAL_BLOOD_STAND.x,.25,FINAL_BLOOD_STAND.z);
+ labyrinth.add(ritualGlow);
+ const ritualRing=new THREE.Mesh(new THREE.TorusGeometry(.36,.052,5,24),
+  new THREE.MeshBasicMaterial({color:0xc35b64,transparent:true,opacity:.6}));
+ ritualRing.rotation.x=-Math.PI/2;ritualGlow.add(ritualRing);
+ const ritualLight=new THREE.PointLight(0xae555e,0,3.1,2);
+ ritualLight.position.y=.28;ritualGlow.add(ritualLight);
+ ritualGlow.visible=false;
  const vidal=buildVidal(labyrinth);
  vidal.root.position.set(VIDAL_START.x,.10,VIDAL_START.z);
  vidal.root.rotation.y=2.4;
@@ -419,7 +445,7 @@ export function createFinalScene(canvas,state){
    // The centre seat remains VACANT until after the parents' invitation.
    // Ofelia arrives at the red carpet first, and walks toward her seat
    // only during the mother's lines; she does not materialize sitting.
-   const invitation=state.ending==='mercy'?9.40:8.28;
+   const invitation=state.ending==='mercy'?14.75:14.10;
    const walkT=Math.max(0,Math.min(1,(state.cinematicTime-invitation)/4.6));
    const eased=walkT*walkT*(3-2*walkT);
    hero.body.position.set(0,.13,6.00-eased*8.0);
@@ -433,7 +459,8 @@ export function createFinalScene(canvas,state){
   }else{
    const cinematic=state.phase==='cinematic';
    const localT=state.cinematicTime||0;
-   const arriveSeconds=state.timeOut?2.05:1.30;
+   const cues=FINAL_CUES[state.ending]||FINAL_CUES.mercy;
+   const arriveSeconds=cues.approachEnd;
    const raw=cinematic?Math.max(0,Math.min(1,localT/arriveSeconds)):0;
    const eased=raw*raw*(3-2*raw);
    const sceneActor=cinematic
@@ -451,38 +478,56 @@ export function createFinalScene(canvas,state){
    hero.body.rotation.y=THREE.MathUtils.lerp(hero.body.rotation.y,
     cinematic?2.3:hero.body.rotation.y,.12);
    baby.visible=state.brotherVisible;
-   const viewX=cinematic?THREE.MathUtils.lerp(sceneActor.x,FINAL_WELL_CENTER.x,.26):state.player.x;
-   const viewZ=cinematic?THREE.MathUtils.lerp(sceneActor.z,FINAL_WELL_CENTER.z,.26):state.player.z;
+   // During refusal, hold both the captain AND the well in the fixed
+   // orthographic frame instead of tracking Ofelia so tightly he is unseen.
+   const captainShare=cinematic&&state.ending==='mercy'
+    ?.21*(1-normalizedBeat(localT,0,cues.approachEnd)):0;
+   const viewX=cinematic?THREE.MathUtils.lerp(
+    THREE.MathUtils.lerp(sceneActor.x,FINAL_WELL_CENTER.x,.22),
+    VIDAL_CINEMATIC_ENTRY.x,captainShare):state.player.x;
+   const viewZ=cinematic?THREE.MathUtils.lerp(
+    THREE.MathUtils.lerp(sceneActor.z,FINAL_WELL_CENTER.z,.22),
+    VIDAL_CINEMATIC_ENTRY.z,captainShare):state.player.z;
    focus.lerp(temp.set(viewX,cinematic?1.20:.80,viewZ),Math.min(1,d*4.8));
-   // The captain arrives at the moment the 62-second clock expires, not
-   // six seconds before it. On timeout he pursues Ofelia WHERE she stands.
-   const chase=state.phase==='cinematic'&&state.ending==='mercy';
-   // Keep Vidal out of sight until he actually enters from the paved gate.
-   // The offering branch has no shooting scene, so he never appears there.
-   vidal.root.visible=chase||(['approach','dialogue','decision'].includes(state.phase)&&state.elapsed>=23);
-   const p=chase?Math.min(1,localT/2.05):
-    Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-22)/(CHAPTER4_TIME_LIMIT-22)));
-   const pursuitTarget=cinematic?FINAL_BLOOD_STAND:state.player;
+   const chase=cinematic&&state.ending==='mercy';
+   // Start Vidal ON the approach path. At refusal the model is visible
+   // immediately and walks for a full 3.5 seconds before taking the infant.
+   const lateApproach=['approach','dialogue','decision'].includes(state.phase)&&
+    state.elapsed>=24;
+   vidal.root.visible=chase||lateApproach;
+   const prevProgress=Math.max(0,Math.min(1,(state.elapsed-24)/38));
+   const chaseProgress=normalizedBeat(localT,0,cues.approachEnd);
+   const p=chase?prevProgress+(1-prevProgress)*chaseProgress:prevProgress;
+   const pursuitTarget=chase?FINAL_BLOOD_STAND:state.player;
    const beforeVidal=vidal.root.position.clone();
    vidal.root.position.set(
-    THREE.MathUtils.lerp(VIDAL_START.x,pursuitTarget.x-.95,p),
-    .10,THREE.MathUtils.lerp(VIDAL_START.z,pursuitTarget.z+.75,p));
+    THREE.MathUtils.lerp(VIDAL_CINEMATIC_ENTRY.x,pursuitTarget.x-.72,p),
+    .10,THREE.MathUtils.lerp(VIDAL_CINEMATIC_ENTRY.z,pursuitTarget.z+.72,p));
    const vx=vidal.root.position.x-beforeVidal.x;
    const vz=vidal.root.position.z-beforeVidal.z;
    const strideDistance=Math.hypot(vx,vz);
    if(strideDistance>.0001)vidal.root.rotation.y=Math.atan2(vx,vz);
-   const aiming=chase&&localT>=1.48;
+   const aiming=chase&&localT>=cues.aim;
    vidal.pistol.visible=aiming;
    animateVidal(vidal,d,strideDistance,aiming);
-   vidalBaby.visible=chase&&localT>=1.6;
+   vidalBaby.visible=chase&&localT>=cues.handOff;
    // Drip from Ofelia's feet, cross the lip and descend alongside the
    // genuine spiral steps. Portal opens BELOW them, not over the mouth.
-   const bloodAt=state.ending==='mercy'?3.22:1.42;
-   const bloodProgress=cinematic?
-    Math.max(0,Math.min(1,(localT-bloodAt)/1.10)):0;
-   maze.well.setBloodProgress(bloodProgress);
-   const portalAt=state.ending==='mercy'?4.05:2.52;
-   const portalDuration=.76;
+   // Blood cannot fall before the baby handoff/shot in the mercy path
+   // or before the knife gesture in the alternate path.
+   maze.well.setBloodProgress(cinematic?
+    normalizedBeat(localT,cues.bloodStart,cues.bloodEnd):0);
+   const portalAt=cues.portalStart;
+   const portalDuration=1.05;
+   const alternate=cinematic&&state.ending==='offering';
+   ceremonyKnife.visible=alternate&&localT>=cues.knifeStart&&
+    localT<cues.portalStart;
+   if(maze.faun.userData.ritualBlade)
+    maze.faun.userData.ritualBlade.visible=!(alternate&&localT>=cues.knifeStart);
+   ritualGlow.visible=alternate&&localT>=cues.bloodMoment&&localT<cues.royalAt;
+   ritualLight.intensity=ritualGlow.visible?1.5+.3*Math.sin(elapsed*4):0;
+   ritualRing.rotation.z=elapsed*.36;
+   ritualRing.scale.setScalar(1+.12*Math.sin(elapsed*3));
    const pulse=Math.max(0,Math.min(1,(localT-portalAt)/portalDuration));
    maze.well.portal.visible=cinematic&&localT>=portalAt;
    maze.well.portal.material.color.setHex(
@@ -493,9 +538,9 @@ export function createFinalScene(canvas,state){
    maze.spot.color.setHex(state.ending==='offering'?0xe0a09b:0xa9d2c7);
    maze.spot.intensity=state.phase==='cinematic'?2.35:1.10;
    maze.seal.rotation.y=elapsed*.15;
-   if(chase&&localT>=2.17){
-    hero.rig.rotation.z=THREE.MathUtils.lerp(0,-1.13,Math.min(1,(localT-2.17)*1.20));
-    hero.body.position.y=.13-Math.min(.18,(localT-2.17)*.10);
+   if(chase&&localT>=cues.shot){
+    hero.rig.rotation.z=THREE.MathUtils.lerp(0,-1.13,Math.min(1,(localT-cues.shot)*.85));
+    hero.body.position.y=.13-Math.min(.18,(localT-cues.shot)*.10);
    }else hero.rig.rotation.z=0;
   }
   animatePlayer(hero,d,Math.max(0,hero.walkDistance||0),Boolean(hero.walkDistance));
@@ -504,12 +549,21 @@ export function createFinalScene(canvas,state){
   if(isRoyal){
    hero.rig.rotation.z=0;
    hero.arms[0].rotation.x=0;hero.arms[1].rotation.x=0;
-  }else if(state.phase==='cinematic'&&state.ending==='mercy'&&state.cinematicTime>=2.17){
-   hero.rig.rotation.z=-1.13*Math.min(1,(state.cinematicTime-2.17)*1.2);
+  }else if(state.phase==='cinematic'&&state.ending==='mercy'&&state.cinematicTime>=FINAL_CUES.mercy.shot){
+   hero.rig.rotation.z=-1.13*Math.min(1,(state.cinematicTime-FINAL_CUES.mercy.shot)*.85);
    hero.arms[0].rotation.x=-.22;hero.arms[1].rotation.x=-.42;
   }else{
    hero.arms[0].rotation.x=-.50;
    hero.arms[1].rotation.x=-.45;
+   if(state.phase==='cinematic'&&state.ending==='offering'){
+    const c=FINAL_CUES.offering,t=state.cinematicTime;
+    // Bring the sacred dagger up in a clearly readable held pose, then
+    // lower it towards the well as the ruby pulse appears.
+    const lift=normalizedBeat(t,c.knifeStart,c.knifeLiftEnd);
+    const lower=normalizedBeat(t,c.knifeLiftEnd,c.bloodMoment);
+    hero.arms[1].rotation.x=-.45-1.45*lift+1.25*lower;
+    hero.arms[1].rotation.z=-.20*lift;
+   }else hero.arms[1].rotation.z=0;
   }
   hero.walkDistance=0;
   const onRoyal=isRoyal;
