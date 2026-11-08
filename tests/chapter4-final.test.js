@@ -54,6 +54,9 @@ test('offering at the stone well opens the invented route before the captain arr
 test('refusing the Faun keeps the baby alive, Vidal takes the baby and Ofelia sees the royal court',()=>{
  const s=newFinalTrial();
  s.player={...FINAL_ALTAR};updateFinalTrial(s,.05);
+ assert.equal(s.phase,'dialogue');
+ for(let i=0;i<FINAL_DIALOGUE.length;i++)advanceFaunDialogue(s);
+ assert.equal(s.phase,'decision');
  assert.equal(decideFinal(s,'mercy'),true);
  forward(s,1.7);
  assert.equal(s.brotherVisible,false,'Vidal takes the baby away from Ofelia');
