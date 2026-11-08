@@ -121,22 +121,22 @@ function installHome(){
    </div>
   </main>`;
  chapterButtons(document,save);
- const dialog=()=>{
+ const dialog=(onChosen)=>{
+  if(document.getElementById('campaign-dialog-host'))return;
   const host=document.createElement('div');host.id='campaign-dialog-host';host.innerHTML=modeMarkup();
   document.body.appendChild(host);
   const sheet=$('tale-mode-dialog');
   const close=()=>host.remove();
-  addSelectionHandlers(sheet,close,close);
+  addSelectionHandlers(sheet,onChosen?()=>onChosen(host):close,close);
   sheet.querySelector('.tale-modal').focus({preventScroll:true});
-  return {host,close};
  };
  $('tale-new').addEventListener('click',()=>{
-  const {host}=dialog();
-  const accept=host.querySelector('[data-mode-accept]');
-  accept.addEventListener('click',()=>{
-   // Replace the temporary settings sheet with the short story prologue.
+  dialog(host=>{
+   // This replaces the selector *without removing its host from the DOM*.
    host.innerHTML=prologueMarkup();
-   host.querySelector('#tale-enter').addEventListener('click',()=>navigate(campaignChapterUrl(1)));
+   const prologue=host.querySelector('#tale-prologue');
+   prologue.querySelector('#tale-enter').focus({preventScroll:true});
+   prologue.querySelector('#tale-enter').addEventListener('click',()=>navigate(campaignChapterUrl(1)));
   });
  });
  $('tale-controls').addEventListener('click',()=>dialog());
