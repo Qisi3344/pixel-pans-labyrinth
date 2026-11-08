@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,zone} from './chapter3-logic.js';
 import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
+import {createChildShoePile} from './chapter3-shoes.js';
+import {deathBeat} from './chapter3-devour.js';
 
 // All props are real meshes in the same orthographic 3D world.
 // No external textures, models, assets or full-screen 2D fake scenery.
@@ -193,6 +195,26 @@ function buildPaleMan(scene){
  }
  const neck=beam(rig,bone,[0,1.80,0],[0,2.32,-.06],.16,7);
  const head=ico(rig,0xd8c5b0,0,2.53,-.03,.35,.49,.33,1);
+ // Hinged lower jaw and dark inner mouth, only opened for real devouring.
+ // A static sad face plus a vanishing protagonist is not a death animation.
+ const maw=ico(rig,0x21171a,0,2.29,.337,.255,.17,.085,1);
+ maw.visible=false;
+ maw.material=new THREE.MeshBasicMaterial({color:0x231b1b,side:THREE.DoubleSide});
+ const jawPivot=new THREE.Group();
+ jawPivot.position.set(0,2.27,.28);rig.add(jawPivot);
+ const lowerJaw=ico(jawPivot,bone,0,-.15,.14,.24,.095,.17,1);
+ jawPivot.visible=false;
+ const teeth=[];
+ for(let k=-2;k<=2;k++){
+  const tooth=ico(rig,0xe7d8b7,k*.083,2.40,.41,.030,.066,.042,0);
+  tooth.visible=false;teeth.push(tooth);
+  const lower=ico(jawPivot,0xe7d8b7,k*.083,-.054,.25,.028,.066,.035,0);
+  lower.visible=false;teeth.push(lower);
+ }
+ const mouthShadow=ico(rig,0x281b1b,0,2.31,.345,.25,.16,.085,0);
+ mouthShadow.visible=false;
+ mouthShadow.material=new THREE.MeshBasicMaterial({color:0x271a1c});
+
  // No face eyes. A long, unsettling mouth cleft occupies their place.
  ico(rig,0x403b35,0,2.31,.309,.11,.23,.025);
  const hands=[],arms=[];
@@ -245,8 +267,38 @@ function buildPaleMan(scene){
    positionArm(arms[k],shoulder,aim.clone().add(new THREE.Vector3(0,.25,-.08)));
    limbs[k].rotation.x=THREE.MathUtils.lerp(-.95,active?Math.sin(time*8+k*Math.PI)*.33:0,standing);
   }
+  if(state.phase==='caught'){
+   const beat=deathBeat(state.deathTime);
+   // Hands reach down to grasp, then pull the captured figure against the
+   // head. The creature looks down and bites twice with an articulated jaw.
+   for(let k=0;k<2;k++){
+    const sign=k===0?-1:1;
+    const hand=hands[k];
+    hand.position.set(sign*(.30-.10*beat.grip),
+      1.38+.46*beat.lift,
+      .64+.18*beat.grip);
+    hand.rotation.z=sign*(.34+.18*beat.grip);
+    positionArm(arms[k],new THREE.Vector3(sign*.40,1.82,0),
+      hand.position.clone().add(new THREE.Vector3(0,.03,-.03)));
+   }
+   rig.rotation.x=-.09*beat.grip-.20*beat.jawOpen;
+   head.position.y=2.53-beat.headLower;
+   jawPivot.visible=true;maw.visible=true;mouthShadow.visible=true;
+   teeth.forEach(tooth=>{tooth.visible=true;});
+   jawPivot.rotation.x=beat.jawOpen*.86;
+   jawPivot.position.y=2.27-beat.jawOpen*.24;
+   maw.scale.set(.255+.07*beat.jawOpen,.055+beat.jawOpen*.32,.085);
+   mouthShadow.scale.copy(maw.scale).multiplyScalar(.9);
+   const nod=Math.sin(beat.time*12)*(beat.jawOpen*.055);
+   rig.rotation.z=nod;
+  }else{
+   jawPivot.visible=false;maw.visible=false;mouthShadow.visible=false;
+   teeth.forEach(tooth=>{tooth.visible=false;});
+   head.position.y=2.53;
+   rig.rotation.x=0;
+  }
  }
- return {root,rig,hands,pose};
+ return {root,rig,hands,jawPivot,maw,pose};
 }
 function chalkPortal(scene){
  // The original entry portal is at the FAR END of the vaulted passage.
@@ -341,14 +393,14 @@ export function createBanquetScene(canvas,state){
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),color(0xffffff));
  ground.rotation.x=-Math.PI/2;ground.position.y=-1.62;ground.receiveShadow=true;scene.add(ground);
  const hall=banquetHall(scene),passage=createProcessionalPassage(scene),table=buildTable(scene);
- const details=enrichForbiddenFeast(scene),pale=buildPaleMan(scene);
+ const details=enrichForbiddenFeast(scene),shoePile=createChildShoePile(scene),pale=buildPaleMan(scene);
  const chalk=chalkPortal(scene);
  const player=createPlayer(scene,new THREE.Vector3(START.x,.03,START.z));
  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
  // The orthographic projection and follow-camera keep mobile player visible.
  const focus=new THREE.Vector3(-1,1,0);
  const angle=new THREE.Vector3(-1.0,1.24,1.18).normalize();
- let w=0,h=0,portrait=false,zoom=1;
+ let w=0,h=0,portrait=false,zoom=1,captureOrigin=null;
  function resize(force=false){
   const rect=canvas.parentElement?.getBoundingClientRect();
   const width=Math.max(1,Math.round(rect?.width||window.innerWidth));
@@ -367,7 +419,9 @@ export function createBanquetScene(canvas,state){
   // Ease in for the palm-eye reveal, ease out before the chase starts.
   const reveal=state.phase==='awakening'
    ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
-  const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55);
+  const caughtZoom=state.phase==='caught'?
+   (portrait?1.22:2.0)*deathBeat(state.deathTime).grip:0;
+  const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom;
   const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
   camera.top=halfV;camera.bottom=-halfV;
@@ -393,17 +447,37 @@ export function createBanquetScene(canvas,state){
  }
  function draw(now,dt,distance=0){
   resize();
+  // Animation poses are evaluated in world-space after the creature faces
+  // the captured avatar, avoiding the original scale-to-zero fake death.
+  pale.pose(state,now,dt);
   const p=player.body.position;
   p.set(state.player.x,.03,state.player.z);
   player.body.rotation.y=dampHeading(player.body.rotation.y,
     state.face??player.body.rotation.y,12,dt);
   animatePlayer(player,dt,distance,distance>.0001);
-  if(state.phase==='caught'){
-   const t=smooth(state.deathTime/1.0);
-   player.body.scale.setScalar(Math.max(.01,1-t));
-   player.body.position.y+=t*.85;
-  }else player.body.scale.setScalar(1);
-  pale.pose(state,now,dt);
+  const devour=state.phase==='caught'?deathBeat(state.deathTime):null;
+  if(devour){
+   // The hero stays full-sized through the grab, lift, bite and chewing.
+   // She is only hidden AFTER the scene itself has faded into black.
+   if(!captureOrigin)captureOrigin=new THREE.Vector3(
+    state.player.x,.03,state.player.z);
+   pale.root.updateWorldMatrix(true,true);
+   const held=pale.root.localToWorld(new THREE.Vector3(
+    0,devour.heroLift,.75-devour.yank*.17));
+   p.copy(captureOrigin).lerp(held,devour.grip);
+   p.y+=Math.sin(devour.time*19)*devour.shake;
+   player.body.rotation.x=-devour.heroLean;
+   player.body.rotation.z=Math.sin(devour.time*15)*devour.shake;
+   player.body.scale.setScalar(1);
+   player.body.visible=devour.fade<.97;
+   player.arms[0].rotation.x=-.30-devour.grip*.85+devour.shake*3;
+   player.arms[1].rotation.x=.25+devour.grip*.70-devour.shake*2;
+   player.legs[0].rotation.x=devour.lift*Math.sin(devour.time*9)*.24;
+   player.legs[1].rotation.x=-devour.lift*Math.sin(devour.time*9)*.24;
+  }else{
+   captureOrigin=null;player.body.visible=true;player.body.scale.setScalar(1);
+   player.body.rotation.x=0;player.body.rotation.z=0;
+  }
   table.grapes.scale.setScalar(state.eaten?.01:1);
   chalk.update(state.doorProgress,now,state);
   let target;
@@ -411,6 +485,9 @@ export function createBanquetScene(canvas,state){
    const t=smooth(state.awakeTime/AWAKEN_SECONDS);
    target=new THREE.Vector3(THREE.MathUtils.lerp(state.player.x,6.25,Math.sin(Math.PI*t)*.94),
     1.48+Math.sin(Math.PI*t)*.66,THREE.MathUtils.lerp(state.player.z,0,Math.sin(Math.PI*t)*.80));
+  } else if(state.phase==='caught'){
+   // The fatal scene is a tight two-character shot, not an off-screen scale.
+   target=new THREE.Vector3(state.monster.x,1.65,state.monster.z+.40);
   } else if(state.phase==='escape'){
    target=new THREE.Vector3(DOOR.x,1.45,DOOR.z);
   }else{
@@ -428,8 +505,9 @@ export function createBanquetScene(canvas,state){
   focus.lerp(target,1-Math.exp(-Math.max(.015,dt)*(portrait?5.5:3.1)));
   camera.position.copy(focus).addScaledVector(angle,37);camera.lookAt(focus);
   renderer.render(scene,camera);
+  return devour;
  }
  resize(true);draw(0,.016,0);
- return {scene,renderer,camera,player,monster:pale,draw,resize,pick,setZoom,
+ return {scene,renderer,camera,player,monster:pale,shoePile,draw,resize,pick,setZoom,
   dispose:()=>renderer.dispose()};
 }

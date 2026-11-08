@@ -4,6 +4,8 @@ import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone} from './chapter3-logic.js';
 import {createBanquetScene} from './chapter3-scene.js';
 import {note,chime,toggleSound} from './audio.js';
+import {CHILD_SHOE_PILE,SHOE_INSPECT_RADIUS,SHOE_MESSAGE} from './chapter3-shoes.js';
+import {deathBeat,DEVOUR_DURATION} from './chapter3-devour.js';
 
 document.title='苍白盛宴 | 石之迷宫 · 第三章';
 document.body.innerHTML=[
@@ -23,6 +25,8 @@ document.body.innerHTML=[
    '<button id="pale-act" class="pale-act" type="button">✦<small>交互</small></button></div>',
   '<div id="pale-suggest" class="pale-suggest"><span id="pale-suggest-text">✦ 走近长桌，按 E 品尝食物</span><button id="pale-suggest-act" type="button">交互 E</button></div>',
   '<div id="pale-cinematic" class="pale-cinematic" aria-live="polite"></div>',
+  '<div id="pale-shoe-clue" class="pale-shoe-clue" role="status" aria-live="polite"><small>环境线索 · 遗失的鞋子</small><p>这些都是小孩的鞋子……</p></div>',
+  '<div id="pale-death-vignette" class="pale-death-vignette" aria-hidden="true"></div>',
   '<div id="pale-draw" class="pale-draw hidden"><div class="draw-frame">',
    '<div class="draw-heading"><div><small>CHALK GATE · DOOR</small><strong>画出逃生门</strong><p>从左下角开始，向上、向右、向下连续描画。怪物不会停下。</p></div>',
    '<button id="pale-draw-close" type="button" aria-label="关闭画门操作">×</button></div>',
@@ -52,6 +56,7 @@ const view=createBanquetScene($('pale-world'),state);
 let started=false,last=0,currentTime=0,moveDistance=0,navPath=[],navAction=null;
 let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
+let inspectedShoes=false,shoeClueUntil=0,deathStage='';
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
@@ -73,6 +78,10 @@ function updateHUD(){
  let title=inPassage?'沿石廊深入宴会厅':'靠近宴会长桌';
  let desc=inPassage?'身后的粉笔门是唯一退路。穿过漫长石廊，前往尽头的盛宴。':
   '桌上堆满葡萄、面包和烤肉；苍白怪守在桌尾。';
+ if(phase==='invitation'&&inspectedShoes&&currentTime<shoeClueUntil){
+  title='这些都是小孩的鞋子……';
+  desc='有鞋带、有搭扣，鞋底磨得很旧。为什么会被丢在宴会厅的角落？';
+ }
  if(phase==='awakening'){
   title='它在苏醒';desc='两只掌心的眼睛正缓缓升到额头的位置。';
  }else if(phase==='chase'){
@@ -82,7 +91,7 @@ function updateHUD(){
  }else if(phase==='drawing'){
   title='门已关闭，快画！';desc='从左下角向上、向右、向下描画门框。怪物正在追来。';
  }else if(phase==='caught'){
-  title='它终于看见了你';desc='苍白怪抓住逃跑者，把她拖进黑暗的宴席。';
+  title='被苍白怪抓住了';desc='它伸出手把奥菲莉娅提到面前……';
  }else if(phase==='escape'||phase==='escaped'){
   title='粉笔门已开启';desc='甬道尽头的门重新撕开，赶在它伸手之前逃出去。';
  }
@@ -338,10 +347,10 @@ function driveHunter(dt){
   }
  }
  if(attemptCatch(state)){
-  keyboard.clear();navPath=[];resetPad();
+  deathStage='';keyboard.clear();navPath=[];resetPad();
   $('pale-draw').classList.add('hidden');
   $('pale-cinematic').classList.add('active');
-  $('pale-cinematic').textContent='它终于看见了你。';
+  $('pale-cinematic').textContent='苍白的手抓住了她。';
   note(115,.45,'sawtooth',.04);updateHUD();
  }
 }
@@ -360,6 +369,18 @@ function frame(now){
  const dt=Math.min(.08,last?(now-last)/1000:.016);last=now;
  currentTime=now/1000;
  moveDistance=started?drivePlayer(dt):0;
+ // Environment discovery happens through walking, not by inspecting a menu.
+ if(started&&!inspectedShoes&&state.phase==='invitation'&&
+    distance(state.player,CHILD_SHOE_PILE)<SHOE_INSPECT_RADIUS){
+  inspectedShoes=true;shoeClueUntil=currentTime+6.0;
+  $('pale-shoe-clue').classList.add('visible');
+  tell(SHOE_MESSAGE,5700);
+  note(215,.26,'triangle',.026);
+  updateHUD();
+ }
+ if(inspectedShoes&&currentTime>shoeClueUntil){
+  $('pale-shoe-clue').classList.remove('visible');
+ }
  if(started)tickBanquet(state,dt);
  if(started)driveHunter(dt);
  updateTransition();
@@ -368,8 +389,26 @@ function frame(now){
   $('pale-cinematic').textContent=t<1.15?'盛宴突然安静了。':
    t<2.25?'它缓缓抬起双手……':'眼睛在手掌里睁开。';
  }
- if(state.phase==='caught'&&state.deathTime>=1.08&&!endingShown){
-  endingShown=true;$('pale-death').classList.remove('hidden');
+ if(state.phase==='caught'){
+  const beat=deathBeat(state.deathTime);
+  $('pale-death-vignette').style.opacity=String(beat.fade);
+  if(beat.stage!==deathStage){
+   deathStage=beat.stage;
+   $('pale-cinematic').textContent={
+    grab:'它伸出双手，攥住了奥菲莉娅。',
+    lift:'苍白怪把她提到面前。',
+    bite:'那张没有眼睛的脸，张开了嘴。',
+    gulp:'牙齿合拢，剩下的声音被吞没。',
+    fade:'盛宴恢复了死一般的寂静。'
+   }[deathStage];
+   if(deathStage==='bite')note(94,.32,'sawtooth',.08);
+   if(deathStage==='gulp')note(72,.30,'triangle',.07);
+  }
+  if(beat.completed&&!endingShown){
+   endingShown=true;$('pale-death').classList.remove('hidden');
+  }
+ }else{
+  $('pale-death-vignette').style.opacity='0';
  }
  if(state.phase==='escape'&&state.winTime>1.50&&!endingShown){
   endingShown=true;state.phase='escaped';
@@ -393,4 +432,13 @@ if(params.has('previewReturn')){
 if(params.has('previewDoor')){
  start();state.player={...DOOR};state.phase='chase';state.monster={x:6.7,z:2.5};
  beginChalk();
+}
+if(params.has('previewShoes')){
+ start();state.player={x:CHILD_SHOE_PILE.x-1.09,z:CHILD_SHOE_PILE.z+.08};
+ updateHUD();
+}
+if(params.has('previewDevour')){
+ start();state.player={x:6.49,z:.76};state.monster={x:6.78,z:.12};
+ state.phase='caught';state.deathTime=0;state.eaten=true;
+ updateHUD();
 }

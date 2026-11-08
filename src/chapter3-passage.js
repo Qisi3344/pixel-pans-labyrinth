@@ -139,12 +139,8 @@ export function enrichForbiddenFeast(scene){
    stone(props,i%2?0x785045:0x8b604d,px,py,-4.08,.23,.25,.06);
   }
  }
- for(let i=0;i<32;i++){
-  const x=5.36+rand(i*4)*2.4,z=-3.58+rand(i*11)*.77,y=.02+Math.floor(i/11)*.13;
-  const shoe=cube(props,[0x49312c,0x322e2b,0x795b47][i%3],
-   x,y,z,.25,.16,.37);
-  shoe.rotation.y=rand(i*13)*Math.PI*2;
- }
+ // The former cubes were placeholder footwear. The separate chapter3-shoes
+ // module now creates individually modelled leather shoes instead.
  // Small dagger in a niche for film fidelity; not a mandatory fetch quest.
  cube(props,0x72675b,-6.17,.45,-3.84,1.02,.69,.70);
  stick(props,0xb6bdba,[-6.16,.71,-3.84],[-6.16,1.37,-3.84],.065);
