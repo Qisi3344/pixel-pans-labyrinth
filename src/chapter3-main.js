@@ -72,7 +72,6 @@ const hasGoldenKey=loadCampaign().completed>=2||
 let frescoOpen=false,lastFrescoFocus=null;
 const viewedFrescoes=new Set();
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
-const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
 const QA_DEVOUR_PREVIEW=new URLSearchParams(location.search).has('previewDevour');
 // A held-frame diagnostic for visibility of the actual in-engine biting pose.
@@ -448,7 +447,6 @@ function driveHunter(dt){
  // QA-only long-passage visual inspection does not immediately end in death.
  // Normal play still keeps pursuit, catching and drawing hazards intact.
  if(QA_RETURN_PREVIEW&&state.phase==='chase')return;
- if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;
  if(!['chase','climbing','drawing'].includes(state.phase))return;
  huntTime-=dt;
  if(huntTime<=0||!huntPath.length){
@@ -577,7 +575,10 @@ if(params.has('previewReturn')){
  state.sealed=true;state.monster={x:-8.3,z:.1};
 }
 if(params.has('previewDoor')){
- start();state.player={...DOOR};state.phase='chase';state.monster={x:6.7,z:2.5};
+ start();state.player={...DOOR};state.phase='chase';
+ // Preview is an actual playable chase: monster starts down the corridor,
+ // advances during climbing AND every stroke of the four-sided chalk hatch.
+ state.monster={x:-17.5,z:0};huntPath=[];huntTime=0;
  beginChalk();
 }
 if(params.has('previewFresco')){
