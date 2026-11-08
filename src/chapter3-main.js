@@ -1,5 +1,5 @@
 import './chapter3-style.css';
-import {loadCampaign,recordChapterComplete,campaignChapterUrl,CAMPAIGN_FINAL} from './campaign.js';
+import {loadCampaign,recordChapterComplete,campaignChapterUrl} from './campaign.js';
 import {DAGGER_POINT,DAGGER_RADIUS} from './chapter3-dagger.js';
 import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  newBanquet,walkable,moveActor,distance,eat,atDoor,startDrawing,cancelDrawing,traceChalk,
@@ -55,7 +55,7 @@ document.body.innerHTML=[
   '<section id="pale-win" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✧　✦　✧</div><small>CHAPTER III · COMPLETE</small><h2>粉笔划开了黑暗</h2>',
    '<p>钥匙打开了石柜，祭仪匕首回到了你手里。<br>天花板的粉笔门在身后闭合。<br>这项试炼结束了，故事却还没有结束。</p><div class="tale-reward"><span>✢</span> 祭仪匕首</div>',
-   '<button id="pale-again" class="pale-primary" type="button">走向尾声 ↗</button><button id="pale-replay" class="pale-replay" type="button">重玩本章 ↻</button>',
+   '<button id="pale-again" class="pale-primary" type="button">继续 · 最后的石井 ↗</button><button id="pale-replay" class="pale-replay" type="button">重玩本章 ↻</button>',
    '<footer><a href="?stage=1">返回石之迷宫</a></footer></div></section>',
  '</main>'
 ].join('');
@@ -342,7 +342,7 @@ $('pale-suggest-act').addEventListener('click',interact);
 $('pale-act').addEventListener('click',interact);
 $('pale-start').addEventListener('click',start);
 $('pale-retry').addEventListener('click',()=>location.replace(campaignChapterUrl(3)));
-$('pale-again').addEventListener('click',()=>location.href=CAMPAIGN_FINAL);
+$('pale-again').addEventListener('click',()=>location.href=campaignChapterUrl(4));
 $('pale-replay').addEventListener('click',()=>location.replace(campaignChapterUrl(3)));
 $('pale-reset').addEventListener('click',()=>location.replace('?stage=3'));
 $('pale-zoom-in').addEventListener('click',()=>view.setZoom(.12));
