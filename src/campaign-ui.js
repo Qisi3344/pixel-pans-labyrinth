@@ -190,8 +190,8 @@ function installEpilogue(){
   $('tale-end-heading').textContent=v.title;
   $('tale-end-subtitle').textContent=v.subtitle;
   $('tale-end-prose').textContent=viewed==='mercy'
-   ?'维达尔赶到石井，带走了弟弟，枪声落下。\\n少女的血流过古老台阶，点亮一扇谁也无法证实的门。\\n在金色王宫中，她再次见到了父亲与母亲。'
-   :'奥菲莉娅交出了潘神要求的那一滴血。\\n石井闪出猩红的光，路真的通向了王宫。\\n父亲与母亲在等待她——弟弟却再也没能穿过那道门。';
+   ?'维达尔赶到石井，带走了弟弟，枪声落下。\n少女的血流过古老台阶，点亮一扇谁也无法证实的门。\n在金色王宫中，她再次见到了父亲与母亲。'
+   :'奥菲莉娅交出了潘神要求的那一滴血。\n石井闪出猩红的光，路真的通向了王宫。\n父亲与母亲在等待她——弟弟留在了人间，他有属于自己的世界。';
   $('tale-end-blessing').textContent=v.speech;
   $('tale-end-last').textContent=v.second+' '+v.last;
   document.querySelectorAll('[data-ending]').forEach(b=>{
