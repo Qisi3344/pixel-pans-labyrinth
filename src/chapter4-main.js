@@ -3,6 +3,7 @@ import {newFinalTrial,updateFinalTrial,moveFinalPlayer,walkableFinal,
  nearFaun,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
  finalClockLabel,distance} from './chapter4-logic.js';
 import {createFinalScene} from './chapter4-scene.js';
+import {activeRoyalDialogue} from './chapter4-royal-dialogue.js';
 import {recordFinalOutcome,loadCampaign,campaignChapterUrl,CAMPAIGN_FINAL} from './campaign.js';
 
 document.title='最终试炼 · 石井之血 | 潘神的迷宫';
@@ -45,6 +46,17 @@ document.body.innerHTML=`
    <button type="button" id="final-touch-action" aria-label="前往石井或观察">交互</button>
   </div>
   <div class="final-gun-flash" id="final-gun-flash"></div>
+  <!-- The royal family now speaks in-character above their world-space heads. -->
+  <div id="final-father-bubble" class="final-royal-bubble hidden" data-speaker="father"
+       role="status" aria-live="polite">
+   <div class="royal-bubble-label">✧ 父王</div>
+   <p id="final-father-words"></p>
+  </div>
+  <div id="final-mother-bubble" class="final-royal-bubble hidden" data-speaker="mother"
+       role="status" aria-live="polite">
+   <div class="royal-bubble-label">✧ 母后</div>
+   <p id="final-mother-words"></p>
+  </div>
   <div class="final-overlay" id="final-start">
    <div class="final-card"><div class="symbol">✧</div>
     <small>CHAPTER IV · THE LAST TEST</small><h2>最后的血</h2>
@@ -79,7 +91,7 @@ const state=newFinalTrial(),view=createFinalScene($('final-world'),state);
 const keyboard=new Set();
 let started=false,lastTime=0,elapsed=0,moveTo=null,pad={x:0,z:0},padPointer=null;
 let lastNote='',resultShown=false,selectedEnding=null,sound=true;
-let cachedPhase='',screenUpdate=0;
+let cachedPhase='',screenUpdate=0,royalBubbleKey='',royalPreviouslyShown=false;
 const CANVAS=$('final-world');
 const toMenu=()=>{location.href='?screen=menu';};
 const showMessage=t=>{
@@ -219,6 +231,35 @@ function cinematicNarration(){
  if(t<3.6)return '弟弟的声音留在了门外。石井却真的为她打开。';
  return '王宫终于在眼前亮起。她所盼望的家，终于出现了。';
 }
+function renderRoyalDialogue(){
+ const line=activeRoyalDialogue(state.ending,state.cinematicTime,state.royalShown);
+ const key=line?state.ending+':'+line.speaker:'';
+ if(key!==royalBubbleKey){
+  royalBubbleKey=key;
+  for(const speaker of ['father','mother']){
+   const node=$('final-'+speaker+'-bubble');
+   const visible=line?.speaker===speaker&&!resultShown;
+   node.classList.toggle('hidden',!visible);
+   if(visible){
+    $('final-'+speaker+'-words').textContent=line.text;
+    node.dataset.ending=state.ending;
+   }
+  }
+ }
+ if(!line||resultShown)return;
+ const bubble=$('final-'+line.speaker+'-bubble');
+ const anchor=view.projectRoyalSpeaker(line.speaker);
+ if(!anchor?.visible){bubble.classList.add('hidden');return;}
+ bubble.classList.remove('hidden');
+ const surface=$('final-game').getBoundingClientRect();
+ const width=Math.min(window.innerWidth<=820?268:342,surface.width-26);
+ const margin=13;
+ const x=Math.max(margin+width*.5,
+  Math.min(surface.width-margin-width*.5,anchor.x));
+ const y=Math.max(100,Math.min(surface.height*.77,anchor.y-8));
+ bubble.style.left=x+'px';
+ bubble.style.top=y+'px';
+}
 function showResult(){
  if(resultShown)return;resultShown=true;
  const kind=state.ending||'mercy',out=FINAL_OUTCOMES[kind];
@@ -230,7 +271,9 @@ function showResult(){
  $('final-result-label').textContent=out.subtitle;
  $('final-result-title').textContent=out.title;
  $('final-result-banner').textContent='恭喜完成最后的试炼。'+out.banner;
- $('final-result-speech').textContent='王座上的父母说：“'+out.speech+'”';
+ $('final-result-speech').textContent=kind==='mercy'
+  ?'父王与母后的欢迎，已经在王宫中响起。中间的王座仍为她空着。'
+  :'王座向她敞开，但父王与母后的话无法替她抹去这份代价。';
  $('final-result-text').textContent=out.second+'\n'+out.last;
  $('final-ending-count').textContent='已发现的命运：'+seen.length+' / 2';
  $('final-result').classList.remove('hidden');
@@ -268,14 +311,24 @@ function frame(t){
   updateFinalTrial(state,dt);
  }
  view.update(active?dt:0,elapsed);
+ const royalNow=Boolean(state.royalShown);
+ $('final-game').classList.toggle('is-royal',royalNow);
+ if(royalNow&&!royalPreviouslyShown)tone(state.ending==='mercy'?610:380,.32,'triangle');
+ royalPreviouslyShown=royalNow;
+ renderRoyalDialogue();
  if(t-screenUpdate>90||state.phase!==cachedPhase){
   cachedPhase=state.phase;screenUpdate=t;updateHud();
  }
 }
 const preview=params.get('previewFinal');
-if(preview==='choice'||preview==='mercy'||preview==='offering'){
+if(['choice','mercy','offering','royalMercy','royalOffering'].includes(preview)){
  start();state.player={x:FINAL_ALTAR.x-.85,z:FINAL_ALTAR.z+.60};
- if(preview==='choice'){state.phase='decision';state.foundAltar=true;}
- else{state.phase='decision';choose(preview);}
+ state.phase='decision';state.foundAltar=true;
+ if(preview==='mercy'||preview==='offering')choose(preview);
+ if(preview==='royalMercy'||preview==='royalOffering'){
+  choose(preview==='royalMercy'?'mercy':'offering');
+  state.cinematicTime=preview==='royalMercy'?5.45:4.3;
+  state.royalShown=true;state.brotherVisible=false;
+ }
 }
 requestAnimationFrame(frame);
