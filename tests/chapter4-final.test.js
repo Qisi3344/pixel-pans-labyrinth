@@ -44,7 +44,7 @@ test('offering at the stone well opens the invented route before the captain arr
  assert.equal(s.brotherVisible,false);
  forward(s,1.5);
  assert.equal(s.royalShown,true);
- forward(s,5);
+ forward(s,11);
  assert.equal(s.phase,'done');
  assert.equal(s.gunFlash,false);
 });
@@ -61,7 +61,7 @@ test('refusing the Faun keeps the baby alive, Vidal takes the baby and Ofelia se
  assert.equal(s.gunFlash,false);
  forward(s,3);
  assert.equal(s.royalShown,true);
- forward(s,4);
+ forward(s,10);
  assert.equal(s.phase,'done');
 });
 
@@ -71,7 +71,7 @@ test('a player who runs out of time without harming the infant enters canon refu
  assert.equal(s.ending,'mercy');
  assert.equal(s.phase,'cinematic');
  assert.equal(decideFinal(s,'offering'),false);
- forward(s,9);assert.equal(s.phase,'done');
+ forward(s,16);assert.equal(s.phase,'done');
 });
 
 test('countdown remains live while the ritual choice is visible, and movement cannot move the camera out of the diorama',()=>{

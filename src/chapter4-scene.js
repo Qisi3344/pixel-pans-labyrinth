@@ -183,56 +183,167 @@ function buildMaze(root){
  }
  return {ground,well,faun,altar,seal,spot};
 }
+// Film-inspired vast court, not the original 17x11 one-room stage.
+// All architecture remains low-poly and viewed with the SAME fixed ISO camera.
 function royalFigure(root,x,z,kind,red){
- const g=new THREE.Group();g.position.set(x,0,z);root.add(g);
- const c=kind==='king'?0xe0c798:0xe0c9a1;
- cyl(g,c,0,1.16,0,.31,.52,1.55,8);
- cyl(g,kind==='king'?0x8f5a40:0x997f66,0,2.03,0,.22,.34,.40,8);
- stone(g,0xd6bfa2,0,2.38,.02,.26,1);
- const crown=cyl(g,0xb99b57,0,2.72,0,.31,.31,.13,9);
- for(let i=0;i<7;i++){
-  const a=i/7*Math.PI*2;
-  const tooth=new THREE.Mesh(new THREE.ConeGeometry(.075,.26,4),mat(0xd7b56d));
-  tooth.position.set(Math.cos(a)*.27,2.86,Math.sin(a)*.27);g.add(tooth);
- }
+ const g=new THREE.Group();
+ g.position.set(x,1.15,z);root.add(g);
+ const gown=kind==='king'?0xcab08b:0xd5c0a0;
+ const cloth=kind==='king'?0x855e52:0x9f786a;
+ const mantle=kind==='king'?0x765346:0x8d685c;
+ cyl(g,cloth,0,.73,-.08,.42,.65,1.11,9);
+ cyl(g,gown,0,1.43,0,.30,.42,.70,8);
+ cyl(g,mantle,0,1.71,-.13,.29,.36,.32,8);
+ stone(g,0xd8c3a9,0,2.05,.09,.28,1);
+ // A crowned seated monarch, feet tucked behind the throne dais.
+ box(g,0x6f4d3f,0,.37,.34,.78,.17,.58);
  for(const sign of [-1,1]){
-  beam(g,c,[sign*.28,1.74,0],[sign*.44,.96,.35],.11,6);
+  beam(g,gown,[sign*.30,1.45,.02],[sign*.56,.90,.31],.105,6);
+  stone(g,0xd4bda3,sign*.56,.91,.32,.11,0);
  }
- const robe=box(g,red?0x6b303a:0x8b604a,0,.64,-.11,1.08,.18,.7);
+ const crown=cyl(g,0xc6a46a,0,2.41,0,.34,.34,.14,10);
+ for(let n=0;n<9;n++){
+  const a=n/9*Math.PI*2;
+  const point=new THREE.Mesh(new THREE.ConeGeometry(.063,.26,4),mat(0xe1c17d));
+  point.position.set(Math.cos(a)*.28,2.57,Math.sin(a)*.28);g.add(point);
+ }
+ const gem=stone(g,kind==='king'?0x933f50:0x617a79,0,2.48,.32,.075,0);
+ const speechAnchor=new THREE.Object3D();
+ speechAnchor.position.set(0,3.24,.28);g.add(speechAnchor);
+ g.userData.speechAnchor=speechAnchor;
  return g;
 }
-function royalHall(root){
- const floor=box(root,0x534a3c,0,-.32,0,17.7,.58,11.5);
- const surface=box(root,0x9f8a68,0,-.022,0,17.3,.05,11.1);
- for(let i=0;i<9;i++)for(let j=0;j<6;j++)
-  box(root,(i+j)%3===0?0xb79b75:0xa68a62,-7.9+i*1.97,.022,-4.7+j*1.88,1.9,.055,1.8,false);
- const columnColor=0xc2a16a;
- for(const sign of [-1,1])for(const z of [-3.85,0,3.85]){
-  cyl(root,0x8d7254,sign*7.25,1.64,z,.46,.57,3.30,10);
-  box(root,columnColor,sign*7.25,3.40,z,1.15,.34,1.12);
-  box(root,0x66503c,sign*7.25,.11,z,1.22,.23,1.17);
+function royalThrone(root,x,z,central=false){
+ const g=new THREE.Group();g.position.set(x,1.17,z);root.add(g);
+ const width=central?2.25:2.03;
+ const base=box(g,0x5f4339,0,.12,.05,width,.33,1.52);
+ box(g,0xb69a69,0,.33,.06,width*.88,.12,1.23);
+ // Tall Gothic seat with carved gold border and separate crown finials.
+ box(g,0x503c37,0,1.49,-.60,width,2.75,.43);
+ box(g,central?0x9a6b58:0xa68d65,0,1.50,-.34,width-.22,2.47,.08);
+ box(g,0x5d4140,0,1.48,-.26,width-.44,2.18,.07);
+ for(const sign of [-1,1]){
+  box(g,0xbb9b66,sign*(width*.5-.08),1.59,-.30,.095,2.77,.17);
+  box(g,0x675047,sign*(width*.5-.06),.67,.32,.21,.20,1.11);
+  const finial=stone(g,0xd3ad6e,sign*(width*.5-.08),3.03,-.53,.19,0);
+  finial.scale.y=1.6;
  }
- box(root,0x6a4d3c,0,1.20,-4.65,9.80,3.28,.75);
- box(root,0xc5a367,0,3.31,-4.46,9.98,.24,.93);
- const back=cyl(root,0x76553c,0,2.15,-4.15,3.3,3.3,3.45,12);
- back.rotation.x=Math.PI/2;back.scale.y=.13;
- box(root,0x997850,0,.27,-2.6,6.75,.50,4.80);
- box(root,0x836543,0,.58,-3.35,6.4,.43,3.10);
- for(const x of [-2.05,2.05]){
-  box(root,0x76533e,x,1.31,-3.51,1.34,1.82,.76);
-  box(root,0xb49b6a,x,2.06,-3.35,1.50,.22,.85);
-  box(root,0x69513e,x,.50,-3.09,1.35,.26,1.1);
+ box(g,0xd3b379,0,2.85,-.37,width+.16,.20,.29);
+ for(let n=0;n<5;n++){
+  const t=n/4;
+  const spike=new THREE.Mesh(new THREE.ConeGeometry(.14,.32,5),mat(0xd4b16f));
+  spike.position.set((t-.5)*(width-.36),3.09,-.34);g.add(spike);
  }
- const father=royalFigure(root,-2.05,-3.25,'king',false);
- const mother=royalFigure(root,2.05,-3.25,'queen',false);
- const faun=buildFaun(root,4.78,.08,-1.83);
- faun.scale.setScalar(.79);faun.rotation.y=.48;
- for(let i=0;i<6;i++){
-  const torch=stone(root,0xb28b56,-5.2+i*2.1,2.54,-4.2,.14);
-  torch.material=new THREE.MeshBasicMaterial({color:0xffd29a});
+ if(central){
+  const crest=stone(g,0xe7c992,0,2.44,-.20,.25,0);
+  crest.scale.set(.9,1.28,.40);
+  // The centre throne is intentionally EMPTY: Ofelia's rightful place.
+  const smallStep=box(g,0xdec08c,0,-.18,.98,1.66,.21,.82);
  }
- const light=new THREE.AmbientLight(0xffd59c,.45);root.add(light);
- return {father,mother,faun,surface,floor,light};
+ return g;
+}
+export function royalHall(root){
+ const floor=box(root,0x423733,0,-.49,-.55,32.5,.94,25.25);
+ const surface=box(root,0x846f58,0,.012,-.55,32.04,.085,24.76);
+ for(let i=0;i<16;i++)for(let k=0;k<12;k++){
+  const x=-14.97+i*2.0,z=-11.8+k*2.03;
+  const tile=box(root,(i+k)%4===0?0xb59a73:(i+k)%3===0?0x9a836a:0xa58d6d,
+   x,.068,z,1.96,.035,1.97,false);
+  tile.receiveShadow=true;
+ }
+ // The central runner recedes into the throne dais, visually extending
+ // the royal court far beyond the protagonist instead of ending at her feet.
+ box(root,0x5a3842,0,.105,1.85,3.55,.035,15.9,false);
+ for(const x of [-1.86,1.86])
+  box(root,0xc39d70,x,.135,1.85,.11,.045,15.88,false);
+ for(let k=0;k<10;k++)
+  box(root,0xac8f73,0,.14,-5.3+k*1.55,1.0,.025,.035,false);
+ // Deep raised ceremonial platform, four real risers.
+ const podium=[];
+ for(const [height,depth,width,z,color] of [
+  [.28,8.0,19.0,-7.43,0x776044],
+  [.55,7.0,17.5,-7.75,0x9e7951],
+  [.83,5.7,16.2,-8.13,0xbb986a],
+  [1.10,4.3,14.5,-8.53,0x7d5f48]
+ ]){
+  podium.push(box(root,color,0,height/2+.12,z,width,height,depth));
+  box(root,0xddb77e,0,height+.19,z+depth/2,width,.07,.11,false);
+ }
+ // High rear wall and an immense stone arch with a shadowed royal alcove.
+ box(root,0x382c30,0,4.40,-12.17,26.0,8.9,.90);
+ box(root,0x655044,0,4.68,-11.66,18.2,7.9,.28);
+ box(root,0x302b30,0,4.62,-11.45,15.75,7.26,.17);
+ box(root,0x886c4e,0,7.85,-11.31,18.3,.25,.28);
+ for(const sign of [-1,1]){
+  box(root,0x85664f,sign*9.30,4.44,-11.23,.52,8.55,.70);
+  box(root,0xb09164,sign*9.30,8.83,-11.23,1.12,.35,.89);
+ }
+ // An arch crown much higher than the three thrones.
+ const archSegments=18;
+ for(let i=0;i<archSegments;i++){
+  const a=Math.PI*i/archSegments,b=Math.PI*(i+1)/archSegments;
+  const x1=Math.cos(a)*8.8,y1=5.95+Math.sin(a)*3.95;
+  const x2=Math.cos(b)*8.8,y2=5.95+Math.sin(b)*3.95;
+  beam(root,i%4===0?0xc7a77b:0x80694e,
+   [x1,y1,-11.05],[x2,y2,-11.05],.36,7);
+ }
+ // Five pairs of tall colonnades, pedestals and rearward shadows.
+ const columns=[];
+ for(const sign of [-1,1])for(const z of [-9.95,-5.6,-1.25,3.1,7.45]){
+  const x=sign*12.20;
+  box(root,0x655344,x,.22,z,1.58,.42,1.53);
+  cyl(root,0xb5a07b,x,3.12,z,.47,.60,5.55,10);
+  cyl(root,0x856d58,x,5.93,z,.64,.51,.34,9);
+  box(root,0xc9ab7b,x,6.21,z,1.58,.34,1.49);
+  for(let q=0;q<7;q++){
+   const a=q/7*Math.PI*2;
+   beam(root,0x806c54,
+    [x+Math.cos(a)*.48,.59,z+Math.sin(a)*.48],
+    [x+Math.cos(a)*.48,5.80,z+Math.sin(a)*.48],.035,4);
+  }
+  columns.push({x,z});
+ }
+ // Open side-gallery arcades. They stay at the back / sides, never
+ // crossing the princess or interfering with actor speech anchors.
+ for(const sign of [-1,1]){
+  for(let i=0;i<4;i++){
+   const z=-8.80+i*4.6;
+   beam(root,0x8e755c,
+    [sign*12.15,6.20,z],
+    [sign*12.15,6.20,z+3.60],.24,6);
+  }
+  // Low-poly crimson banners, dim enough for the gold thrones to stand out.
+  for(const z of [-9.20,-1.20,6.70]){
+   const banner=box(root,0x6a3a42,sign*14.28,4.35,z,.13,2.66,1.26,false);
+   box(root,0xb49873,sign*14.15,5.70,z,.17,.13,1.42,false);
+   stone(root,0xc5a876,sign*14.15,4.37,z,.10,0).scale.y=1.3;
+  }
+ }
+ // Three explicit, physically separate seats: parents flank the RESERVED
+ // empty throne. Their own figures are fixed to the correct seat positions.
+ const throneGroups=[];
+ for(const [x,central] of [[-4.12,false],[0,true],[4.12,false]])
+  throneGroups.push(royalThrone(root,x,-8.78,central));
+ const father=royalFigure(root,-4.12,-8.33,'king',false);
+ const mother=royalFigure(root,4.12,-8.33,'queen',false);
+ const centerThrone=throneGroups[1];
+ const faun=buildFaun(root,7.65,.12,-5.25);
+ faun.scale.setScalar(.82);faun.rotation.y=.34;
+ // A handful of candles/sconces, no glitter or busy particles.
+ for(const sign of [-1,1])for(const z of [-9.6,-3.6,3.1]){
+  const lamp=stone(root,0xdec69a,sign*10.56,3.26,z,.16,0);
+  lamp.material=new THREE.MeshBasicMaterial({color:0xffd6a0});
+  const glow=new THREE.PointLight(0xf7c88f,.45,6.5,2);
+  glow.position.set(sign*10.50,3.50,z);root.add(glow);
+ }
+ const light=new THREE.AmbientLight(0xffd59c,.42);root.add(light);
+ const keyLight=new THREE.PointLight(0xffd6a0,1.15,17,2);
+ keyLight.position.set(0,7.7,-5.7);root.add(keyLight);
+ return {
+  father,mother,faun,centerThrone,throneGroups,podium,columns,
+  surface,floor,light,keyLight,
+  speechAnchors:{father:father.userData.speechAnchor,mother:mother.userData.speechAnchor}
+ };
 }
 export function createFinalScene(canvas,state){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
@@ -244,8 +355,8 @@ export function createFinalScene(canvas,state){
  scene.add(new THREE.HemisphereLight(0xf1f7f0,0x4f5750,2.1));
  const sun=new THREE.DirectionalLight(0xffffff,2.05);
  sun.position.set(-8,19,13);sun.castShadow=true;
- sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-24;
- sun.shadow.camera.right=24;sun.shadow.camera.top=24;sun.shadow.camera.bottom=-24;
+ sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-37;
+ sun.shadow.camera.right=37;sun.shadow.camera.top=37;sun.shadow.camera.bottom=-37;
  sun.shadow.bias=-.0008;scene.add(sun);
  const labyrinth=new THREE.Group();scene.add(labyrinth);
  const maze=buildMaze(labyrinth);
@@ -274,7 +385,8 @@ export function createFinalScene(canvas,state){
   sceneWidth=w;sceneHeight=h;
   const aspect=w/h;
   // Fixed orthographic ISO micro-world, no orbit controls.
-  const portrait=aspect<.79,scale=portrait?10.8:8.6;
+  const portrait=aspect<.79;
+  const scale=state.royalShown?(portrait?14.15:12.35):(portrait?10.8:8.6);
   const view=Math.max(5,scale/zoom);
   camera.left=-view*aspect;camera.right=view*aspect;
   camera.top=view;camera.bottom=-view;
@@ -293,16 +405,17 @@ export function createFinalScene(canvas,state){
   const d=Math.max(0,Math.min(dt,.1));
   const isRoyal=Boolean(state.royalShown);
   if(isRoyal!==wasRoyal){
-   wasRoyal=isRoyal;labyrinth.visible=!isRoyal;royal.visible=isRoyal;
+   wasRoyal=isRoyal;sceneWidth=0; // Recalculate orthographic framing for vast royal court.
+   labyrinth.visible=!isRoyal;royal.visible=isRoyal;
    scene.background=new THREE.Color(isRoyal?
     (state.ending==='offering'?0x33262a:0xe0c79c):0xf8f8f5);
    throne.surface.material.color.setHex(state.ending==='offering'?0x856057:0xb29b75);
    throne.floor.material.color.setHex(state.ending==='offering'?0x423034:0x675340);
   }
   if(isRoyal){
-   hero.body.position.set(0,.13,2.90);hero.body.rotation.y=Math.PI;
+   hero.body.position.set(0,.13,6.00);hero.body.rotation.y=Math.PI;
    baby.visible=false;
-   focus.lerp(temp.set(0,1.50,-1.8),Math.min(1,d*5));
+   focus.lerp(temp.set(0,2.48,-3.40),Math.min(1,d*4.4));
   }else{
    hero.body.position.set(state.player.x,.13,state.player.z);
    hero.body.rotation.y=THREE.MathUtils.lerp(hero.body.rotation.y,
@@ -370,8 +483,22 @@ export function createFinalScene(canvas,state){
   resize();
   renderer.render(scene,camera);
  }
+ // Anchor the speech to the ACTUAL king/queen mesh, using the same
+ // orthographic projection as the renderer (even after resize).
+ function projectRoyalSpeaker(speaker){
+  if(!state.royalShown)return null;
+  const anchor=throne.speechAnchors[speaker];
+  if(!anchor)return null;
+  const projected=anchor.getWorldPosition(new THREE.Vector3()).project(camera);
+  const rect=canvas.getBoundingClientRect();
+  return {
+   x:(projected.x*.5+.5)*rect.width,
+   y:(.5-projected.y*.5)*rect.height,
+   visible:projected.z>=-1&&projected.z<=1
+  };
+ }
  function setZoom(value){zoom=Math.max(.78,Math.min(1.25,value));sceneWidth=0;resize();}
  function dispose(){renderer.dispose();}
  resize();
- return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,setZoom,dispose};
+ return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,projectRoyalSpeaker,setZoom,dispose};
 }
