@@ -173,3 +173,18 @@ test('the Pale Man can catch Ofelia on the chair before she finishes her chalk d
  assert.equal(attemptCatch(state),true);
  assert.equal(state.phase,'caught');
 });
+
+test('ceiling drawing UI does not obscure its actual 3D chair and trapdoor',()=>{
+ const style=readFileSync(new URL('../src/chapter3-style.css',import.meta.url),'utf8');
+ const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
+ assert.ok(style.includes('.pale-game[data-phase="drawing"] .pale-draw'));
+ assert.ok(style.includes('left:auto;right:clamp(14px,3vw,48px)'),
+  'desktop tracing must be on the right rather than covering the center of the canvas');
+ assert.ok(style.includes('bottom:calc(8px + env(safe-area-inset-bottom))'),
+  'mobile tracing must leave visible scene space above the bottom sheet');
+ assert.ok(style.includes('top:auto;'));
+ assert.ok(scene.includes("const verticalTarget=portrait&&state.phase==='drawing'?-2.2"),
+  'mobile world camera must keep stool and overhead roof above the bottom sheet');
+ assert.ok(scene.includes("(portrait?.04:.86)"),
+  'portrait should keep enough room to show both chair and raised hatch');
+});
