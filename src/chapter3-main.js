@@ -15,11 +15,11 @@ document.body.innerHTML=[
    '<p>席间的食物，究竟是为谁准备的？</p></div>',
    '<div class="pale-tools"><button id="pale-zoom-out" title="缩小">−</button><button id="pale-zoom-in" title="放大">+</button><button id="pale-sound" title="音效">♫</button><button id="pale-reset" title="重开">↻</button></div></header>',
   '<aside class="pale-side"><small>THE THIRD TRIAL</small><h2 id="pale-objective">穿过古老石廊</h2><p id="pale-description">魔法粉笔门在身后，前方还有一段很长的甬道。</p>',
-   '<div class="pale-danger" id="pale-danger"><span></span><div><b>它苏醒了</b><small>别让它靠近，去墙边画出逃生门。</small></div></div>',
+   '<div class="pale-danger" id="pale-danger"><span></span><div><b>它苏醒了</b><small>别让它靠近！回到椅子旁，在天花板画出逃生门。</small></div></div>',
    '<div class="pale-timer" id="pale-timer"></div>',
   '</aside>',
   '<div id="pale-tip" class="pale-tip" role="status" aria-live="polite"></div>',
-  '<div id="pale-escape-guide" class="pale-escape-guide" aria-live="polite"><strong>← 原路冲回粉笔门</strong><div class="pale-escape-track"><span id="pale-escape-fill"></span></div><small id="pale-escape-distance">沿长廊撤退</small></div>',
+  '<div id="pale-escape-guide" class="pale-escape-guide" aria-live="polite"><strong>← 原路冲回旧木椅</strong><div class="pale-escape-track"><span id="pale-escape-fill"></span></div><small id="pale-escape-distance">沿长廊撤退</small></div>',
   '<div class="pale-bottom"><div>WASD / 方向键移动　·　E 交互　·　鼠标点击地面寻路</div><a href="?stage=2">← 巨树之腹</a></div>',
   '<div class="pale-touch"><div id="pale-pad" class="pale-pad" aria-label="虚拟方向摇杆" role="group"><div id="pale-knob" class="pale-knob"></div></div>',
    '<button id="pale-act" class="pale-act" type="button">✦<small>交互</small></button></div>',
@@ -28,13 +28,13 @@ document.body.innerHTML=[
   '<div id="pale-shoe-clue" class="pale-shoe-clue" role="status" aria-live="polite"><small>环境线索 · 遗失的鞋子</small><p>这些都是小孩的鞋子……</p></div>',
   '<div id="pale-death-vignette" class="pale-death-vignette" aria-hidden="true"></div>',
   '<div id="pale-draw" class="pale-draw hidden"><div class="draw-frame">',
-   '<div class="draw-heading"><div><small>CHALK GATE · DOOR</small><strong>画出逃生门</strong><p>从左下角开始，向上、向右、向下连续描画。怪物不会停下。</p></div>',
+   '<div class="draw-heading"><div><small>CHALK GATE · DOOR</small><strong>在天花板画出出口</strong><p>踩在摇晃的木椅上！沿四条边完成粉笔门，苍白怪还在逼近。</p></div>',
    '<button id="pale-draw-close" type="button" aria-label="关闭画门操作">×</button></div>',
-   '<canvas id="pale-chalk" width="300" height="360" aria-label="拖动画出一扇倒 U 形粉笔门"></canvas>',
+   '<canvas id="pale-chalk" width="300" height="360" aria-label="用粉笔在天花板描画完整四边形出口"></canvas>',
    '<div class="draw-meter"><span id="draw-percent">0%</span><span>粉笔描画进度</span></div></div></div>',
   '<section id="pale-intro" class="pale-overlay" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✦　◈　✦</div><small>CHAPTER III · PALE MAN</small><h2>苍白盛宴</h2>',
-   '<p>粉笔门在你身后，古老石廊通向一场盛宴。<br>桌尾的守卫安静地坐着，仿佛早已死去。<br>如果惊醒它，你必须原路逃回来。</p>',
+   '<p>魔法入口旁留下了一把旧木椅，长石廊通向盛宴。<br>桌尾的守卫安静地坐着，仿佛早已死去。<br>如果惊醒它，你必须原路逃回来。</p>',
    '<button id="pale-start" class="pale-primary" type="button">踏入石廊 ↗</button><footer>LONG PURSUIT · BANQUET & CHALK ESCAPE</footer>',
   '</div></section>',
   '<section id="pale-death" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
@@ -79,7 +79,7 @@ function tell(message,duration=3200){
 }
 function allowedMovement(){
  return started&&state.phase!=='awakening'&&
-  !['drawing','caught','escape','escaped'].includes(state.phase);
+  !['climbing','drawing','caught','escape','escaped'].includes(state.phase);
 }
 function updateHUD(){
  const phase=state.phase;
@@ -95,23 +95,25 @@ function updateHUD(){
   title='它在苏醒';desc='两只掌心的眼睛正缓缓升到额头的位置。';
  }else if(phase==='chase'){
   title=inPassage?'不要停！沿石廊继续跑':'绕开长桌！逃回石廊';
-  desc=state.sealed?'粉笔门已经关闭。冲回入口，在怪物到达前重新画开它。':
-   '身后的粉笔门正在消失，沿来路跑回原来的入口！';
+  desc=state.sealed?'入口消失了！跑回旧木椅，踩上去画天花板出口。':
+   '入口正在关闭！沿来路返回椅子，准备画头顶的门。';
+ }else if(phase==='climbing'){
+  title='爬上木椅！';desc='奥菲莉娅踩上摇晃的椅子，伸手够向头顶的天花板。';
  }else if(phase==='drawing'){
-  title='门已关闭，快画！';desc='从左下角向上、向右、向下描画门框。怪物正在追来。';
+  title='在天花板画门！';desc='从左下角沿四条边描完整个四边形。怪物还在逼近。';
  }else if(phase==='caught'){
   title='被苍白怪抓住了';desc='它伸出手把奥菲莉娅提到面前……';
  }else if(phase==='escape'||phase==='escaped'){
-  title='粉笔门已开启';desc='甬道尽头的门重新撕开，赶在它伸手之前逃出去。';
+  title='天花板出口打开了';desc='奥菲莉娅正在从椅子上爬向头顶洞口。';
  }
  $('pale-objective').textContent=title;
  $('pale-description').textContent=desc;
  $('pale-game').dataset.phase=phase;
- const chased=['chase','drawing','caught'].includes(phase);
+ const chased=['chase','climbing','drawing','caught'].includes(phase);
  $('pale-danger').classList.toggle('active',chased);
  $('pale-escape-guide').classList.toggle('active',chased);
  const remaining=Math.max(0,Math.ceil(SEAL_SECONDS-state.chaseTime));
- $('pale-timer').textContent=['chase','drawing'].includes(phase)?
+ $('pale-timer').textContent=['chase','climbing','drawing'].includes(phase)?
    state.sealed?'⌛ 粉笔门已关闭 · 必须重新描画':'⌛ 沙漏：'+remaining+' 秒后入口消失':'';
  const span=Math.abs(FOOD.x-DOOR.x);
  const progress=Math.max(0,Math.min(1,(FOOD.x-state.player.x)/span));
@@ -123,15 +125,15 @@ function updateHUD(){
  const suggest=phase==='invitation'||canDraw;
  $('pale-suggest').classList.toggle('show',suggest);
  $('pale-suggest-text').textContent=canEat?'✦ 葡萄就在眼前：吃一颗':
-  canDraw?'✦ 粉笔门已关闭：快画出新门':
+  canDraw?'✦ 木椅到了：踩上去画头顶的出口':
   inPassage?'✦ 沿石廊穿过拱门，去宴会长桌':'✦ 长桌就在前方。走到葡萄果盘';
- $('pale-suggest-act').textContent=canEat?'吃一口 E':canDraw?'画门 E':'前往盛宴 ↗';
+ $('pale-suggest-act').textContent=canEat?'吃一口 E':canDraw?'爬椅子 E':'前往盛宴 ↗';
  $('pale-act').innerHTML=phase==='drawing'?'✎<small>画门中</small>':
-  canEat?'🍇<small>吃一口</small>':canDraw?'✎<small>画门</small>':'✦<small>交互</small>';
+  canEat?'🍇<small>吃一口</small>':canDraw?'🪑<small>爬椅子</small>':'✦<small>交互</small>';
 }
 function start(){
  if(started)return;started=true;$('pale-intro').classList.add('hidden');
- note(392,.25);tell('你从粉笔门进入长甬道。沿石廊向右前方前进，走到尽头的盛宴。',5300);
+ note(392,.25);tell('你从粉笔门进入长甬道。走过石廊前往盛宴。回来时记住入口旁的旧木椅。',5300);
  updateHUD();
 }
 function setActionTarget(target,action=null){
@@ -153,12 +155,14 @@ function doEat(){
  updateHUD();
 }
 function beginChalk(){
- if(state.phase==='drawing')return;
- if(!startDrawing(state)){setActionTarget(DOOR,'draw');tell('还没抵达出口！沿宴会厅入口原路返回长石廊，直到尽头的粉笔门。');return;}
- navPath=[];navAction=null;keyboard.clear();
- $('pale-draw').classList.remove('hidden');
- drawPrevious=null;drawPointer=null;
- paintChalk();note(590,.15,'triangle',.035);updateHUD();
+ if(state.phase==='climbing'||state.phase==='drawing')return;
+ if(!startDrawing(state)){
+  setActionTarget(DOOR,'draw');
+  tell('先沿长石廊跑回入口的木椅！');return;
+ }
+ navPath=[];navAction=null;keyboard.clear();drawPrevious=null;drawPointer=null;
+ tell('奥菲莉娅踩上旧木椅，摇晃着伸手够向天花板……',1550);
+ note(590,.15,'triangle',.035);updateHUD();
 }
 function interact(){
  if(!started)return;
@@ -187,9 +191,9 @@ function chalkSample(a,b){
   drawPointer=null;drawPrevious=null;
   $('pale-draw').classList.add('hidden');
   keyboard.clear();navPath=[];
-  chime();tell('粉笔划开了石墙！逃脱成功。',4000);
+  chime();tell('天花板裂开了！快爬进洞口！',4000);
   $('pale-cinematic').classList.add('active');
-  $('pale-cinematic').textContent='门后的光照亮了石厅。';
+  $('pale-cinematic').textContent='奥菲莉娅抓住石沿，努力向上爬出洞口。';
   updateHUD();
  }
 }
@@ -197,7 +201,7 @@ function paintChalk(){
  const canvas=$('pale-chalk'),ctx=canvas.getContext('2d');
  const W=300,H=360;
  ctx.clearRect(0,0,W,H);
- ctx.fillStyle='#2c3335';ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#53574f';ctx.fillRect(0,0,W,H);
  // Ancient wall scratches, strictly decorative.
  ctx.strokeStyle='rgba(198,191,159,.09)';ctx.lineWidth=2;
  for(let n=0;n<13;n++){
@@ -212,15 +216,15 @@ function paintChalk(){
  ctx.lineWidth=10;ctx.shadowBlur=9;ctx.shadowColor='rgba(245,222,156,.50)';
  ctx.strokeStyle='#eee6cf';ctx.beginPath();
  ctx.moveTo(DOOR_POLYLINE[0].x*W,DOOR_POLYLINE[0].y*H);
- const progress=state.doorProgress*3;
- for(let i=0;i<3;i++){
+ const progress=state.doorProgress*(DOOR_POLYLINE.length-1);
+ for(let i=0;i<DOOR_POLYLINE.length-1;i++){
   if(progress<=i)break;
   const a=DOOR_POLYLINE[i],b=DOOR_POLYLINE[i+1],f=Math.min(1,progress-i);
   ctx.lineTo((a.x+(b.x-a.x)*f)*W,(a.y+(b.y-a.y)*f)*H);
  }
  ctx.stroke();ctx.shadowBlur=0;
- const current=DOOR_POLYLINE[Math.min(2,state.doorSegment)];
- const next=DOOR_POLYLINE[Math.min(3,state.doorSegment+1)];
+ const current=DOOR_POLYLINE[Math.min(DOOR_POLYLINE.length-2,state.doorSegment)];
+ const next=DOOR_POLYLINE[Math.min(DOOR_POLYLINE.length-1,state.doorSegment+1)];
  const t=state.segmentT;
  ctx.beginPath();ctx.arc((current.x+(next.x-current.x)*t)*W,(current.y+(next.y-current.y)*t)*H,10,0,Math.PI*2);
  ctx.fillStyle='#d5b578';ctx.fill();
@@ -338,8 +342,8 @@ function driveHunter(dt){
  // QA-only long-passage visual inspection does not immediately end in death.
  // Normal play still keeps pursuit, catching and drawing hazards intact.
  if(QA_RETURN_PREVIEW&&state.phase==='chase')return;
- if(QA_CHALK_PREVIEW&&state.phase==='drawing')return;
- if(!['chase','drawing'].includes(state.phase))return;
+ if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;
+ if(!['chase','climbing','drawing'].includes(state.phase))return;
  huntTime-=dt;
  if(huntTime<=0||!huntPath.length){
   huntPath=huntRoute(state.monster,state.player,.28);
@@ -370,6 +374,11 @@ function updateTransition(){
    $('pale-cinematic').classList.remove('active');
    tell('快跑！先绕过长桌，再穿过整条石廊，跑回最初的粉笔门！',4400);
    note(180,.36,'sawtooth',.027);
+  }
+  if(lastPhase==='drawing'){
+   $('pale-draw').classList.remove('hidden');
+   drawPointer=null;drawPrevious=null;
+   paintChalk();note(625,.16,'triangle',.03);
   }
   if(lastPhase==='awakening')updateHUD();
  }
@@ -424,7 +433,7 @@ function frame(now){
  }else{
   $('pale-death-vignette').style.opacity='0';
  }
- if(state.phase==='escape'&&state.winTime>1.50&&!endingShown){
+ if(state.phase==='escape'&&state.winTime>2.55&&!endingShown){
   endingShown=true;state.phase='escaped';
   $('pale-win').classList.remove('hidden');chime();
  }

@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import {HALL,CORRIDOR,TABLE,START,ENTRANCE,FOOD,DOOR,MONSTER_START,
  zone,walkable,huntRoute,moveActor,newBanquet,eat,tickBanquet,SEAL_SECONDS,
  PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,atDoor,startDrawing,traceChalk,
- DOOR_POLYLINE} from '../src/chapter3-logic.js';
-import {PALE_UPPER_FACE_Y,palmEyePosition} from '../src/chapter3-scene.js';
+ attemptCatch,DOOR_POLYLINE} from '../src/chapter3-logic.js';
+import {PALE_UPPER_FACE_Y,palmEyePosition,chalkPortal} from '../src/chapter3-scene.js';
 import {createProcessionalPassage,enrichForbiddenFeast} from '../src/chapter3-passage.js';
 
 test('long processional corridor has real dimensions and joins the banquet arch',()=>{
@@ -69,8 +69,10 @@ test('hourglass marks the sealing of the original exit while chalk escape stays 
  assert.equal(s.sealed,true,'original doorway must close during the long chase');
  s.player={...DOOR};
  assert.equal(atDoor(s),true);
- assert.equal(startDrawing(s),true,'player can redraw the closed portal');
- for(let i=0;i<3;i++){
+ assert.equal(startDrawing(s),true,'player can climb chair and redraw the ceiling portal');
+ for(let n=0;n<10;n++)tickBanquet(s,.1);
+ assert.equal(s.phase,'drawing');
+ for(let i=0;i<DOOR_POLYLINE.length-1;i++){
   const a=DOOR_POLYLINE[i],b=DOOR_POLYLINE[i+1];
   for(let k=0;k<=100;k++){
    const t=k/100;
@@ -109,7 +111,7 @@ test('desktop and mobile both use follow camera and route signage is accessible'
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(scene.includes("const hall=banquetHall(scene),passage=createProcessionalPassage(scene)"));
  assert.ok(scene.includes("const lead=zone(state.player)==='passage'"));
- assert.ok(scene.includes("const cx=DOOR.x,z=-1.72"));
+ assert.ok(scene.includes("const cx=DOOR.x,oldX=-31.62"));
  assert.ok(main.includes('id="pale-escape-guide"'));
  assert.ok(main.includes('previewReturn'));
  assert.ok(main.includes('SEAL_SECONDS-state.chaseTime'));
@@ -120,5 +122,54 @@ test('safe corridor preview is isolated to explicit QA URL only',()=>{
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(main.includes("const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn')"));
  assert.ok(main.includes("if(QA_RETURN_PREVIEW&&state.phase==='chase')return;"));
- assert.ok(main.includes("if(!['chase','drawing'].includes(state.phase))return;"));
+ assert.ok(main.includes("if(!['chase','climbing','drawing'].includes(state.phase))return;"));
+});
+
+test('closed original doorway is flush wall chalk; actual exit is a raised ceiling hatch with wooden chair',()=>{
+ const scene=new THREE.Scene();
+ const hatch=chalkPortal(scene);
+ assert.ok(hatch.roof.position.y>=3.7,'the new hatch is above the player, not in a side wall');
+ assert.ok(hatch.stool.position.z<-.6,'wooden chair should sit beside the rear wall');
+ assert.equal(hatch.lines.length,4,'full four-sided chalk rectangle in ceiling');
+ assert.ok(hatch.stool.children.length>=8,'seat, legs, backrest and bracing are modelled');
+ assert.equal(hatch.target.material.opacity,0,'the raycast target must be invisible');
+ assert.equal(hatch.darkOpening.parent,hatch.roof,
+  'the exit belongs to the elevated ceiling, not a freestanding wall panel');
+ assert.ok(walkable(DOOR,.25),'approach interaction point stays navigable');
+ assert.equal(walkable({x:DOOR.x,z:-.92},.25),false,'the chair body cannot be walked through');
+});
+
+test('film-like escape: climb stool, trace four sides on ceiling, then pull up through opening',()=>{
+ const scene=new THREE.Scene(),hatch=chalkPortal(scene);
+ const state=newBanquet();state.phase='chase';state.player={...DOOR};
+ assert.ok(startDrawing(state));
+ assert.equal(state.phase,'climbing');
+ hatch.update(0,.1,state);
+ assert.equal(hatch.darkOpening.visible,false);
+ for(let i=0;i<10;i++)tickBanquet(state,.10);
+ assert.equal(state.phase,'drawing');
+ assert.equal(state.doorProgress,0);
+ for(let i=0;i<DOOR_POLYLINE.length-1;i++){
+  const start=DOOR_POLYLINE[i],end=DOOR_POLYLINE[i+1];
+  for(let n=0;n<=100;n++){
+   const t=n/100;
+   traceChalk(state,start.x+(end.x-start.x)*t,start.y+(end.y-start.y)*t);
+  }
+ }
+ assert.equal(state.phase,'escape','a full rectangle is required to open the trapdoor');
+ assert.equal(state.doorProgress,1);
+ hatch.update(state.doorProgress,2,state);
+ assert.equal(hatch.darkOpening.visible,true,'escape is in the horizontal roof');
+ assert.ok(hatch.lines.every(segment=>segment.visible));
+ for(let i=0;i<20;i++)tickBanquet(state,.10);
+ hatch.update(1,3,state);
+ assert.equal(hatch.ceiling.material.opacity,0,'hatch cover disappears during actual climb');
+});
+
+test('the Pale Man can catch Ofelia on the chair before she finishes her chalk drawing',()=>{
+ const state=newBanquet();state.phase='chase';state.player={...DOOR};
+ assert.equal(startDrawing(state),true);
+ state.monster={...state.player};
+ assert.equal(attemptCatch(state),true);
+ assert.equal(state.phase,'caught');
 });

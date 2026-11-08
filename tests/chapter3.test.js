@@ -81,6 +81,8 @@ test('drawing requires chase and the player to reach the chalk-marked wall',()=>
  s.player={...DOOR};
  assert.equal(atDoor(s),true);
  assert.equal(startDrawing(s),true);
+ assert.equal(s.phase,'climbing');
+ for(let i=0;i<10;i++)tickBanquet(s,.1);
  assert.equal(s.phase,'drawing');
  assert.equal(cancelDrawing(s),true);
  assert.equal(s.phase,'chase');
@@ -89,9 +91,10 @@ test('drawing requires chase and the player to reach the chalk-marked wall',()=>
 
 test('door must be physically traced from left-bottom to left-top, across and down',()=>{
  const s=newBanquet();s.phase='chase';s.player={...DOOR};startDrawing(s);
+ for(let i=0;i<10;i++)tickBanquet(s,.1);
  assert.equal(traceChalk(s,.83,.84),false,'one tap at end cannot solve');
  assert.equal(s.doorProgress,0);
- for(let k=0;k<3;k++){
+ for(let k=0;k<DOOR_POLYLINE.length-1;k++){
   const a=DOOR_POLYLINE[k],b=DOOR_POLYLINE[k+1];
   for(let i=0;i<=100;i++){
    const t=i/100;
@@ -144,6 +147,6 @@ test('awakening zoom is cinematic and chalk QA does not alter normal chase',()=>
  assert.ok(scene.includes("const cinematicZoom=1+Math.max(0,reveal)"));
  assert.ok(scene.includes("state.awakeTime/AWAKEN_SECONDS"));
  assert.ok(main.includes("const QA_CHALK_PREVIEW="));
- assert.ok(main.includes("if(QA_CHALK_PREVIEW&&state.phase==='drawing')return;"));
- assert.ok(main.includes("if(!['chase','drawing'].includes(state.phase))return;"));
+ assert.ok(main.includes("if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;"));
+ assert.ok(main.includes("if(!['chase','climbing','drawing'].includes(state.phase))return;"));
 });

@@ -6,19 +6,25 @@ export const TABLE=Object.freeze({minX:-4.35,maxX:5.25,minZ:-1.13,maxZ:1.13});
 export const ENTRANCE=Object.freeze({x:-9.02,z:0});
 export const START=Object.freeze({x:-30.95,z:.06});
 export const FOOD=Object.freeze({x:-1.45,z:2.35});
-export const DOOR=Object.freeze({x:-31.62,z:0});
+export const DOOR=Object.freeze({x:-29.65,z:0});
+export const CHAIR=Object.freeze({minX:-30.10,maxX:-29.20,minZ:-1.39,maxZ:-.47});
 export const MONSTER_START=Object.freeze({x:6.78,z:.12});
 export const PLAYER_SPEED=4.6;
 export const HUNTER_SPEED=4.15;
 export const AWAKEN_SECONDS=3.35;
 export const CATCH_RADIUS=.76;
 export const DOOR_RADIUS=1.35;
+export const CHAIR_CLIMB_SECONDS=.90;
+export const ESCAPE_CLIMB_SECONDS=2.45;
 // An hourglass warns that the *original* passage is sealing shut; the player
 // always escapes by returning and drawing a new chalk doorway, as in the film.
 export const SEAL_SECONDS=7.8;
+// The final chalk passage is a full RECTANGLE on the CEILING, not a
+// freestanding wall-shaped panel. Trace all four sides with the mouse/finger.
 export const DOOR_POLYLINE=Object.freeze([
- Object.freeze({x:.17,y:.84}),Object.freeze({x:.17,y:.16}),
- Object.freeze({x:.83,y:.16}),Object.freeze({x:.83,y:.84})
+ Object.freeze({x:.18,y:.82}),Object.freeze({x:.18,y:.18}),
+ Object.freeze({x:.82,y:.18}),Object.freeze({x:.82,y:.82}),
+ Object.freeze({x:.18,y:.82})
 ]);
 const EPS=.00001;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -36,6 +42,8 @@ export function walkable(p,radius=.25){
   p.z>CORRIDOR.minZ+radius&&p.z<CORRIDOR.maxZ-radius;
  if(!(inHall||inPassage))return false;
  if(inRect(p,TABLE,radius+.07))return false;
+ // Solid chair: walk beside it, then climb through the scripted interaction.
+ if(inRect(p,CHAIR,radius*.55))return false;
  return true;
 }
 export function moveActor(point,xAxis,zAxis,dt,speed=PLAYER_SPEED,radius=.25){
@@ -56,7 +64,7 @@ export function newBanquet(){
  return {phase:'invitation',player:{...START},monster:{...MONSTER_START},
   eaten:false,awakeTime:0,chaseTime:0,doorProgress:0,doorSegment:0,
   segmentT:0,deathTime:0,winTime:0,crumbleTime:0,hasDragged:false,
-  sealed:false,distanceEscaped:0};
+  sealed:false,distanceEscaped:0,climbTime:0};
 }
 export function eat(state){
  if(state.phase!=='invitation'||distance(state.player,FOOD)>1.48)return false;
@@ -65,16 +73,21 @@ export function eat(state){
 export function atDoor(state){return distance(state.player,DOOR)<DOOR_RADIUS;}
 export function startDrawing(state){
  if(state.phase!=='chase'||!atDoor(state))return false;
- state.phase='drawing';state.doorProgress=0;state.doorSegment=0;
+ // First step UP onto the chair, then reach the ceiling to draw the hatch.
+ state.phase='climbing';state.climbTime=0;
+ state.doorProgress=0;state.doorSegment=0;
  state.segmentT=0;state.hasDragged=false;return true;
 }
 export function cancelDrawing(state){
- if(state.phase==='drawing'){state.phase='chase';return true;}
+ if(state.phase==='drawing'||state.phase==='climbing'){
+  state.phase='chase';state.climbTime=0;return true;
+ }
  return false;
 }
 export function traceChalk(state,x,y){
  if(state.phase!=='drawing')return false;
  const seg=state.doorSegment,a=DOOR_POLYLINE[seg],b=DOOR_POLYLINE[seg+1];
+ const total=DOOR_POLYLINE.length-1;
  if(!a||!b)return false;
  const vx=b.x-a.x,vy=b.y-a.y;
  const t=clamp(((x-a.x)*vx+(y-a.y)*vy)/(vx*vx+vy*vy),0,1);
@@ -82,9 +95,9 @@ export function traceChalk(state,x,y){
  if(!near||t<state.segmentT-.11||t>state.segmentT+.24)return false;
  if(t>state.segmentT+.005)state.hasDragged=true;
  state.segmentT=Math.max(t,state.segmentT);
- state.doorProgress=(seg+state.segmentT)/3;
+ state.doorProgress=(seg+state.segmentT)/total;
  if(state.segmentT>=.95){
-  if(seg===2){state.phase='escape';state.doorProgress=1;state.winTime=0;}
+  if(seg===total-1){state.phase='escape';state.doorProgress=1;state.winTime=0;}
   else {state.doorSegment++;state.segmentT=0;}
  }
  return true;
@@ -94,15 +107,19 @@ export function tickBanquet(state,dt){
  if(state.phase==='awakening'){
   state.awakeTime+=d;
   if(state.awakeTime>=AWAKEN_SECONDS){state.phase='chase';state.chaseTime=0;}
- }else if(state.phase==='chase'||state.phase==='drawing'){
+ }else if(['chase','climbing','drawing'].includes(state.phase)){
   state.chaseTime+=d;
   if(state.chaseTime>=SEAL_SECONDS)state.sealed=true;
+  if(state.phase==='climbing'){
+   state.climbTime+=d;
+   if(state.climbTime>=CHAIR_CLIMB_SECONDS){state.phase='drawing';state.climbTime=CHAIR_CLIMB_SECONDS;}
+  }
  }else if(state.phase==='caught')state.deathTime+=d;
  else if(state.phase==='escape')state.winTime+=d;
  return state.phase;
 }
 export function attemptCatch(state){
- if(!['chase','drawing'].includes(state.phase))return false;
+ if(!['chase','climbing','drawing'].includes(state.phase))return false;
  if(distance(state.player,state.monster)>CATCH_RADIUS)return false;
  state.phase='caught';state.deathTime=0;return true;
 }
