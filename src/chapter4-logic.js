@@ -2,13 +2,19 @@
 // Canonical route = refuse the faun, Vidal takes the infant and shoots Ofelia;
 // the girl's own blood then unlocks the royal vision. The alternative route
 // (giving innocent blood) is an explicitly original, non-film what-if ending.
+import {blockedByFinalMaze} from './chapter4-maze-layout.js';
 export const CHAPTER4_TIME_LIMIT=62;
 export const CHAPTER4_SPEED=3.75;
 export const CHAPTER4_RADIUS=12.7;
-export const FINAL_ALTAR=Object.freeze({x:1.1,z:-.65});
+export const FINAL_ALTAR=Object.freeze({x:-1.6,z:0});
 export const FINAL_START=Object.freeze({x:-9.65,z:7.2});
 export const VIDAL_START=Object.freeze({x:-11.8,z:8.45});
-export const FINAL_CHOICE_RADIUS=2.15;
+export const FINAL_CHOICE_RADIUS=1.75;
+export const FINAL_DIALOGUE=Object.freeze([
+ Object.freeze({speaker:'潘神',text:'公主殿下，你终于来了。地底王国的门就在这口古井下面。'}),
+ Object.freeze({speaker:'潘神',text:'最后一项试炼，只需要一滴无辜之血。把你怀里的弟弟交给我。'}),
+ Object.freeze({speaker:'奥菲莉娅',text:'你说的是……弟弟的血？如果我不答应呢？'})
+]);
 export const FINAL_CINEMATIC=Object.freeze({mercy:15.35,offering:14.20});
 export const FINAL_OUTCOMES=Object.freeze({
  mercy:Object.freeze({
@@ -30,17 +36,27 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function walkableFinal(p,radius=.28){
  return Number.isFinite(p.x)&&Number.isFinite(p.z)&&
-  Math.hypot(p.x+.2,p.z-.2)<=CHAPTER4_RADIUS-radius;
+  Math.hypot(p.x+.2,p.z-.2)<=CHAPTER4_RADIUS-radius&&
+  !blockedByFinalMaze(p,radius);
 }
 export function newFinalTrial(){
  return {phase:'approach',player:{...FINAL_START},vidal:{...VIDAL_START},
   timeLeft:CHAPTER4_TIME_LIMIT,elapsed:0,cinematicTime:0,ending:null,
-  timeOut:false,foundAltar:false,dialogueShown:false,royalShown:false,
+  timeOut:false,foundAltar:false,dialogueShown:false,dialogueStep:0,royalShown:false,
   brotherVisible:true,gunFlash:false};
 }
 export function nearFaun(state){return distance(state.player,FINAL_ALTAR)<=FINAL_CHOICE_RADIUS;}
+export function advanceFaunDialogue(state){
+ if(state.phase!=='dialogue'||state.timeLeft<=0)return false;
+ state.dialogueStep++;
+ if(state.dialogueStep>=FINAL_DIALOGUE.length){
+  state.phase='decision';
+  state.dialogueStep=FINAL_DIALOGUE.length;
+ }
+ return true;
+}
 export function decideFinal(state,decision){
- if(!['offering','mercy'].includes(decision)||!['approach','decision'].includes(state.phase))return false;
+ if(!['offering','mercy'].includes(decision)||state.phase!=='decision')return false;
  if(!nearFaun(state)||state.timeLeft<=0)return false;
  state.ending=decision;
  state.phase='cinematic';
@@ -51,10 +67,12 @@ export function decideFinal(state,decision){
 export function updateFinalTrial(state,dt){
  const d=clamp(Number(dt)||0,0,.1);
  if(state.phase==='done')return state;
- if(['approach','decision'].includes(state.phase)){
+ if(['approach','dialogue','decision'].includes(state.phase)){
   state.elapsed+=d;state.timeLeft=Math.max(0,state.timeLeft-d);
-  if(nearFaun(state)){state.phase='decision';state.foundAltar=true;}
-  else state.phase='approach';
+  if(state.phase==='approach'&&nearFaun(state)){
+   state.phase='dialogue';state.foundAltar=true;
+   state.dialogueStep=0;state.dialogueShown=true;
+  }
   // Clock running out means the captain catches up. He takes the infant
   // and the story follows Ofelia's refusal (no harm to the baby).
   if(state.timeLeft<=0){
@@ -77,7 +95,7 @@ export function updateFinalTrial(state,dt){
  return state;
 }
 export function moveFinalPlayer(state,axisX,axisZ,dt){
- if(!['approach','decision'].includes(state.phase))return 0;
+ if(state.phase!=='approach')return 0;
  const len=Math.hypot(axisX,axisZ);
  if(len<1e-5)return 0;
  const step=CHAPTER4_SPEED*clamp(dt,0,.085);

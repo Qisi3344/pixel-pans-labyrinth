@@ -1,6 +1,6 @@
 import './chapter4-style.css';
 import {newFinalTrial,updateFinalTrial,moveFinalPlayer,walkableFinal,
- nearFaun,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
+ nearFaun,advanceFaunDialogue,FINAL_DIALOGUE,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
  finalClockLabel,distance} from './chapter4-logic.js';
 import {createFinalScene} from './chapter4-scene.js';
 import {activeRoyalDialogue} from './chapter4-royal-dialogue.js';
@@ -28,6 +28,14 @@ document.body.innerHTML=`
    <span id="final-guide-text">石井在迷宫的中央。潘神正在等你。</span>
    <button id="final-guide-action" type="button">前往石井 ↗</button>
   </div>
+  <section class="final-faun-dialogue hidden" id="final-faun-dialogue" aria-label="潘神在石井旁说话" aria-live="polite">
+   <div class="final-faun-label" id="final-faun-speaker">✧ 潘神</div>
+   <p id="final-faun-text"></p>
+   <div class="final-faun-actions">
+    <small>维达尔仍在靠近，时间不会暂停。</small>
+    <button type="button" id="final-faun-next">继续 <span>E ↗</span></button>
+   </div>
+  </section>
   <section class="final-choice hidden" id="final-choice" aria-label="终极试炼的选择">
    <small>THE THIRD TASK · 最后的考验</small>
    <h2>只要一滴无辜之血</h2>
@@ -100,9 +108,10 @@ const showMessage=t=>{
  $('final-message').classList.remove('hidden');
 };
 const goAltar=()=>{
- if(!started||!['approach','decision'].includes(state.phase))return;
+ if(!started)return;
+ if(state.phase==='dialogue'){nextFaunLine();return;}
+ if(state.phase!=='approach')return;
  moveTo={...FINAL_ALTAR};
- if(nearFaun(state))$('final-offering').focus({preventScroll:true});
 };
 function tone(freq=430,duration=.18,type='sine'){
  if(!sound)return;
@@ -128,11 +137,20 @@ function choose(choice){
   ?'奥菲莉娅把弟弟护在怀里。她拒绝了潘神。'
   :'匕首悬在井口上方。一滴无辜之血，换一扇归家的门。');
 }
+function nextFaunLine(){
+ if(!started||state.phase!=='dialogue')return;
+ if(!advanceFaunDialogue(state))return;
+ tone(470,.08,'triangle');
+ updateHud();
+ if(state.phase==='decision')$('final-mercy').focus({preventScroll:true});
+}
+$('final-faun-next').addEventListener('click',nextFaunLine);
 $('final-offering').addEventListener('click',()=>choose('offering'));
 $('final-mercy').addEventListener('click',()=>choose('mercy'));
 $('final-guide-action').addEventListener('click',goAltar);
 $('final-touch-action').addEventListener('click',()=>{
- if(state.phase==='decision')$('final-offering').focus({preventScroll:true});
+ if(state.phase==='dialogue')nextFaunLine();
+ else if(state.phase==='decision')$('final-mercy').focus({preventScroll:true});
  else goAltar();
 });
 $('final-sound').addEventListener('click',()=>{
@@ -180,9 +198,10 @@ document.addEventListener('keydown',e=>{
   return;
  }
  if(!started&&k==='enter'){start();return;}
- if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k))keyboard.add(k);
- if(k==='e'&&started&&!resultShown){
-  if(state.phase==='decision')$('final-mercy').focus({preventScroll:true});
+ if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)&&state.phase==='approach')keyboard.add(k);
+ if((k==='e'||k==='enter')&&started&&!resultShown){
+  if(state.phase==='dialogue')nextFaunLine();
+  else if(state.phase==='decision')$('final-mercy').focus({preventScroll:true});
   else goAltar();
  }
 });
@@ -285,10 +304,18 @@ function updateHud(){
  $('final-clock-numbers').textContent=finalClockLabel(time);
  $('final-clock-fill').style.width=Math.max(0,Math.min(100,time/CHAPTER4_TIME_LIMIT*100))+'%';
  $('final-clock').classList.toggle('warning',time<=18);
- const isChoice=state.phase==='decision';
+ const isChoice=state.phase==='decision',isDialogue=state.phase==='dialogue';
  $('final-choice').classList.toggle('hidden',!started||!isChoice);
- $('final-guide').classList.toggle('hidden',!started||isChoice||['cinematic','done'].includes(state.phase));
- if(isChoice)showMessage('潘神要求用弟弟的血开启地下王国的门。');
+ $('final-faun-dialogue').classList.toggle('hidden',!started||!isDialogue);
+ $('final-guide').classList.toggle('hidden',!started||isChoice||isDialogue||['cinematic','done'].includes(state.phase));
+ if(isDialogue){
+  keyboard.clear();moveTo=null;pad={x:0,z:0};
+  const line=FINAL_DIALOGUE[Math.min(state.dialogueStep,FINAL_DIALOGUE.length-1)];
+  $('final-faun-speaker').textContent=line.speaker==='潘神'?'✧ 潘神':'✦ 奥菲莉娅';
+  $('final-faun-text').textContent=line.text;
+  $('final-faun-next').textContent=state.dialogueStep>=FINAL_DIALOGUE.length-1?'做出选择 ↗':'继续 E ↗';
+  showMessage('');
+ }else if(isChoice)showMessage('潘神的要求已经说明。现在，由你决定。');
  else if(state.phase==='approach'){
   const d=Math.max(0,distance(state.player,FINAL_ALTAR)-1.5);
   $('final-guide-text').textContent=d>2
@@ -322,9 +349,10 @@ function frame(t){
  }
 }
 const preview=params.get('previewFinal');
-if(['choice','mercy','offering','royalMercy','royalOffering'].includes(preview)){
+if(['dialogue','choice','mercy','offering','royalMercy','royalOffering'].includes(preview)){
  start();state.player={x:FINAL_ALTAR.x-.85,z:FINAL_ALTAR.z+.60};
- state.phase='decision';state.foundAltar=true;
+ state.phase=preview==='dialogue'?'dialogue':'decision';
+ state.dialogueStep=0;state.foundAltar=true;
  if(preview==='mercy'||preview==='offering')choose(preview);
  if(preview==='royalMercy'||preview==='royalOffering'){
   choose(preview==='royalMercy'?'mercy':'offering');

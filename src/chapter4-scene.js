@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {FINAL_START,FINAL_ALTAR,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
+import {FINAL_FAUN_POSITION} from './chapter4-maze-layout.js';
+import {buildFirstMazeCenterFragment} from './chapter4-maze-center.js';
 
 const mat=(color,opt={})=>new THREE.MeshLambertMaterial({color,flatShading:true,...opt});
 const box=(root,color,x,y,z,w,h,d,shadow=true)=>{
@@ -51,24 +53,60 @@ function buildFaun(root,x,y,z){
  body.rotation.y=-.22;
  return body;
 }
-function buildVidal(root){
+export function buildVidal(root){
  const soldier=new THREE.Group();root.add(soldier);
- cyl(soldier,0x242928,0,1.13,0,.27,.38,1.05,7);
- const uniform=box(soldier,0x303b3d,0,1.3,.08,.6,.87,.38);
- const collar=box(soldier,0x67664a,0,1.70,.04,.33,.12,.29);
- stone(soldier,0xbca58a,0,1.99,.05,.22,0);
- cyl(soldier,0x303333,0,2.25,.01,.33,.31,.26,9);
- cyl(soldier,0x222726,0,2.11,.15,.38,.37,.07,10);
+ // A soldier with real articulated hips, knees and shoulder pivots.
+ // Walking is distance-driven so he does not skate while approaching Ofelia.
+ const torso=new THREE.Group();soldier.add(torso);
+ cyl(torso,0x292e2d,0,1.24,0,.28,.36,.90,8);
+ box(torso,0x344042,0,1.43,.075,.60,.83,.39);
+ box(torso,0x726e57,0,1.81,.05,.37,.12,.29);
+ stone(torso,0xbfa78f,0,2.08,.05,.22,0);
+ cyl(torso,0x303535,0,2.32,.02,.33,.31,.26,9);
+ cyl(torso,0x1e2425,0,2.17,.16,.38,.38,.07,10);
+ const legs=[],knees=[],arms=[];
  for(const sign of [-1,1]){
-  beam(soldier,0x222828,[sign*.30,1.58,0],[sign*.42,.91,.22],.13);
-  beam(soldier,0x303838,[sign*.17,.72,0],[sign*.17,.11,.07],.15);
-  box(soldier,0x1b2224,sign*.19,.14,.18,.28,.18,.40);
+  const hip=new THREE.Group();
+  hip.position.set(sign*.17,.84,0);soldier.add(hip);
+  beam(hip,0x353e3e,[0,0,0],[0,-.40,.06],.145,7);
+  const knee=new THREE.Group();knee.position.set(0,-.42,.06);hip.add(knee);
+  beam(knee,0x2b3233,[0,0,0],[0,-.33,.03],.116,7);
+  box(knee,0x192122,0,-.37,.20,.27,.17,.43);
+  legs.push(hip);knees.push(knee);
+  const shoulder=new THREE.Group();shoulder.position.set(sign*.34,1.73,.06);
+  torso.add(shoulder);
+  beam(shoulder,0x303b3b,[0,0,0],[0,-.57,.14],.12,7);
+  stone(shoulder,0xbba58e,0,-.64,.14,.11,0);
+  arms.push(shoulder);
  }
- const arm=new THREE.Group();arm.position.set(.34,1.57,.18);soldier.add(arm);
- beam(arm,0x303a39,[0,0,0],[.28,-.21,.37],.11);
- const pistol=box(arm,0x222627,.34,-.25,.53,.14,.10,.36);
+ const arm=arms[1];
+ // Pistol stays physically attached to the right hand and appears only
+ // after Vidal confronts Ofelia, not as a floating independent mesh.
+ const pistol=box(arm,0x1b2224,.04,-.65,.35,.13,.11,.35);
  pistol.visible=false;
- return {root:soldier,arm,pistol};
+ const model={root:soldier,torso,legs,knees,arms,arm,pistol,gaitPhase:0,walkBlend:0};
+ return model;
+}
+export function animateVidal(model,dt,worldDistance,aim=false){
+ const d=Math.max(0,Math.min(.1,Number(dt)||0));
+ const walk=Math.max(0,Number(worldDistance)||0);
+ model.gaitPhase+=walk*8.6;
+ model.walkBlend=THREE.MathUtils.damp(model.walkBlend,walk>.0003?1:0,10,d);
+ const w=model.walkBlend,p=model.gaitPhase;
+ // Alternating footfalls, knee flexion, opposite shoulder swing and slight
+ // weight transfer give the captain a deliberate marching silhouette.
+ for(let i=0;i<2;i++){
+  const side=i===0?1:-1,step=Math.sin(p+ i*Math.PI)*w;
+  model.legs[i].rotation.x=step*.52;
+  model.legs[i].rotation.z=side*Math.cos(p+i*Math.PI)*w*.06;
+  model.knees[i].rotation.x=Math.max(0,-step)*.43;
+  model.arms[i].rotation.x=aim&&i===1?-.90:-step*.32;
+  model.arms[i].rotation.z=side*w*.045;
+ }
+ model.torso.position.y=w*(.012+.032*Math.cos(p*2));
+ model.torso.rotation.z=w*.025*Math.sin(p);
+ model.torso.rotation.y=w*.020*Math.sin(p);
+ if(aim)model.arms[1].rotation.z=-.12;
 }
 function babyModel(root){
  const group=new THREE.Group();root.add(group);
@@ -118,38 +156,12 @@ function spiralWell(root){
  return {well,dark,droplet,portal};
 }
 function buildMaze(root){
- const ground=box(root,0x383f3c,-.1,-.64,.20,27.7,1.1,27.2);
- const cap=box(root,0x69766e,-.1,-.075,.20,27.35,.22,26.85);
- for(let i=0;i<24;i++){
-  const a=i/24*Math.PI*2,rr=12.15;
-  const stoneTile=box(root,i%4?0x66746e:0x859084,
-   Math.cos(a)*rr-.18,.077,Math.sin(a)*rr+.20,
-   2.02,.16,1.12);
-  stoneTile.rotation.y=-a+.05;
- }
- // Organic ruined arcs and moss-clothed stones create a miniature labyrinth
- // without filling the safe movement corridor with invisible walls.
- for(let i=0;i<14;i++){
-  const a=i/14*Math.PI*2+.06,rr=11.35,px=Math.cos(a)*rr,pz=Math.sin(a)*rr;
-  const p=stone(root,i%3?0x5e6d63:0x829084,px,.36,pz,.79+(i%3)*.12);
-  p.scale.set(1,.75,.92);
-  if(i%3===0){
-   const pillar=cyl(root,0x78847a,px,1.15,pz,.32,.43,1.95,6);
-   stone(root,0x535d53,px,2.14,pz,.47,0).scale.y=.35;
-  }
- }
- for(let i=0;i<22;i++){
-  const a=rand(i,0)*Math.PI*2,rr=4.1+rand(i,1)*6.5;
-  const x=Math.cos(a)*rr,z=Math.sin(a)*rr;
-  const m=stone(root,i%2?0x515f55:0x738079,x,.20,z,.23+rand(i,4)*.4);
-  m.scale.y=.43;
-  if(i%3===0){
-   for(let q=0;q<3;q++){
-    const angle=q*2.1;
-    beam(root,0x4e5f50,[x,.22,z],[x+.2*Math.cos(angle),.65+q*.10,z+.20*Math.sin(angle)],.05);
-   }
-  }
- }
+ // Round stone diorama, matching the first chapter's miniature footprint.
+ // The central wall map, paving, ivy and hedge foliage are sampled from
+ // generateMaze(132), not a newly randomized maze for this final trial.
+ const ground=cyl(root,0x394a42,0,-.71,.12,13.17,13.17,1.08,48);
+ const cap=cyl(root,0x4c6156,0,-.12,.12,13.08,13.08,.17,48);
+ const fragment=buildFirstMazeCenterFragment(root);
  const well=spiralWell(root);
  // Three broken stone arches lead toward the centre, framing the distant Faun.
  for(const [x,z,s] of [[-7,5,1],[-5,-5,.87],[7,4,1.02]]){
@@ -169,9 +181,11 @@ function buildMaze(root){
  const chalk=new THREE.Mesh(new THREE.TorusGeometry(.69,.035,5,18),
   new THREE.MeshBasicMaterial({color:0xc2c3a5}));
  chalk.position.set(FINAL_ALTAR.x,.33,FINAL_ALTAR.z);chalk.rotation.x=Math.PI/2;root.add(chalk);
- const faun=buildFaun(root,FINAL_ALTAR.x+1.55,.05,FINAL_ALTAR.z-1.20);
+ // No part of the Faun stands in the black well! The player talks to
+ // him from an adjacent safe stone landing, then gets the fate choices.
+ const faun=buildFaun(root,FINAL_FAUN_POSITION.x,.05,FINAL_FAUN_POSITION.z);
  const spot=new THREE.PointLight(0xa9d2c7,1.1,7,2);
- spot.position.set(FINAL_ALTAR.x+.5,2.35,FINAL_ALTAR.z-.4);root.add(spot);
+ spot.position.set(FINAL_FAUN_POSITION.x+.4,2.35,FINAL_FAUN_POSITION.z-.2);root.add(spot);
  const seal=new THREE.Group();root.add(seal);
  seal.position.set(FINAL_ALTAR.x,.33,FINAL_ALTAR.z);
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.76,.038,5,40),
@@ -181,7 +195,7 @@ function buildMaze(root){
   const a=i/7*Math.PI*2;
   stone(seal,0xa6c7be,Math.cos(a)*.72,.06,Math.sin(a)*.72,.07,0);
  }
- return {ground,well,faun,altar,seal,spot};
+ return {ground,fragment,well,faun,altar,seal,spot};
 }
 // Film-inspired vast court, not the original 17x11 one-room stage.
 // All architecture remains low-poly and viewed with the SAME fixed ISO camera.
@@ -329,6 +343,26 @@ export function royalHall(root){
  const centerThrone=throneGroups[1];
  const faun=buildFaun(root,7.65,.12,-5.25);
  faun.scale.setScalar(.82);faun.rotation.y=.34;
+ // Exactly ONE Faun on the royal stage. The distant accompanying creatures
+ // in the film are FAIRIES, not more copies of the Faun. Keep them restrained.
+ const fairies=[];
+ for(let i=0;i<7;i++){
+  const side=i%2?-1:1;
+  const winged=new THREE.Group();
+  winged.position.set(side*(3.6+i*.49),2.9+(i%3)*.45,
+   -3.5+(i%4)*1.06);
+  const light=new THREE.Mesh(new THREE.IcosahedronGeometry(.105,0),
+   new THREE.MeshBasicMaterial({color:i%3?0xf1ddad:0xcde3d5}));
+  winged.add(light);
+  for(const wingSide of [-1,1]){
+   const wing=new THREE.Mesh(new THREE.TetrahedronGeometry(.145,0),
+    new THREE.MeshLambertMaterial({color:0xcabf9b,flatShading:true}));
+   wing.position.set(wingSide*.15,.025,0);
+   wing.scale.set(1.0,.55,.30);wing.rotation.z=wingSide*.42;
+   winged.add(wing);
+  }
+  root.add(winged);fairies.push(winged);
+ }
  // A handful of candles/sconces, no glitter or busy particles.
  for(const sign of [-1,1])for(const z of [-9.6,-3.6,3.1]){
   const lamp=stone(root,0xdec69a,sign*10.56,3.26,z,.16,0);
@@ -340,7 +374,7 @@ export function royalHall(root){
  const keyLight=new THREE.PointLight(0xffd6a0,1.15,17,2);
  keyLight.position.set(0,7.7,-5.7);root.add(keyLight);
  return {
-  father,mother,faun,centerThrone,throneGroups,podium,columns,
+  father,mother,faun,fairies,centerThrone,throneGroups,podium,columns,
   surface,floor,light,keyLight,
   speechAnchors:{father:father.userData.speechAnchor,mother:mother.userData.speechAnchor}
  };
@@ -413,8 +447,19 @@ export function createFinalScene(canvas,state){
    throne.floor.material.color.setHex(state.ending==='offering'?0x423034:0x675340);
   }
   if(isRoyal){
-   hero.body.position.set(0,.13,6.00);hero.body.rotation.y=Math.PI;
+   // The centre seat remains VACANT until after the parents' invitation.
+   // Ofelia arrives at the red carpet first, and walks toward her seat
+   // only during the mother's lines; she does not materialize sitting.
+   const invitation=state.ending==='mercy'?9.40:8.28;
+   const walkT=Math.max(0,Math.min(1,(state.cinematicTime-invitation)/4.6));
+   const eased=walkT*walkT*(3-2*walkT);
+   hero.body.position.set(0,.13,6.00-eased*8.0);
+   hero.body.rotation.y=Math.PI;
    baby.visible=false;
+   hero.walkDistance=eased>0&&eased<1?d*1.55:0;
+   throne.fairies.forEach((f,i)=>{
+    f.position.y=2.9+(i%3)*.45+.09*Math.sin(elapsed*1.65+i*1.1);
+   });
    focus.lerp(temp.set(0,2.48,-3.40),Math.min(1,d*4.4));
   }else{
    hero.body.position.set(state.player.x,.13,state.player.z);
@@ -432,12 +477,17 @@ export function createFinalScene(canvas,state){
    const p=chase?Math.min(1,localT/1.68):
     Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-22)/(CHAPTER4_TIME_LIMIT-22)));
    const pursuitTarget=state.timeOut?state.player:FINAL_ALTAR;
+   const beforeVidal=vidal.root.position.clone();
    vidal.root.position.set(
     THREE.MathUtils.lerp(VIDAL_START.x,pursuitTarget.x-.95,p),
     .10,THREE.MathUtils.lerp(VIDAL_START.z,pursuitTarget.z+.75,p));
-   vidal.root.rotation.y=-.6;
-   vidal.pistol.visible=chase&&localT>=1.48;
-   vidal.arm.rotation.x=chase?-.72:0;
+   const vx=vidal.root.position.x-beforeVidal.x;
+   const vz=vidal.root.position.z-beforeVidal.z;
+   const strideDistance=Math.hypot(vx,vz);
+   if(strideDistance>.0001)vidal.root.rotation.y=Math.atan2(vx,vz);
+   const aiming=chase&&localT>=1.48;
+   vidal.pistol.visible=aiming;
+   animateVidal(vidal,d,strideDistance,aiming);
    vidalBaby.visible=chase&&localT>=1.6;
    const portalAt=state.ending==='mercy'?3.23:1.53;
    const portalDuration=state.ending==='mercy'?1.40:1.92;

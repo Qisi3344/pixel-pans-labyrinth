@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {readFileSync} from 'node:fs';
 import {royalHall} from '../src/chapter4-scene.js';
-import {FINAL_CINEMATIC,newFinalTrial,decideFinal,updateFinalTrial,FINAL_ALTAR} from '../src/chapter4-logic.js';
+import {FINAL_CINEMATIC,newFinalTrial,advanceFaunDialogue,FINAL_DIALOGUE,decideFinal,updateFinalTrial,FINAL_ALTAR} from '../src/chapter4-logic.js';
 import {ROYAL_DIALOGUE,activeRoyalDialogue,royalDialogueEnd} from '../src/chapter4-royal-dialogue.js';
 const source=name=>readFileSync(new URL(name,import.meta.url),'utf8');
 
@@ -67,7 +67,9 @@ test('both ending timelines keep the actual royal court visible while each paren
  for(const ending of ['mercy','offering']){
   const s=newFinalTrial();
   s.player={...FINAL_ALTAR};
-  updateFinalTrial(s,.02);assert.equal(s.phase,'decision');
+  updateFinalTrial(s,.02);assert.equal(s.phase,'dialogue');
+ for(let i=0;i<FINAL_DIALOGUE.length;i++)assert.equal(advanceFaunDialogue(s),true);
+ assert.equal(s.phase,'decision');
   assert.equal(decideFinal(s,ending),true);
   const lines=ROYAL_DIALOGUE[ending];
   while(s.cinematicTime<lines[1].start+.2&&s.phase==='cinematic')updateFinalTrial(s,.05);
