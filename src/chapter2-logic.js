@@ -39,7 +39,7 @@ export function interact(state) {
  if(state.node===8&&!state.boulderMoved) {
   state.boulderMoved=true;return {type:'boulder'};
  }
- if(TOAD_INTERACTION_NODES.includes(state.node)&&state.boulderMoved) {
+ if(state.node===TOAD_NODE || (state.node===TOAD_APPROACH_NODE&&state.boulderMoved)) {
   const collected=state.stones.filter(Boolean).length;
   if(collected<3)return {type:'need-stones',remaining:3-collected};
   if(state.offerings<3){
