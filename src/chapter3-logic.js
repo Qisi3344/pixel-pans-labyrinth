@@ -86,7 +86,7 @@ export function newBanquet(){
  return {phase:'invitation',player:{...START},monster:{...MONSTER_START},
   eaten:false,awakeTime:0,chaseTime:0,doorProgress:0,doorSegment:0,
   segmentT:0,deathTime:0,winTime:0,crumbleTime:0,hasDragged:false,
-  sealed:false,distanceEscaped:0,climbTime:0,inspectedMonster:false};
+  sealed:false,distanceEscaped:0,climbTime:0,inspectedMonster:false,hasDagger:false};
 }
 export function eat(state){
  if(state.phase!=='invitation'||distance(state.player,FOOD)>1.48)return false;
