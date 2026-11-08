@@ -356,13 +356,13 @@ function chalkPortal(scene){
  // The existing attic entrance has CLOSED: its old chalk trace stays flush
  // with masonry. Escape instead uses a CHAIR and a CEILING trapdoor.
  const parent=new THREE.Group();scene.add(parent);
- const cx=DOOR.x,roofY=3.80,roofZ=-.59;
+ const cx=DOOR.x,oldX=-31.62,roofY=3.80,roofZ=-.92;
  const oldTrace=new THREE.Group();parent.add(oldTrace);
  // Thin wall traces, not a floating solid plane clipping the stone wall.
  const traces=[
-  [[cx-.67,.22,-1.724],[cx-.67,2.52,-1.724]],
-  [[cx-.67,2.52,-1.724],[cx+.67,2.52,-1.724]],
-  [[cx+.67,2.52,-1.724],[cx+.67,.22,-1.724]]
+  [[oldX-.67,.22,-1.724],[oldX-.67,2.52,-1.724]],
+  [[oldX-.67,2.52,-1.724],[oldX+.67,2.52,-1.724]],
+  [[oldX+.67,2.52,-1.724],[oldX+.67,.22,-1.724]]
  ];
  for(const [p1,p2] of traces){
   const a=new THREE.Vector3(...p1),b=new THREE.Vector3(...p2);
@@ -374,7 +374,7 @@ function chalkPortal(scene){
   oldTrace.add(m);
  }
  // Four-legged worn wooden chair, with backrest and bracing.
- const stool=new THREE.Group();stool.position.set(cx,0,.20);parent.add(stool);
+ const stool=new THREE.Group();stool.position.set(cx,0,-.92);parent.add(stool);
  box(stool,0x674939,0,.66,0,.9,.15,.86);
  box(stool,0x987454,0,.74,0,.96,.055,.90);
  for(const x of [-.35,.35])for(const z of [-.32,.32])
@@ -418,7 +418,7 @@ function chalkPortal(scene){
  const glow=new THREE.PointLight(0xb2d7e2,0,5,2);
  glow.position.set(cx,roofY-.36,roofZ);parent.add(glow);
  // Click on the CHAIR, not a fake floor-to-ceiling wall panel.
- const target=box(parent,0xffffff,cx,.98,.25,1.62,1.82,1.60,false);
+ const target=box(parent,0xffffff,cx,.98,-.88,1.62,1.82,1.60,false);
  target.material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
  target.userData.kind='door';
  function update(progress,time,state){
@@ -556,7 +556,7 @@ export function createBanquetScene(canvas,state){
    p.set(
     THREE.MathUtils.lerp(state.player.x,DOOR.x,step),
     .03+step*.72+up*2.72,
-    THREE.MathUtils.lerp(state.player.z,DOOR.z+.20,step)-up*.73
+    THREE.MathUtils.lerp(state.player.z,DOOR.z-.92,step)-up*.08
    );
    player.arms[0].rotation.x=-1.17;
    player.arms[1].rotation.x=state.phase==='climbing'?- .42:-1.30;
