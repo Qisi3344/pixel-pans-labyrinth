@@ -250,7 +250,7 @@ $('root-world').addEventListener('pointerup',event=>{
 $('root-world').addEventListener('wheel',event=>{event.preventDefault();view.setZoom(event.deltaY>0?.88:1.16);},{passive:false});
 window.addEventListener('resize',view.resize);
 function frame(now){
- const dt=Math.min(.10,last?(now-last)/1000:.016);last=now;
+ const dt=window.__pansModalOpen?0:Math.min(.10,last?(now-last)/1000:.016);last=now;
  let distance=0;
  if(started&&!state.won){
   if(outside){
