@@ -580,6 +580,9 @@ export function createFinalScene(canvas,state){
   camera.lookAt(focus);
   camera.updateMatrixWorld(true);
   resize();
+  // QA mode compares real WebGL screenshots with each object individually hidden.
+  if(window.__finalQA?.hideCaptain)vidal.root.visible=false;
+  if(window.__finalQA?.hideKnife)ceremonyKnife.visible=false;
   renderer.render(scene,camera);
  }
  // Anchor the speech to the ACTUAL king/queen mesh, using the same
