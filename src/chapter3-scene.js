@@ -262,7 +262,30 @@ function chalkPortal(scene){
  portal.material=new THREE.MeshBasicMaterial({
   color:0x4f8292,transparent:true,opacity:.34,depthWrite:false,side:THREE.DoubleSide
  });
- // The former chalk lines vanish, until the player draws a new doorway.
+ // A faint but permanent 3D chalk scar stays on the wall AFTER the
+ // original magic door seals. This is a tangible world-space target, not an
+ // invisible hotspot or a disconnected floating UI label.
+ const etched=[];
+ for(let i=0;i<3;i++){
+  const a=new THREE.Vector3(...points[i]),b=new THREE.Vector3(...points[i+1]);
+  a.z+=.105;b.z+=.105;
+  const d=b.clone().sub(a);
+  const mark=new THREE.Mesh(
+   new THREE.CylinderGeometry(.036,.041,d.length(),6),
+   new THREE.MeshBasicMaterial({color:0xece3cc,transparent:true,opacity:.64,depthWrite:false})
+  );
+  mark.position.copy(a).add(b).multiplyScalar(.5);
+  mark.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());
+  parent.add(mark);etched.push(mark);
+ }
+ // Tiny pale stones lead from the center of the hallway toward the chalk
+ // outline. Keep them low so the player and monster can cross unobstructed.
+ for(let k=0;k<5;k++){
+  const pebble=ico(parent,0xc9bda2,cx+(.10*Math.sin(k*2)),.045,-.18-k*.28,
+    .12,.025,.09,0);
+  pebble.material=new THREE.MeshBasicMaterial({color:0xdfd3b9});
+ }
+ // The actual retraced white lines become brighter only while drawing.
  const linePieces=[];
  for(let i=0;i<3;i++){
   const a=new THREE.Vector3(...points[i]),b=new THREE.Vector3(...points[i+1]);
@@ -292,9 +315,11 @@ function chalkPortal(scene){
    state.phase==='invitation'?.85:clamp(1-state.chaseTime/SEAL_SECONDS);
   portal.visible=ready||unsealed;
   portal.material.opacity=ready?.78:(unsealed?.26*fading:0);
-  ring.visible=portal.visible;ring.material.opacity=ready?.74:.22*fading;
+  etched.forEach(mark=>{mark.material.opacity=ready?.20:state.sealed?.82:.55;});
+  ring.visible=true;
+  ring.material.opacity=ready?.74:state.sealed?.26:.22*fading;
   ring.rotation.z=time*.12;
-  glow.intensity=ready?1.8:unsealed?.45*fading:.05;
+  glow.intensity=ready?1.8:state.sealed?.16:unsealed?.45*fading:.05;
  }
  const target=box(parent,0xffffff,cx,1.4,z+.35,2.12,3.10,.08,false);
  target.material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
