@@ -1,4 +1,5 @@
 import './campaign-style.css';
+import {FINAL_OUTCOMES} from './chapter4-logic.js';
 import {CHAPTERS,CAMPAIGN_MENU,CAMPAIGN_FINAL,loadCampaign,storeCampaign,
  setInputPreference,chapterUnlocked,campaignChapterUrl,selectedInputMode,
  inferredInputMode,defaultProgress} from './campaign.js';
@@ -104,9 +105,9 @@ function installHome(){
       <div class="tale-gate" aria-hidden="true"><div class="tale-gate-in"><span>✧</span></div></div>
       <div class="tale-main-actions">
        <button class="tale-primary" id="tale-new" type="button">开启旅程 <span>↗</span></button>
-       ${save.completed>0?`<button class="tale-secondary" id="tale-continue" type="button">继续旅程 · 第 ${Math.min(3,save.completed+1)} 章 <span>↗</span></button>`:''}
+       ${save.completed>0?`<button class="tale-secondary" id="tale-continue" type="button">${save.completed>=4?'回顾最终结局':'继续旅程 · 第 '+Math.min(4,save.completed+1)+' 章'} <span>↗</span></button>`:''}
        <button class="tale-secondary" id="tale-controls" type="button">操作方式 <span>⌘</span></button>
-       <p class="tale-save">${save.completed===3?'三段故事已经完成 · 可以回看任一章节':save.completed>0?`已走过 ${save.completed} / 3 章 · 进度保存在本机`:'三段微缩章节 · 从石之迷宫开始'}</p>
+       <p class="tale-save">${save.completed===4?'终章已完成 · 两条命运都可重温':save.completed>0?`已走过 ${save.completed} / 4 章 · 进度保存在本机`:'四段微缩章节 · 从石之迷宫开始'}</p>
       </div>
      </section>
      <section class="tale-chapter-list" aria-label="章节回看">
@@ -116,7 +117,7 @@ function installHome(){
      </section>
     </div>
     <footer class="tale-page-foot">
-     <span>等距视角 · 三维像素微缩世界</span><span>黑暗童话三章 · 非官方致敬作品</span>
+     <span>等距视角 · 三维像素微缩世界</span><span>黑暗童话四章 · 非官方致敬作品</span>
     </footer>
    </div>
   </main>`;
@@ -140,36 +141,67 @@ function installHome(){
   });
  });
  $('tale-controls').addEventListener('click',()=>dialog());
- $('tale-continue')?.addEventListener('click',()=>navigate(campaignChapterUrl(Math.min(3,save.completed+1))));
+ $('tale-continue')?.addEventListener('click',()=>navigate(save.completed>=4?CAMPAIGN_FINAL:campaignChapterUrl(Math.min(4,save.completed+1))));
 }
 function installEpilogue(){
  const save=loadCampaign();
- if(save.completed<3){navigate(CAMPAIGN_MENU);return;}
+ if(save.completed<4){navigate(CAMPAIGN_MENU);return;}
+ let viewed=save.ending||'mercy';
  setBody('campaign-ending');
- document.title='尾声 · 潘神的迷宫';
+ document.title='最后的命运 · 潘神的迷宫';
+ const choices=save.endingsSeen||[viewed];
  document.body.innerHTML=`
- <main class="tale-page tale-ending-page">
+ <main class="tale-page tale-ending-page" id="tale-epilogue-root">
   <div class="tale-vine tale-vine-a" aria-hidden="true"></div>
   <div class="tale-vine tale-vine-b" aria-hidden="true"></div>
-  <article class="tale-ending-content">
-   <div class="tale-eyebrow">EPILOGUE · BEYOND THE CHALK DOOR</div>
-   <div class="tale-crest">✦</div>
-   <h1>故事尚未终结</h1>
-   <div class="tale-english">THE STONE REMEMBERS</div>
-   <div class="tale-rule"><span>✧</span></div>
-   <p class="tale-epilogue-prose">石门认出了她的脚步。<br>垂死的古树获得了春天。<br>
-   宴会厅里的沉睡者，在身后睁开了眼。<br><br>
-   她带回钥匙与匕首，<br>却仍未走出整个童话。</p>
+  <article class="tale-ending-content" id="tale-ending-art">
+   <div class="tale-eyebrow">THE FINAL TRIAL · THE KINGDOM BEYOND</div>
+   <div class="tale-crest" id="tale-end-crest">✧</div>
+   <h1 id="tale-end-heading">无辜之血</h1>
+   <div class="tale-english" id="tale-end-subtitle">THE ROYAL RETURN</div>
+   <div class="tale-rule"><span>✦</span></div>
+   <p class="tale-epilogue-prose" id="tale-end-prose"></p>
+   <div class="tale-royal-blessing">
+    <div class="tale-eyebrow">THE KING AND QUEEN · 父亲与母亲</div>
+    <blockquote id="tale-end-blessing"></blockquote>
+   </div>
    <div class="tale-relics" aria-label="旅途所得">
     ${CHAPTERS.map(c=>`<div><span>${c.icon}</span><small>第 0${c.number} 章</small><strong>${c.item}</strong></div>`).join('')}
    </div>
-   <div class="tale-epilogue-note">你已完成本作收录的迷宫序章与两项试炼。电影的最终试炼不在这三个章节之中。</div>
+   <p class="tale-epilogue-note" id="tale-end-last"></p>
+   <div class="tale-end-archive">
+    <div class="tale-eyebrow">已见结局 · ${choices.length} / 2</div>
+    <div class="tale-end-tabs">
+     ${choices.map(k=>`<button type="button" data-ending="${k}">${k==='mercy'?'✧ 无辜之血':'✢ 猩红归途'}</button>`).join('')}
+    </div>
+    <p>“猩红归途”为本游戏新增的架空命运；“无辜之血”对应电影原结局。</p>
+   </div>
    <div class="tale-ending-actions">
-    <button id="tale-replay" type="button" class="tale-primary">从头重温 <span>↗</span></button>
+    <button id="tale-replay-final" type="button" class="tale-primary">重走最后的石井 <span>↗</span></button>
+    <button id="tale-replay" type="button" class="tale-secondary">从头重温</button>
     <button id="tale-toc" type="button" class="tale-secondary">章节目录</button>
    </div>
   </article>
  </main>`;
+ const render=()=>{
+  const v=FINAL_OUTCOMES[viewed];
+  $('tale-epilogue-root').dataset.ending=viewed;
+  $('tale-end-crest').textContent=viewed==='mercy'?'✧':'✢';
+  $('tale-end-heading').textContent=v.title;
+  $('tale-end-subtitle').textContent=v.subtitle;
+  $('tale-end-prose').textContent=viewed==='mercy'
+   ?'维达尔赶到石井，带走了弟弟，枪声落下。\\n少女的血流过古老台阶，点亮一扇谁也无法证实的门。\\n在金色王宫中，她再次见到了父亲与母亲。'
+   :'奥菲莉娅交出了潘神要求的那一滴血。\\n石井闪出猩红的光，路真的通向了王宫。\\n父亲与母亲在等待她——弟弟却再也没能穿过那道门。';
+  $('tale-end-blessing').textContent=v.speech;
+  $('tale-end-last').textContent=v.second+' '+v.last;
+  document.querySelectorAll('[data-ending]').forEach(b=>{
+   b.setAttribute('aria-pressed',String(b.dataset.ending===viewed));
+  });
+ };
+ document.querySelectorAll('[data-ending]').forEach(b=>
+  b.addEventListener('click',()=>{viewed=b.dataset.ending;render();}));
+ render();
+ $('tale-replay-final').addEventListener('click',()=>navigate(campaignChapterUrl(4)));
  $('tale-replay').addEventListener('click',()=>navigate(campaignChapterUrl(1)));
  $('tale-toc').addEventListener('click',()=>navigate(CAMPAIGN_MENU));
 }
@@ -178,11 +210,11 @@ export function bootCampaignScreen(params=new URLSearchParams(window.location.se
  else installHome();
 }
 export function mountChapterFrame(stage){
- if(!Number.isInteger(stage)||stage<1||stage>3)return;
+ if(!Number.isInteger(stage)||stage<1||stage>4)return;
  document.body.classList.add('campaign-chapter');
  document.documentElement.dataset.inputMode=selectedInputMode();
  document.documentElement.dataset.chapter=String(stage);
- const parent=document.querySelector(stage===1?'.top-actions':stage===2?'.root-tools':'.pale-tools');
+ const parent=document.querySelector(stage===1?'.top-actions':stage===2?'.root-tools':stage===3?'.pale-tools':'.final-tools');
  if(!parent||document.getElementById('tale-chapter-menu'))return;
  const menu=document.createElement('button');
  menu.id='tale-chapter-menu';menu.type='button';menu.textContent='☷';
