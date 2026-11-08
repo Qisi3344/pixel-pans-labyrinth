@@ -213,6 +213,8 @@ function buildPaleMan(scene){
  jawPivot.visible=false;
  const tongue=ico(jawPivot,0x77323a,0,-.065,.38,.22,.070,.065,0);
  tongue.visible=false;
+ const biteLight=new THREE.PointLight(0xffedcf,0,3.8,2);
+ biteLight.position.set(0,2.36,.87);rig.add(biteLight);
  const teeth=[];
  for(let k=-3;k<=3;k++){
   const x=k*.091;
@@ -292,7 +294,7 @@ function buildPaleMan(scene){
    for(let k=0;k<2;k++){
     const sign=k===0?-1:1;
     const hand=hands[k];
-    hand.position.set(sign*(.30-.10*beat.grip),
+    hand.position.set(sign*(.30-.10*beat.grip)+.32*beat.grip,
       1.38+.46*beat.lift,
       .64+.18*beat.grip);
     hand.rotation.z=sign*(.34+.18*beat.grip);
@@ -304,6 +306,7 @@ function buildPaleMan(scene){
    jawPivot.visible=true;maw.visible=true;mouthShadow.visible=true;lip.visible=true;tongue.visible=true;
    teeth.forEach(tooth=>{tooth.visible=true;});
    const open=beat.jawOpen;
+   biteLight.intensity=.36+open*1.9;
    // Distinct 3D movement: upper jaw holds, lower jaw descends by nearly
    // half a head height, seven ivory teeth track the hinged chin.
    jawPivot.rotation.x=open*.9;
@@ -328,6 +331,7 @@ function buildPaleMan(scene){
    });
   }else{
    jawPivot.visible=false;maw.visible=false;mouthShadow.visible=false;lip.visible=false;tongue.visible=false;
+   biteLight.intensity=0;
    teeth.forEach(tooth=>{tooth.visible=false;});
    scraps.forEach(fragment=>{fragment.visible=false;});
    head.position.y=2.53;head.rotation.x=0;head.scale.set(1,1,1);
@@ -436,6 +440,9 @@ export function createBanquetScene(canvas,state){
  // The orthographic projection and follow-camera keep mobile player visible.
  const focus=new THREE.Vector3(-1,1,0);
  const angle=new THREE.Vector3(-1.0,1.24,1.18).normalize();
+ // The ordinary game stays isometric. Only the 4-second devour cutscene
+ // uses a low frontal orthographic camera so the mouth cannot be hidden.
+ const deathCameraAngle=new THREE.Vector3(-.10,.55,1.7).normalize();
  let w=0,h=0,portrait=false,zoom=1,captureOrigin=null;
  function resize(force=false){
   const rect=canvas.parentElement?.getBoundingClientRect();
@@ -456,7 +463,7 @@ export function createBanquetScene(canvas,state){
   const reveal=state.phase==='awakening'
    ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
   const caughtZoom=state.phase==='caught'?
-   (portrait?2.25:4.2)*deathBeat(state.deathTime).grip:0;
+   (portrait?2.7:5.4)*deathBeat(state.deathTime).grip:0;
   const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom;
   const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
@@ -499,7 +506,7 @@ export function createBanquetScene(canvas,state){
     state.player.x,.03,state.player.z);
    pale.root.updateWorldMatrix(true,true);
    const held=pale.root.localToWorld(new THREE.Vector3(
-    .19,devour.heroLift,.83-devour.yank*.18));
+    .19+.34*devour.jawOpen,devour.heroLift,.83-devour.yank*.18));
    p.copy(captureOrigin).lerp(held,devour.grip);
    p.y+=Math.sin(devour.time*19)*devour.shake;
    player.body.rotation.x=-devour.heroLean;
@@ -539,7 +546,7 @@ export function createBanquetScene(canvas,state){
    }
   }
   focus.lerp(target,1-Math.exp(-Math.max(.015,dt)*(portrait?5.5:3.1)));
-  camera.position.copy(focus).addScaledVector(angle,37);camera.lookAt(focus);
+  camera.position.copy(focus).addScaledVector(state.phase==='caught'?deathCameraAngle:angle,37);camera.lookAt(focus);
   renderer.render(scene,camera);
   return devour;
  }
