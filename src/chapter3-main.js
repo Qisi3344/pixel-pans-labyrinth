@@ -490,7 +490,7 @@ function updateTransition(){
  }
 }
 function frame(now){
- const dt=Math.min(.08,last?(now-last)/1000:.016);last=now;
+ const dt=window.__pansModalOpen?0:Math.min(.08,last?(now-last)/1000:.016);last=now;
  currentTime=now/1000;
  moveDistance=started?drivePlayer(dt):0;
  // One-time automatic invitation when approaching either fresco. The scene
