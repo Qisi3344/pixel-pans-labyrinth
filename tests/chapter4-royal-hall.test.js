@@ -60,7 +60,10 @@ test('monarch dialogue is sequential, actor-specific and distinct in both ending
  assert.notEqual(ROYAL_DIALOGUE.mercy[0].text,ROYAL_DIALOGUE.offering[0].text);
  assert.notEqual(ROYAL_DIALOGUE.mercy[1].text,ROYAL_DIALOGUE.offering[1].text);
  assert.ok(ROYAL_DIALOGUE.mercy[1].text.includes('王座'));
- assert.ok(ROYAL_DIALOGUE.offering[1].text.includes('代价'));
+ assert.ok(ROYAL_DIALOGUE.offering[1].text.includes('欢迎回来')||
+  ROYAL_DIALOGUE.offering[1].text.includes('回到'));
+ assert.doesNotMatch(ROYAL_DIALOGUE.offering[1].text,/责备|伤害|弟弟|代价/,
+  'royal parents do not scold Ofelia about her human infant brother');
 });
 
 test('both ending timelines keep the actual royal court visible while each parent speaks',()=>{
