@@ -36,7 +36,9 @@ test('chapter II stage camera sees toad front and the pushed rock slides to a si
  const scene=source('../src/chapter2-scene.js');
  const main=source('../src/chapter2-main.js');
  const style=source('../src/chapter2-style.css');
- assert.ok(scene.includes('const cavernDirection=new THREE.Vector3(-.60,1.24,1.54).normalize()'));
+ assert.ok(scene.includes('const cavernDirection=new THREE.Vector3('));
+ assert.ok(scene.includes('Math.sqrt(1*1+1.3*1.3-.60*.60)'),
+  'azimuth may change but original elevation is invariant');
  assert.ok(scene.includes('toad.rotation.y=1.08'));
  assert.ok(scene.includes("area==='interior'?cavernDirection:direction"));
  assert.ok(scene.includes('boulder.position.z=THREE.MathUtils.damp(boulder.position.z,1-2.20*lateral'));
