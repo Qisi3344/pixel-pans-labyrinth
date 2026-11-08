@@ -79,7 +79,7 @@ function tell(message,duration=3200){
 }
 function allowedMovement(){
  return started&&state.phase!=='awakening'&&
-  !['drawing','caught','escape','escaped'].includes(state.phase);
+  !['climbing','drawing','caught','escape','escaped'].includes(state.phase);
 }
 function updateHUD(){
  const phase=state.phase;
