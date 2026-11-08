@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
+import {buildRoyalHall} from './chapter4-palace.js';
 import {FINAL_START,FINAL_ALTAR,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
 
 const mat=(color,opt={})=>new THREE.MeshLambertMaterial({color,flatShading:true,...opt});
@@ -183,57 +184,6 @@ function buildMaze(root){
  }
  return {ground,well,faun,altar,seal,spot};
 }
-function royalFigure(root,x,z,kind,red){
- const g=new THREE.Group();g.position.set(x,0,z);root.add(g);
- const c=kind==='king'?0xe0c798:0xe0c9a1;
- cyl(g,c,0,1.16,0,.31,.52,1.55,8);
- cyl(g,kind==='king'?0x8f5a40:0x997f66,0,2.03,0,.22,.34,.40,8);
- stone(g,0xd6bfa2,0,2.38,.02,.26,1);
- const crown=cyl(g,0xb99b57,0,2.72,0,.31,.31,.13,9);
- for(let i=0;i<7;i++){
-  const a=i/7*Math.PI*2;
-  const tooth=new THREE.Mesh(new THREE.ConeGeometry(.075,.26,4),mat(0xd7b56d));
-  tooth.position.set(Math.cos(a)*.27,2.86,Math.sin(a)*.27);g.add(tooth);
- }
- for(const sign of [-1,1]){
-  beam(g,c,[sign*.28,1.74,0],[sign*.44,.96,.35],.11,6);
- }
- const robe=box(g,red?0x6b303a:0x8b604a,0,.64,-.11,1.08,.18,.7);
- return g;
-}
-function royalHall(root){
- const floor=box(root,0x534a3c,0,-.32,0,17.7,.58,11.5);
- const surface=box(root,0x9f8a68,0,-.022,0,17.3,.05,11.1);
- for(let i=0;i<9;i++)for(let j=0;j<6;j++)
-  box(root,(i+j)%3===0?0xb79b75:0xa68a62,-7.9+i*1.97,.022,-4.7+j*1.88,1.9,.055,1.8,false);
- const columnColor=0xc2a16a;
- for(const sign of [-1,1])for(const z of [-3.85,0,3.85]){
-  cyl(root,0x8d7254,sign*7.25,1.64,z,.46,.57,3.30,10);
-  box(root,columnColor,sign*7.25,3.40,z,1.15,.34,1.12);
-  box(root,0x66503c,sign*7.25,.11,z,1.22,.23,1.17);
- }
- box(root,0x6a4d3c,0,1.20,-4.65,9.80,3.28,.75);
- box(root,0xc5a367,0,3.31,-4.46,9.98,.24,.93);
- const back=cyl(root,0x76553c,0,2.15,-4.15,3.3,3.3,3.45,12);
- back.rotation.x=Math.PI/2;back.scale.y=.13;
- box(root,0x997850,0,.27,-2.6,6.75,.50,4.80);
- box(root,0x836543,0,.58,-3.35,6.4,.43,3.10);
- for(const x of [-2.05,2.05]){
-  box(root,0x76533e,x,1.31,-3.51,1.34,1.82,.76);
-  box(root,0xb49b6a,x,2.06,-3.35,1.50,.22,.85);
-  box(root,0x69513e,x,.50,-3.09,1.35,.26,1.1);
- }
- const father=royalFigure(root,-2.05,-3.25,'king',false);
- const mother=royalFigure(root,2.05,-3.25,'queen',false);
- const faun=buildFaun(root,4.78,.08,-1.83);
- faun.scale.setScalar(.79);faun.rotation.y=.48;
- for(let i=0;i<6;i++){
-  const torch=stone(root,0xb28b56,-5.2+i*2.1,2.54,-4.2,.14);
-  torch.material=new THREE.MeshBasicMaterial({color:0xffd29a});
- }
- const light=new THREE.AmbientLight(0xffd59c,.45);root.add(light);
- return {father,mother,faun,surface,floor,light};
-}
 export function createFinalScene(canvas,state){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
  renderer.setPixelRatio(Math.min(1.2,window.devicePixelRatio||1));
@@ -250,7 +200,11 @@ export function createFinalScene(canvas,state){
  const labyrinth=new THREE.Group();scene.add(labyrinth);
  const maze=buildMaze(labyrinth);
  const royal=new THREE.Group();scene.add(royal);royal.visible=false;
- const throne=royalHall(royal);
+ const throne=buildRoyalHall(royal);
+ // The Faun remains in the end scene, off to the side of the three thrones.
+ throne.faun=buildFaun(royal,8.45,.15,-4.08);
+ throne.faun.scale.setScalar(.72);
+ throne.faun.rotation.y=.34;
  const hero=createPlayer(scene,new THREE.Vector3(FINAL_START.x,.12,FINAL_START.z));
  // Keep the red-cloaked short-bob heroine from chapter three.
  const baby=babyModel(hero.rig);
@@ -274,7 +228,11 @@ export function createFinalScene(canvas,state){
   sceneWidth=w;sceneHeight=h;
   const aspect=w/h;
   // Fixed orthographic ISO micro-world, no orbit controls.
-  const portrait=aspect<.79,scale=portrait?10.8:8.6;
+  const portrait=aspect<.79;
+  // Same fixed orthographic viewing angle as before, just fit the
+  // wider royal miniature. Portrait keeps the central three seats readable.
+  const scale=state.royalShown?(portrait?13.1:11.9):
+   (portrait?10.8:8.6);
   const view=Math.max(5,scale/zoom);
   camera.left=-view*aspect;camera.right=view*aspect;
   camera.top=view;camera.bottom=-view;
@@ -298,11 +256,14 @@ export function createFinalScene(canvas,state){
     (state.ending==='offering'?0x33262a:0xe0c79c):0xf8f8f5);
    throne.surface.material.color.setHex(state.ending==='offering'?0x856057:0xb29b75);
    throne.floor.material.color.setHex(state.ending==='offering'?0x423034:0x675340);
+   throne.royalSun.color.setHex(state.ending==='offering'?0xd1a0a1:0xffe4b1);
+   throne.royalSun.intensity=state.ending==='offering'?1.75:2.3;
+   sceneWidth=0; // force the orthographic fit to recompute for the hall
   }
   if(isRoyal){
-   hero.body.position.set(0,.13,2.90);hero.body.rotation.y=Math.PI;
+   hero.body.position.set(0,.13,5.20);hero.body.rotation.y=Math.PI;
    baby.visible=false;
-   focus.lerp(temp.set(0,1.50,-1.8),Math.min(1,d*5));
+   focus.lerp(temp.set(0,2.35,-2.00),Math.min(1,d*5));
   }else{
    hero.body.position.set(state.player.x,.13,state.player.z);
    hero.body.rotation.y=THREE.MathUtils.lerp(hero.body.rotation.y,
@@ -370,8 +331,22 @@ export function createFinalScene(canvas,state){
   resize();
   renderer.render(scene,camera);
  }
+ // Project the speaking king or queen into the exact displayed canvas,
+ // rather than guessing a fixed CSS location that shifts on mobile screens.
+ const speechProjection=new THREE.Vector3();
+ function projectRoyalSpeaker(name){
+  if(!state.royalShown)return null;
+  const pin=throne.speechAnchors[name];
+  if(!pin)return null;
+  pin.getWorldPosition(speechProjection);
+  speechProjection.project(camera);
+  const rect=canvas.getBoundingClientRect();
+  return {x:(speechProjection.x+1)*rect.width*.5,
+   y:(1-speechProjection.y)*rect.height*.5,
+   visible:speechProjection.z>=-1&&speechProjection.z<=1};
+ }
  function setZoom(value){zoom=Math.max(.78,Math.min(1.25,value));sceneWidth=0;resize();}
  function dispose(){renderer.dispose();}
  resize();
- return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,setZoom,dispose};
+ return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,projectRoyalSpeaker,setZoom,dispose};
 }
