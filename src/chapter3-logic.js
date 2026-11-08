@@ -1,7 +1,7 @@
 // Chapter III: one continuous route — chalk doorway -> vaulted approach passage
 // -> banquet with forbidden fruit -> awakened Pale Man -> long return pursuit.
 export const HALL=Object.freeze({minX:-9.3,maxX:9.3,minZ:-4.7,maxZ:4.7});
-export const CORRIDOR=Object.freeze({minX:-33.2,maxX:-8.80,minZ:-1.72,maxZ:1.72});
+export const CORRIDOR=Object.freeze({minX:-33.2,maxX:-8.45,minZ:-1.72,maxZ:1.72});
 export const TABLE=Object.freeze({minX:-4.35,maxX:5.25,minZ:-1.13,maxZ:1.13});
 export const ENTRANCE=Object.freeze({x:-9.02,z:0});
 export const START=Object.freeze({x:-30.95,z:.06});
