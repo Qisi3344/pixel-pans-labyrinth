@@ -382,6 +382,7 @@ if(['dialogue','choice','mercy','offering','royalMercy','royalOffering'].include
 // Only visible to real browser tests when explicitly requested.
 if(params.get('qa')==='1'){
  window.__finalQA={
+  hideCaptain:false,hideKnife:false,
   snapshot:()=>({
    started,phase:state.phase,ending:state.ending,
    cinematicTime:state.cinematicTime,beat:state.cinematicBeat,
