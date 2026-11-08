@@ -404,18 +404,25 @@ export function createFinalScene(canvas,state){
  const direction=new THREE.Vector3(1,1.14,1.30).normalize();
  const focus=new THREE.Vector3(FINAL_START.x,.8,FINAL_START.z);
  const temp=new THREE.Vector3();
- let sceneWidth=0,sceneHeight=0,zoom=1,wasRoyal=false;
+ let sceneWidth=0,sceneHeight=0,zoom=1,wasRoyal=false,sceneViewMode='';
  let lastCutscenePosition=null;
  const pickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
  const ray=new THREE.Raycaster();const pointer=new THREE.Vector2();
  function resize(){
   const rect=canvas.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
-  if(w===sceneWidth&&h===sceneHeight)return;
-  sceneWidth=w;sceneHeight=h;
+  const cinematic=state.phase==='cinematic'&&!state.royalShown;
+  const mode=state.royalShown?'royal':cinematic?
+   state.ending==='offering'?'ritual-closeup':'captain-two-shot':'explore';
+  if(w===sceneWidth&&h===sceneHeight&&mode===sceneViewMode)return;
+  sceneWidth=w;sceneHeight=h;sceneViewMode=mode;
   const aspect=w/h;
-  // Fixed orthographic ISO micro-world, no orbit controls.
+  // Keep the fixed original isometric angle; framing is now designed for
+  // mobile: both actors in the refusal, close-up of the knife/shaft for ritual.
   const portrait=aspect<.79;
-  const scale=state.royalShown?(portrait?14.15:12.35):(portrait?10.8:8.6);
+  const scale=state.royalShown?(portrait?14.15:12.35):
+   mode==='ritual-closeup'?(portrait?7.0:6.25):
+   mode==='captain-two-shot'?(portrait?9.6:8.75):
+   (portrait?10.8:8.6);
   const view=Math.max(5,scale/zoom);
   camera.left=-view*aspect;camera.right=view*aspect;
   camera.top=view;camera.bottom=-view;
@@ -480,8 +487,10 @@ export function createFinalScene(canvas,state){
    baby.visible=state.brotherVisible;
    // During refusal, hold both the captain AND the well in the fixed
    // orthographic frame instead of tracking Ofelia so tightly he is unseen.
+   // 0.21 of the captain's location left him wholly off camera on narrow
+   // devices. A true two-shot follows the midpoint until he reaches her.
    const captainShare=cinematic&&state.ending==='mercy'
-    ?.21*(1-normalizedBeat(localT,0,cues.approachEnd)):0;
+    ?.55-.25*normalizedBeat(localT,0,cues.approachEnd):0;
    const viewX=cinematic?THREE.MathUtils.lerp(
     THREE.MathUtils.lerp(sceneActor.x,FINAL_WELL_CENTER.x,.22),
     VIDAL_CINEMATIC_ENTRY.x,captainShare):state.player.x;
@@ -525,9 +534,9 @@ export function createFinalScene(canvas,state){
    if(maze.faun.userData.ritualBlade)
     maze.faun.userData.ritualBlade.visible=!(alternate&&localT>=cues.knifeStart);
    ritualGlow.visible=alternate&&localT>=cues.bloodMoment&&localT<cues.royalAt;
-   ritualLight.intensity=ritualGlow.visible?1.5+.3*Math.sin(elapsed*4):0;
+   ritualLight.intensity=ritualGlow.visible?3.2+.7*Math.sin(elapsed*4):0;
    ritualRing.rotation.z=elapsed*.36;
-   ritualRing.scale.setScalar(1+.12*Math.sin(elapsed*3));
+   ritualRing.scale.setScalar(2.0+.28*Math.sin(elapsed*3));
    const pulse=Math.max(0,Math.min(1,(localT-portalAt)/portalDuration));
    maze.well.portal.visible=cinematic&&localT>=portalAt;
    maze.well.portal.material.color.setHex(
@@ -587,8 +596,25 @@ export function createFinalScene(canvas,state){
    visible:projected.z>=-1&&projected.z<=1
   };
  }
+ function getQAFrame(){
+  const project=obj=>{
+   const p=obj.getWorldPosition(new THREE.Vector3());p.y+=1.25;
+   const projected=p.project(camera);
+   return {u:(projected.x+1)*.5,v:(1-projected.y)*.5,z:projected.z,
+    inside:Math.abs(projected.x)<=.96&&Math.abs(projected.y)<=.96&&
+     projected.z>=-1&&projected.z<=1};
+  };
+  return {viewMode:sceneViewMode,cameraType:camera.type,
+   royalVisible:royal.visible,labyrinthVisible:labyrinth.visible,
+   captainVisible:vidal.root.visible&&labyrinth.visible,
+   captain:project(vidal.root),hero:project(hero.body),
+   knifeVisible:ceremonyKnife.visible,ritualGlowVisible:ritualGlow.visible,
+   portalVisible:maze.well.portal.visible,
+   bloodSegmentsVisible:maze.well.bloodSegments.filter(x=>x.visible).length,
+   captainPosition:vidal.root.position.toArray(),heroPosition:hero.body.position.toArray()};
+ }
  function setZoom(value){zoom=Math.max(.78,Math.min(1.25,value));sceneWidth=0;resize();}
  function dispose(){renderer.dispose();}
  resize();
- return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,projectRoyalSpeaker,setZoom,dispose};
+ return {renderer,scene,camera,hero,baby,vidal,maze,royal,throne,pick,resize,update,projectRoyalSpeaker,getQAFrame,setZoom,dispose};
 }
