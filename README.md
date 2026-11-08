@@ -27,6 +27,8 @@
 - `/?stage=4&previewFinal=choice`：直接查看潘神和二选一
 - `/?stage=4&previewFinal=mercy`：原片拒绝结局演出
 - `/?stage=4&previewFinal=offering`：架空献血开门演出
+- `/?stage=4&previewFinal=royalMercy`：直接到达原片路线的扩建王庭，查看父王、母后气泡
+- `/?stage=4&previewFinal=royalOffering`：直接到达架空路线的深红王庭，查看另一组父母气泡
 - `/?stage=3&previewFresco=1`：第三章壁画放大
 - `/?stage=3&previewShoes=1`：儿童旧鞋堆
 - `/?stage=3&previewDoor=1`：踩椅子画天花板出口
@@ -45,7 +47,9 @@
 - `src/chapter3-*.js`：第三章，含 `chapter3-dagger.js` 的黄金钥匙/匕首柜
 - `src/chapter4-logic.js`：最终试炼倒计时、潘神抉择与两种结局时序
 - `src/chapter4-scene.js`：固定正交 3D 石井、潘神、维达尔、奥菲莉娅、婴儿与王宫父母
-- `src/chapter4-main.js` / `chapter4-style.css`：键鼠/触屏操作、尾声交互、分支叙事与演出
+- `src/chapter4-main.js` / `chapter4-style.css`：键鼠/触屏操作、尾声交互、两位父母的 3D 跟随气泡和分支演出
+- `src/chapter4-royal-dialogue.js`：父王和母后在两个结局中的独立对白、出场顺序和时长
+- `tests/chapter4-royal-hall.test.js`：三王座、宏大王庭、镜头与对白交互回归测试
 - `tests/campaign.test.js`、`tests/chapter3-dagger.test.js`：顺序、存档、物品、场景回归测试
 
 本地运行：
