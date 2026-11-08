@@ -1,7 +1,7 @@
 import './chapter3-style.css';
 import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  newBanquet,walkable,moveActor,distance,eat,atDoor,startDrawing,cancelDrawing,traceChalk,
- tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE} from './chapter3-logic.js';
+ tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone} from './chapter3-logic.js';
 import {createBanquetScene} from './chapter3-scene.js';
 import {note,chime,toggleSound} from './audio.js';
 
@@ -12,11 +12,12 @@ document.body.innerHTML=[
   '<header class="pale-header"><div class="pale-brand"><small>CHAPTER III · THE FORBIDDEN BANQUET</small><h1>苍白盛宴 <em>/ 03</em></h1>',
    '<p>席间的食物，究竟是为谁准备的？</p></div>',
    '<div class="pale-tools"><button id="pale-zoom-out" title="缩小">−</button><button id="pale-zoom-in" title="放大">+</button><button id="pale-sound" title="音效">♫</button><button id="pale-reset" title="重开">↻</button></div></header>',
-  '<aside class="pale-side"><small>THE THIRD TRIAL</small><h2 id="pale-objective">靠近宴会长桌</h2><p id="pale-description">桌子上盛满食物，尽头的身影一动不动。</p>',
+  '<aside class="pale-side"><small>THE THIRD TRIAL</small><h2 id="pale-objective">穿过古老石廊</h2><p id="pale-description">魔法粉笔门在身后，前方还有一段很长的甬道。</p>',
    '<div class="pale-danger" id="pale-danger"><span></span><div><b>它苏醒了</b><small>别让它靠近，去墙边画出逃生门。</small></div></div>',
    '<div class="pale-timer" id="pale-timer"></div>',
   '</aside>',
   '<div id="pale-tip" class="pale-tip" role="status" aria-live="polite"></div>',
+  '<div id="pale-escape-guide" class="pale-escape-guide" aria-live="polite"><strong>← 原路冲回粉笔门</strong><div class="pale-escape-track"><span id="pale-escape-fill"></span></div><small id="pale-escape-distance">沿长廊撤退</small></div>',
   '<div class="pale-bottom"><div>WASD / 方向键移动　·　E 交互　·　鼠标点击地面寻路</div><a href="?stage=2">← 巨树之腹</a></div>',
   '<div class="pale-touch"><div id="pale-pad" class="pale-pad" aria-label="虚拟方向摇杆" role="group"><div id="pale-knob" class="pale-knob"></div></div>',
    '<button id="pale-act" class="pale-act" type="button">✦<small>交互</small></button></div>',
@@ -29,8 +30,8 @@ document.body.innerHTML=[
    '<div class="draw-meter"><span id="draw-percent">0%</span><span>粉笔描画进度</span></div></div></div>',
   '<section id="pale-intro" class="pale-overlay" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✦　◈　✦</div><small>CHAPTER III · PALE MAN</small><h2>苍白盛宴</h2>',
-   '<p>石厅深处摆着一桌盛宴。<br>守卫安静地坐着，像早已死去。<br>不要相信沉默。</p>',
-   '<button id="pale-start" class="pale-primary" type="button">进入宴会厅 ↗</button><footer>3D PIXEL DIORAMA · CHASE & CHALK ESCAPE</footer>',
+   '<p>粉笔门在你身后，古老石廊通向一场盛宴。<br>桌尾的守卫安静地坐着，仿佛早已死去。<br>如果惊醒它，你必须原路逃回来。</p>',
+   '<button id="pale-start" class="pale-primary" type="button">踏入石廊 ↗</button><footer>LONG PURSUIT · BANQUET & CHALK ESCAPE</footer>',
   '</div></section>',
   '<section id="pale-death" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil death">✧　✧　✧</div><small>YOU WERE SEEN</small><h2>盛宴的最后一道菜</h2>',
@@ -67,44 +68,58 @@ function allowedMovement(){
 }
 function updateHUD(){
  const phase=state.phase;
- let title='靠近宴会长桌',desc='葡萄、面包、烤肉摆满桌面。那具苍白的身影还没有动作。';
+ const inPassage=zone(state.player)==='passage';
+ let title=inPassage?'沿石廊深入宴会厅':'靠近宴会长桌';
+ let desc=inPassage?'身后的粉笔门是唯一退路。穿过漫长石廊，前往尽头的盛宴。':
+  '桌上堆满葡萄、面包和烤肉；苍白怪守在桌尾。';
  if(phase==='awakening'){
-  title='不要动……';desc='它把眼睛举到了面前。那些不是普通的手。';
+  title='它在苏醒';desc='两只掌心的眼睛正缓缓升到额头的位置。';
  }else if(phase==='chase'){
-  title='快跑！找到粉笔门';desc='沿长桌绕开苍白怪，朝左后方墙上的粉笔痕迹奔跑。';
+  title=inPassage?'不要停！沿石廊继续跑':'绕开长桌！逃回石廊';
+  desc=state.sealed?'粉笔门已经关闭。冲回入口，在怪物到达前重新画开它。':
+   '身后的粉笔门正在消失，沿来路跑回原来的入口！';
  }else if(phase==='drawing'){
-  title='画！快把门画完！';desc='从左下角向上，横向，再向下画出 U 形门框。';
+  title='门已关闭，快画！';desc='从左下角向上、向右、向下描画门框。怪物正在追来。';
  }else if(phase==='caught'){
-  title='它终于看见了你';desc='怪物抓住了逃跑者，宴席又多了一道菜。';
+  title='它终于看见了你';desc='苍白怪抓住逃跑者，把她拖进黑暗的宴席。';
  }else if(phase==='escape'||phase==='escaped'){
-  title='粉笔门已开启';desc='门后的光正在吞没石厅。';
+  title='粉笔门已开启';desc='甬道尽头的门重新撕开，赶在它伸手之前逃出去。';
  }
  $('pale-objective').textContent=title;
  $('pale-description').textContent=desc;
  $('pale-game').dataset.phase=phase;
- $('pale-danger').classList.toggle('active',['chase','drawing','caught'].includes(phase));
+ const chased=['chase','drawing','caught'].includes(phase);
+ $('pale-danger').classList.toggle('active',chased);
+ $('pale-escape-guide').classList.toggle('active',chased);
+ const remaining=Math.max(0,Math.ceil(SEAL_SECONDS-state.chaseTime));
  $('pale-timer').textContent=['chase','drawing'].includes(phase)?
-  '追逐时间 '+Math.floor(state.chaseTime)+' 秒':'';
+   state.sealed?'⌛ 粉笔门已关闭 · 必须重新描画':'⌛ 沙漏：'+remaining+' 秒后入口消失':'';
+ const span=Math.abs(FOOD.x-DOOR.x);
+ const progress=Math.max(0,Math.min(1,(FOOD.x-state.player.x)/span));
+ $('pale-escape-fill').style.width=(progress*100).toFixed(1)+'%';
+ $('pale-escape-distance').textContent=
+  Math.ceil(distance(state.player,DOOR))+' 米 · '+(inPassage?'直走，出口在前方':'先离开宴会厅');
  const canEat=phase==='invitation'&&distance(state.player,FOOD)<1.55;
  const canDraw=phase==='chase'&&atDoor(state);
  const suggest=phase==='invitation'||canDraw;
  $('pale-suggest').classList.toggle('show',suggest);
- $('pale-suggest-text').textContent=canEat?'✦ 禁忌的葡萄在眼前：吃一颗':
-  canDraw?'✦ 粉笔门就在这里：开始描画':'✦ 长桌就在前方。靠近葡萄果盘';
- $('pale-suggest-act').textContent=canEat?'吃一口 E':canDraw?'画门 E':'靠近食物 ↗';
+ $('pale-suggest-text').textContent=canEat?'✦ 葡萄就在眼前：吃一颗':
+  canDraw?'✦ 粉笔门已关闭：快画出新门':
+  inPassage?'✦ 沿石廊穿过拱门，去宴会长桌':'✦ 长桌就在前方。走到葡萄果盘';
+ $('pale-suggest-act').textContent=canEat?'吃一口 E':canDraw?'画门 E':'前往盛宴 ↗';
  $('pale-act').innerHTML=phase==='drawing'?'✎<small>画门中</small>':
   canEat?'🍇<small>吃一口</small>':canDraw?'✎<small>画门</small>':'✦<small>交互</small>';
 }
 function start(){
  if(started)return;started=true;$('pale-intro').classList.add('hidden');
- note(392,.25);tell('走到长桌前，选择一颗葡萄。桌尾的怪物暂时没有反应。',4800);
+ note(392,.25);tell('你从粉笔门进入长甬道。沿石廊向右前方前进，走到尽头的盛宴。',5300);
  updateHUD();
 }
 function setActionTarget(target,action=null){
  if(!allowedMovement())return;
  const path=huntRoute(state.player,target,.27);
  if(!path.length&&distance(state.player,target)>.55){
-  tell('这里被长桌或石柱挡住了，请绕路。');return;
+  tell('道路被石墙或长桌挡住了。沿着甬道走，或绕过宴会长桌。');return;
  }
  navPath=path;navAction=action;
 }
@@ -120,7 +135,7 @@ function doEat(){
 }
 function beginChalk(){
  if(state.phase==='drawing')return;
- if(!startDrawing(state)){setActionTarget(DOOR,'draw');tell('快到左后方的墙边，粉笔痕迹就在那儿。');return;}
+ if(!startDrawing(state)){setActionTarget(DOOR,'draw');tell('还没抵达出口！沿宴会厅入口原路返回长石廊，直到尽头的粉笔门。');return;}
  navPath=[];navAction=null;keyboard.clear();
  $('pale-draw').classList.remove('hidden');
  drawPrevious=null;drawPointer=null;
@@ -313,7 +328,7 @@ function driveHunter(dt){
   while(huntPath.length&&distance(state.monster,huntPath[0])<.27)huntPath.shift();
   if(huntPath.length){
    const dest=huntPath[0];
-   const speed=HUNTER_SPEED*(state.phase==='drawing'?.88:1);
+   const speed=HUNTER_SPEED*(state.phase==='drawing'?.90:1);
    const next=moveActor(state.monster,dest.x-state.monster.x,dest.z-state.monster.z,dt,speed,.28);
    if(distance(next,state.monster)<.0003)huntTime=0;
    state.monster=next;
@@ -332,7 +347,7 @@ function updateTransition(){
   lastPhase=state.phase;updateHUD();
   if(lastPhase==='chase'){
    $('pale-cinematic').classList.remove('active');
-   tell('跑！沿长桌侧边绕到左后方，按 E 画出粉笔门！',4300);
+   tell('快跑！先绕过长桌，再穿过整条石廊，跑回最初的粉笔门！',4400);
    note(180,.36,'sawtooth',.027);
   }
   if(lastPhase==='awakening')updateHUD();
@@ -367,6 +382,10 @@ requestAnimationFrame(frame);
 const params=new URLSearchParams(location.search);
 if(params.has('previewChase')){
  start();state.player={...FOOD};eat(state);state.awakeTime=AWAKEN_SECONDS-.025;
+}
+if(params.has('previewReturn')){
+ start();state.player={x:-12.6,z:.1};state.phase='chase';state.eaten=true;
+ state.sealed=true;state.monster={x:-8.3,z:.1};
 }
 if(params.has('previewDoor')){
  start();state.player={...DOOR};state.phase='chase';state.monster={x:6.7,z:2.5};

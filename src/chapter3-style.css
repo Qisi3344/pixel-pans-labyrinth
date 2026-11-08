@@ -108,3 +108,29 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
  .pale-draw{max-height:93vh}.draw-heading p{display:none}#pale-chalk{width:min(100%,180px)}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* The old one-room chase is now a 24-unit return route. This compact
+   directional meter only appears after the forbidden food awakens the hunter. */
+.pale-escape-guide{
+ position:absolute;z-index:6;left:50%;top:clamp(90px,11vh,130px);
+ transform:translateX(-50%);width:min(310px,75vw);border-radius:11px;
+ padding:10px 15px;background:rgba(42,45,40,.93);
+ color:#efe1bd;border:1px solid rgba(211,179,120,.42);
+ box-shadow:0 13px 31px #302b2b30;pointer-events:none;
+ opacity:0;visibility:hidden;transition:opacity .25s;
+ text-align:center;
+}
+.pale-escape-guide.active{opacity:1;visibility:visible}
+.pale-escape-guide strong{display:block;font-size:12px;letter-spacing:.10em}
+.pale-escape-track{height:5px;margin:10px 2px 7px;border-radius:8px;background:#6b6354;overflow:hidden}
+.pale-escape-track span{display:block;height:100%;width:0%;border-radius:8px;background:#dfc17b;transition:width .20s}
+.pale-escape-guide small{display:block;font-size:10px;color:#ddc8a9}
+@media(max-width:820px){
+ .pale-escape-guide{top:clamp(74px,10vh,112px);left:auto;right:12px;
+  transform:none;width:150px;padding:8px 9px}
+ .pale-escape-guide strong{font-size:10px}
+ .pale-escape-guide small{font-size:9px}
+ .pale-escape-track{margin:7px 1px 5px}
+ .pale-game[data-phase="chase"] .pale-side{top:183px}
+ .pale-game[data-phase="drawing"] .pale-side{top:183px}
+}
