@@ -2,13 +2,18 @@
 // Canonical route = refuse the faun, Vidal takes the infant and shoots Ofelia;
 // the girl's own blood then unlocks the royal vision. The alternative route
 // (giving innocent blood) is an explicitly original, non-film what-if ending.
-import {blockedByFinalMaze} from './chapter4-maze-layout.js';
+import {blockedByFinalMaze,FINAL_WELL_CENTER} from './chapter4-maze-layout.js';
 export const CHAPTER4_TIME_LIMIT=62;
 export const CHAPTER4_SPEED=3.75;
 export const CHAPTER4_RADIUS=12.7;
 export const FINAL_ALTAR=Object.freeze({x:-1.6,z:0});
 export const FINAL_START=Object.freeze({x:-9.65,z:7.2});
-export const VIDAL_START=Object.freeze({x:-11.8,z:8.45});
+// Captain enters from a paved part of the miniature, not beyond the round rim.
+export const VIDAL_START=Object.freeze({x:-10.1,z:6.8});
+// Both narrative branches reach the SAME stone lip before any blood appears.
+export const FINAL_BLOOD_STAND=Object.freeze({
+ x:FINAL_WELL_CENTER.x-2.29,z:FINAL_WELL_CENTER.z+.27
+});
 export const FINAL_CHOICE_RADIUS=1.75;
 export const FINAL_DIALOGUE=Object.freeze([
  Object.freeze({speaker:'潘神',text:'公主殿下，你终于来了。地底王国的门就在这口古井下面。'}),
@@ -27,9 +32,9 @@ export const FINAL_OUTCOMES=Object.freeze({
  offering:Object.freeze({
   id:'offering',title:'猩红归途',subtitle:'架空结局 · 交换',
   banner:'王国的门终于开了。',
-  speech:'欢迎回家。通往王座的路，从来不是免费的。',
-  second:'金色殿堂确实出现在她面前，失落的父母也在等候。但弟弟再没有来到她身边。王冠很重，掌心更重。',
-  last:'她得到了想要的家，却将最珍贵的东西留在了门外。'
+  speech:'欢迎回来，女儿。这里始终有你的位置。',
+  second:'金色殿堂出现在她面前，失落的父母仍在等候。弟弟留在了人间，他有自己的母亲，也属于另一个世界。王国的父母没有因此责备她；关于那滴血的记忆，只留在她自己的心里。',
+  last:'她回到了梦寐以求的家，但仍记得那条以无辜之血打开的路。'
  })
 });
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));

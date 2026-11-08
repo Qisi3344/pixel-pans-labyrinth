@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
-import {FINAL_START,FINAL_ALTAR,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
+import {FINAL_START,FINAL_ALTAR,FINAL_BLOOD_STAND,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
 import {FINAL_FAUN_POSITION} from './chapter4-maze-layout.js';
 import {buildFirstMazeCenterFragment} from './chapter4-maze-center.js';
+import {buildFinalSpiralWell,createFinalStageWithCutout} from './chapter4-well.js';
 
 const mat=(color,opt={})=>new THREE.MeshLambertMaterial({color,flatShading:true,...opt});
 const box=(root,color,x,y,z,w,h,d,shadow=true)=>{
@@ -119,48 +120,15 @@ function babyModel(root){
  return group;
 }
 function spiralWell(root){
- const well=new THREE.Group();root.add(well);
- well.position.set(2.17,.07,-2.06);
- cyl(well,0x454e4b,0,.03,0,2.06,2.12,.4,24);
- const dark=cyl(well,0x111e22,0,.275,0,1.60,1.60,.016,28);
- dark.material=new THREE.MeshBasicMaterial({color:0x101f24});
- const inner=new THREE.Mesh(new THREE.TorusGeometry(1.76,.11,5,28),mat(0x78847a));
- inner.rotation.x=Math.PI/2;inner.position.y=.33;well.add(inner);
- // Circular stairs fold down toward an empty black centre.
- for(let i=0;i<20;i++){
-  const angle=i/20*Math.PI*2,rr=1.22-(i%4)*.13;
-  const step=box(well,i%4===0?0x829085:0x6f7a70,
-   Math.cos(angle)*rr,.295-(i%4)*.055,Math.sin(angle)*rr,
-   .52,.18,.26);
-  step.rotation.y=-angle;
- }
- for(let i=0;i<18;i++){
-  const a=i/18*Math.PI*2,rr=1.92+(i%3)*.025;
-  const tile=box(well,i%4?0x778279:0x8c9688,
-   Math.cos(a)*rr,.40,Math.sin(a)*rr,.76,.23,.48);
-  tile.rotation.y=-a;
- }
- // A genuine magical opening appears INSIDE the circular stone well.
- // Both variants use the same geometry, but each color tells a different fate.
- const portal=new THREE.Mesh(new THREE.CircleGeometry(1.40,28),
-  new THREE.MeshBasicMaterial({
-   color:0xb0d7c4,transparent:true,opacity:0,
-   depthWrite:false,side:THREE.DoubleSide
-  }));
- portal.rotation.x=-Math.PI/2;
- portal.position.set(0,.49,0);
- portal.visible=false;well.add(portal);
- const droplet=new THREE.Mesh(new THREE.IcosahedronGeometry(.18,0),
-  new THREE.MeshBasicMaterial({color:0xa8484d,transparent:true,opacity:0}));
- droplet.position.set(0,.54,0);well.add(droplet);
- return {well,dark,droplet,portal};
+ // Exact buildWell() from chapter 1; NEVER the old 20 floating faux steps.
+ return buildFinalSpiralWell(root);
 }
 function buildMaze(root){
  // Round stone diorama, matching the first chapter's miniature footprint.
  // The central wall map, paving, ivy and hedge foliage are sampled from
  // generateMaze(132), not a newly randomized maze for this final trial.
- const ground=cyl(root,0x394a42,0,-.71,.12,13.17,13.17,1.08,48);
- const cap=cyl(root,0x4c6156,0,-.12,.12,13.08,13.08,.17,48);
+ const {ground,cap}=createFinalStageWithCutout(root);
+ // Both ground layers have a real cutout, exposing all 52 descending steps.
  const fragment=buildFirstMazeCenterFragment(root);
  const well=spiralWell(root);
  // Three broken stone arches lead toward the centre, framing the distant Faun.
@@ -411,6 +379,7 @@ export function createFinalScene(canvas,state){
  const focus=new THREE.Vector3(FINAL_START.x,.8,FINAL_START.z);
  const temp=new THREE.Vector3();
  let sceneWidth=0,sceneHeight=0,zoom=1,wasRoyal=false;
+ let lastCutscenePosition=null;
  const pickPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
  const ray=new THREE.Raycaster();const pointer=new THREE.Vector2();
  function resize(){
@@ -462,21 +431,38 @@ export function createFinalScene(canvas,state){
    });
    focus.lerp(temp.set(0,2.48,-3.40),Math.min(1,d*4.4));
   }else{
-   hero.body.position.set(state.player.x,.13,state.player.z);
+   const cinematic=state.phase==='cinematic';
+   const localT=state.cinematicTime||0;
+   const arriveSeconds=state.timeOut?2.05:1.30;
+   const raw=cinematic?Math.max(0,Math.min(1,localT/arriveSeconds)):0;
+   const eased=raw*raw*(3-2*raw);
+   const sceneActor=cinematic
+    ?{x:THREE.MathUtils.lerp(state.player.x,FINAL_BLOOD_STAND.x,eased),
+      z:THREE.MathUtils.lerp(state.player.z,FINAL_BLOOD_STAND.z,eased)}
+    :state.player;
+   // All endings physically approach the edge BEFORE any drop falls. On
+   // timeout the walk takes longer to avoid teleporting in from the maze.
+   if(cinematic){
+    const previous=lastCutscenePosition||state.player;
+    hero.walkDistance=Math.hypot(sceneActor.x-previous.x,sceneActor.z-previous.z);
+    lastCutscenePosition={...sceneActor};
+   }else lastCutscenePosition=null;
+   hero.body.position.set(sceneActor.x,.13,sceneActor.z);
    hero.body.rotation.y=THREE.MathUtils.lerp(hero.body.rotation.y,
-    state.phase==='cinematic'?2.3:hero.body.rotation.y,.12);
+    cinematic?2.3:hero.body.rotation.y,.12);
    baby.visible=state.brotherVisible;
-   const lastLook=state.phase==='cinematic'&&!state.timeOut;
-   focus.lerp(temp.set(lastLook?FINAL_ALTAR.x:state.player.x,
-    state.phase==='cinematic'?1.24:.80,
-    lastLook?FINAL_ALTAR.z:state.player.z),Math.min(1,d*4.8));
+   const viewX=cinematic?THREE.MathUtils.lerp(sceneActor.x,FINAL_WELL_CENTER.x,.26):state.player.x;
+   const viewZ=cinematic?THREE.MathUtils.lerp(sceneActor.z,FINAL_WELL_CENTER.z,.26):state.player.z;
+   focus.lerp(temp.set(viewX,cinematic?1.20:.80,viewZ),Math.min(1,d*4.8));
    // The captain arrives at the moment the 62-second clock expires, not
    // six seconds before it. On timeout he pursues Ofelia WHERE she stands.
-   const localT=state.cinematicTime||0;
    const chase=state.phase==='cinematic'&&state.ending==='mercy';
-   const p=chase?Math.min(1,localT/1.68):
+   // Keep Vidal out of sight until he actually enters from the paved gate.
+   // The offering branch has no shooting scene, so he never appears there.
+   vidal.root.visible=chase||(['approach','dialogue','decision'].includes(state.phase)&&state.elapsed>=23);
+   const p=chase?Math.min(1,localT/2.05):
     Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-22)/(CHAPTER4_TIME_LIMIT-22)));
-   const pursuitTarget=state.timeOut?state.player:FINAL_ALTAR;
+   const pursuitTarget=cinematic?FINAL_BLOOD_STAND:state.player;
    const beforeVidal=vidal.root.position.clone();
    vidal.root.position.set(
     THREE.MathUtils.lerp(VIDAL_START.x,pursuitTarget.x-.95,p),
@@ -489,21 +475,21 @@ export function createFinalScene(canvas,state){
    vidal.pistol.visible=aiming;
    animateVidal(vidal,d,strideDistance,aiming);
    vidalBaby.visible=chase&&localT>=1.6;
-   const portalAt=state.ending==='mercy'?3.23:1.53;
-   const portalDuration=state.ending==='mercy'?1.40:1.92;
+   // Drip from Ofelia's feet, cross the lip and descend alongside the
+   // genuine spiral steps. Portal opens BELOW them, not over the mouth.
+   const bloodAt=state.ending==='mercy'?3.22:1.42;
+   const bloodProgress=cinematic?
+    Math.max(0,Math.min(1,(localT-bloodAt)/1.10)):0;
+   maze.well.setBloodProgress(bloodProgress);
+   const portalAt=state.ending==='mercy'?4.05:2.52;
+   const portalDuration=.76;
    const pulse=Math.max(0,Math.min(1,(localT-portalAt)/portalDuration));
-   maze.well.portal.visible=state.phase==='cinematic'&&localT>=portalAt;
+   maze.well.portal.visible=cinematic&&localT>=portalAt;
    maze.well.portal.material.color.setHex(
     state.ending==='offering'?0x9d3f50:0xc5e8ca);
    maze.well.portal.material.opacity=maze.well.portal.visible?
-    .15+.72*pulse:0;
-   maze.well.portal.scale.setScalar(.78+.26*Math.sin(elapsed*2.7));
-   maze.well.droplet.visible=state.phase==='cinematic'&&
-    state.cinematicTime>(state.ending==='mercy'?3.25:1.55);
-   maze.well.droplet.material.opacity=maze.well.droplet.visible?.82:0;
-   maze.well.droplet.position.y=.48+
-    Math.sin(elapsed*2)*.065-(state.ending==='mercy'?Math.max(0,localT-3.25)*.07:0);
-   maze.well.droplet.material.color.setHex(state.ending==='offering'?0xa3414b:0x9e5555);
+    .15+.70*pulse:0;
+   maze.well.portal.scale.setScalar(.88+.10*Math.sin(elapsed*2.7));
    maze.spot.color.setHex(state.ending==='offering'?0xe0a09b:0xa9d2c7);
    maze.spot.intensity=state.phase==='cinematic'?2.35:1.10;
    maze.seal.rotation.y=elapsed*.15;
