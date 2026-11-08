@@ -321,6 +321,18 @@ export function createFinalScene(canvas,state){
    }else hero.rig.rotation.z=0;
   }
   animatePlayer(hero,d,Math.max(0,hero.walkDistance||0),Boolean(hero.walkDistance));
+  // The existing walk animator resets arm and torso pivots each frame. Apply
+  // carrying and the brief non-graphic fall AFTER walking, or they disappear.
+  if(isRoyal){
+   hero.rig.rotation.z=0;
+   hero.arms[0].rotation.x=0;hero.arms[1].rotation.x=0;
+  }else if(state.phase==='cinematic'&&state.ending==='mercy'&&state.cinematicTime>=2.17){
+   hero.rig.rotation.z=-1.13*Math.min(1,(state.cinematicTime-2.17)*1.2);
+   hero.arms[0].rotation.x=-.22;hero.arms[1].rotation.x=-.42;
+  }else{
+   hero.arms[0].rotation.x=-.50;
+   hero.arms[1].rotation.x=-.45;
+  }
   hero.walkDistance=0;
   const onRoyal=isRoyal;
   camera.position.copy(focus).addScaledVector(direction,onRoyal?35:32);
