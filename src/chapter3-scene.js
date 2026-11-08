@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
-import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,zone} from './chapter3-logic.js';
+import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,CHAIR_CLIMB_SECONDS,ESCAPE_CLIMB_SECONDS,zone} from './chapter3-logic.js';
 import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
 import {createChildShoePile} from './chapter3-shoes.js';
 import {deathBeat} from './chapter3-devour.js';
@@ -353,82 +353,96 @@ function buildPaleMan(scene){
  return {root,rig,hands,jawPivot,maw,pose};
 }
 function chalkPortal(scene){
- // The original entry portal is at the FAR END of the vaulted passage.
- // When its hourglass expires it fades; the player must draw a new doorway.
+ // The existing attic entrance has CLOSED: its old chalk trace stays flush
+ // with masonry. Escape instead uses a CHAIR and a CEILING trapdoor.
  const parent=new THREE.Group();scene.add(parent);
- const cx=DOOR.x,z=-1.72;
- const left=cx-.76,right=cx+.76;
- const points=[[left,.08,z],[left,2.74,z],[right,2.74,z],[right,.08,z]];
- for(const [x,y] of points){
-  ico(parent,0xd1c9b2,x,y,z+.08,.075,.075,.065,0);
- }
- const portal=box(parent,0x172838,cx,1.43,z+.06,1.44,2.56,.040,false);
- portal.material=new THREE.MeshBasicMaterial({
-  color:0x4f8292,transparent:true,opacity:.34,depthWrite:false,side:THREE.DoubleSide
- });
- // A faint but permanent 3D chalk scar stays on the wall AFTER the
- // original magic door seals. This is a tangible world-space target, not an
- // invisible hotspot or a disconnected floating UI label.
- const etched=[];
- for(let i=0;i<3;i++){
-  const a=new THREE.Vector3(...points[i]),b=new THREE.Vector3(...points[i+1]);
-  a.z+=.105;b.z+=.105;
+ const cx=DOOR.x,roofY=3.80,roofZ=-.59;
+ const oldTrace=new THREE.Group();parent.add(oldTrace);
+ // Thin wall traces, not a floating solid plane clipping the stone wall.
+ const traces=[
+  [[cx-.67,.22,-1.724],[cx-.67,2.52,-1.724]],
+  [[cx-.67,2.52,-1.724],[cx+.67,2.52,-1.724]],
+  [[cx+.67,2.52,-1.724],[cx+.67,.22,-1.724]]
+ ];
+ for(const [p1,p2] of traces){
+  const a=new THREE.Vector3(...p1),b=new THREE.Vector3(...p2);
   const d=b.clone().sub(a);
-  const mark=new THREE.Mesh(
-   new THREE.CylinderGeometry(.036,.041,d.length(),6),
-   new THREE.MeshBasicMaterial({color:0xece3cc,transparent:true,opacity:.64,depthWrite:false})
-  );
-  mark.position.copy(a).add(b).multiplyScalar(.5);
-  mark.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());
-  parent.add(mark);etched.push(mark);
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(.017,.017,d.length(),5),
+   new THREE.MeshBasicMaterial({color:0xc2b6a2,transparent:true,opacity:.24,depthWrite:false}));
+  m.position.copy(a).add(b).multiplyScalar(.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());
+  oldTrace.add(m);
  }
- // Tiny pale stones lead from the center of the hallway toward the chalk
- // outline. Keep them low so the player and monster can cross unobstructed.
- for(let k=0;k<5;k++){
-  const pebble=ico(parent,0xc9bda2,cx+(.10*Math.sin(k*2)),.045,-.18-k*.28,
-    .12,.025,.09,0);
-  pebble.material=new THREE.MeshBasicMaterial({color:0xdfd3b9});
+ // Four-legged worn wooden chair, with backrest and bracing.
+ const stool=new THREE.Group();stool.position.set(cx,0,.20);parent.add(stool);
+ box(stool,0x674939,0,.66,0,.9,.15,.86);
+ box(stool,0x987454,0,.74,0,.96,.055,.90);
+ for(const x of [-.35,.35])for(const z of [-.32,.32])
+  box(stool,0x47362d,x,.31,z,.13,.62,.13);
+ for(const z of [-.26,.26])box(stool,0x8c6346,0,.30,z,.73,.095,.09);
+ for(const x of [-.34,.34])
+  beam(stool,0x6c4d39,[x,.66,-.32],[x,1.60,-.48],.073,6);
+ box(stool,0x745341,0,1.52,-.48,.78,.22,.12);
+ // Partial ceiling around a rectangular hatch: open cutaway center keeps
+ // the protagonist visible from the orthographic camera above the model.
+ const roof=new THREE.Group();roof.position.set(cx,roofY,roofZ);parent.add(roof);
+ for(const x of [-1.04,1.04]){
+  box(roof,0x585c55,x,-.09,0,.34,.28,2.33);
+  box(roof,0xa39479,x,.055,0,.10,.04,2.20,false);
  }
- // The actual retraced white lines become brighter only while drawing.
- const linePieces=[];
- for(let i=0;i<3;i++){
-  const a=new THREE.Vector3(...points[i]),b=new THREE.Vector3(...points[i+1]);
-  const segment=new THREE.Mesh(new THREE.CylinderGeometry(.044,.044,1,7),
-   new THREE.MeshBasicMaterial({color:0xf4e9cc}));
-  segment.visible=false;segment.userData={a,b,distance:a.distanceTo(b)};
-  parent.add(segment);linePieces.push(segment);
+ for(const z of [-1.0,1.0]){
+  box(roof,0x585c55,0,-.09,z,2.06,.28,.34);
+  box(roof,0xa39479,0,.055,z,2.16,.04,.10,false);
  }
- const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.035,5,28),
-  new THREE.MeshBasicMaterial({color:0x9bc9c9,transparent:true,opacity:.55}));
- ring.position.set(cx,1.43,z+.13);parent.add(ring);
- const glow=new THREE.PointLight(0x9fcee0,0,6,2);
- glow.position.set(cx,1.32,z+.55);parent.add(glow);
- function update(progress,time,state){
-  for(let i=0;i<3;i++){
-   const segment=linePieces[i],{a,b,distance}=segment.userData;
-   const amount=clamp(progress*3-i);
-   segment.visible=amount>.001;
-   segment.position.copy(a).lerp(b,amount*.5);
-   segment.scale.set(1,Math.max(.001,distance*amount),1);
-   segment.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
-    b.clone().sub(a).normalize());
-  }
-  const ready=['escape','escaped'].includes(state.phase);
-  const unsealed=!state.sealed&&!ready;
-  const fading=state.phase==='awakening'?.72:
-   state.phase==='invitation'?.85:clamp(1-state.chaseTime/SEAL_SECONDS);
-  portal.visible=ready||unsealed;
-  portal.material.opacity=ready?.78:(unsealed?.26*fading:0);
-  etched.forEach(mark=>{mark.material.opacity=ready?.20:state.sealed?.82:.55;});
-  ring.visible=true;
-  ring.material.opacity=ready?.74:state.sealed?.26:.22*fading;
-  ring.rotation.z=time*.12;
-  glow.intensity=ready?1.8:state.sealed?.16:unsealed?.45*fading:.05;
+ const ceiling=box(roof,0x575b55,0,-.003,0,1.79,.045,1.76,false);
+ ceiling.material=new THREE.MeshBasicMaterial({
+  color:0x575b55,transparent:true,opacity:.14,depthWrite:false,side:THREE.DoubleSide
+ });
+ const darkOpening=box(roof,0x172935,0,-.016,0,1.82,.06,1.79,false);
+ darkOpening.material=new THREE.MeshBasicMaterial({
+  color:0x152634,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide
+ });
+ darkOpening.visible=false;
+ const glyphPoints=[
+  [-.73,.10,.69],[-.73,.10,-.69],[.73,.10,-.69],
+  [.73,.10,.69],[-.73,.10,.69]
+ ].map(v=>new THREE.Vector3(...v));
+ const lines=[];
+ for(let k=0;k<4;k++){
+  const a=glyphPoints[k],b=glyphPoints[k+1],d=b.clone().sub(a);
+  const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.04,.045,1,6),
+   new THREE.MeshBasicMaterial({color:0xf5ead6}));
+  mesh.visible=false;mesh.userData={a,b,length:d.length()};
+  roof.add(mesh);lines.push(mesh);
  }
- const target=box(parent,0xffffff,cx,1.4,z+.35,2.12,3.10,.08,false);
+ const glow=new THREE.PointLight(0xb2d7e2,0,5,2);
+ glow.position.set(cx,roofY-.36,roofZ);parent.add(glow);
+ // Click on the CHAIR, not a fake floor-to-ceiling wall panel.
+ const target=box(parent,0xffffff,cx,.98,.25,1.62,1.82,1.60,false);
  target.material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
  target.userData.kind='door';
- return {parent,portal,update,target};
+ function update(progress,time,state){
+  const climb=['climbing','drawing'].includes(state.phase);
+  stool.rotation.z=climb?Math.sin(time*11)*.024:0;
+  stool.rotation.x=climb?Math.sin(time*9)*.012:0;
+  const beforeSeal=!state.sealed;
+  oldTrace.children.forEach(m=>{
+   m.material.opacity=beforeSeal?.24*Math.max(0,1-state.chaseTime/SEAL_SECONDS):.025;
+  });
+  for(let k=0;k<4;k++){
+   const line=lines[k],amount=clamp(progress*4-k),{a,b,length}=line.userData;
+   line.visible=amount>.001;
+   line.scale.set(1,Math.max(.001,length*amount),1);
+   line.position.copy(a).lerp(b,amount*.5);
+   line.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());
+  }
+  const open=['escape','escaped'].includes(state.phase);
+  ceiling.material.opacity=open?Math.max(0,.14-state.winTime*.20):.14;
+  darkOpening.visible=open;
+  darkOpening.material.opacity=open?Math.min(.93,.12+state.winTime*.65):0;
+  glow.intensity=open?2.1:climb?.48:.10;
+ }
+ return {parent,stool,roof,ceiling,darkOpening,lines,target,update};
 }
 export function createBanquetScene(canvas,state){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
@@ -476,7 +490,8 @@ export function createBanquetScene(canvas,state){
    ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
   const caughtZoom=state.phase==='caught'?
    (portrait?2.7:5.4)*deathBeat(state.deathTime).grip:0;
-  const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom;
+  const ceilingZoom=['climbing','drawing','escape','escaped'].includes(state.phase)?(portrait?.28:.86):0;
+  const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom+ceilingZoom;
   const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
   camera.top=halfV;camera.bottom=-halfV;
@@ -533,6 +548,22 @@ export function createBanquetScene(canvas,state){
    captureOrigin=null;player.body.visible=true;player.body.scale.setScalar(1);
    player.body.rotation.x=0;player.body.rotation.z=0;
   }
+  // Real climb sequence: step onto stool, stand, trace ceiling, pull upward.
+  if(['climbing','drawing','escape','escaped'].includes(state.phase)){
+   const step=state.phase==='climbing'?smooth(state.climbTime/CHAIR_CLIMB_SECONDS):1;
+   const up=['escape','escaped'].includes(state.phase)
+    ?smooth(state.winTime/ESCAPE_CLIMB_SECONDS):0;
+   p.set(
+    THREE.MathUtils.lerp(state.player.x,DOOR.x,step),
+    .03+step*.72+up*2.72,
+    THREE.MathUtils.lerp(state.player.z,DOOR.z+.20,step)-up*.73
+   );
+   player.arms[0].rotation.x=-1.17;
+   player.arms[1].rotation.x=state.phase==='climbing'?- .42:-1.30;
+   player.legs[0].rotation.x=state.phase==='climbing'?.55*Math.sin(step*Math.PI):-.12;
+   player.legs[1].rotation.x=state.phase==='climbing'?.4*Math.sin(step*Math.PI):.09;
+   player.body.visible=up<.985;
+  }
   table.grapes.scale.setScalar(state.eaten?.01:1);
   chalk.update(state.doorProgress,now,state);
   let target;
@@ -543,8 +574,8 @@ export function createBanquetScene(canvas,state){
   } else if(state.phase==='caught'){
    // The fatal scene is a tight two-character shot, not an off-screen scale.
    target=new THREE.Vector3(state.monster.x,2.04,state.monster.z+.30);
-  } else if(state.phase==='escape'){
-   target=new THREE.Vector3(DOOR.x,1.45,DOOR.z);
+  } else if(['climbing','drawing','escape','escaped'].includes(state.phase)){
+   target=new THREE.Vector3(DOOR.x,2.4,DOOR.z-.42);
   }else{
    // A long route cannot share the fixed camera used for the old square room.
    // Track the avatar on BOTH desktop and mobile while retaining a little
@@ -563,6 +594,6 @@ export function createBanquetScene(canvas,state){
   return devour;
  }
  resize(true);draw(0,.016,0);
- return {scene,renderer,camera,player,monster:pale,shoePile,draw,resize,pick,setZoom,
+ return {scene,renderer,camera,player,monster:pale,shoePile,chalk,draw,resize,pick,setZoom,
   dispose:()=>renderer.dispose()};
 }
