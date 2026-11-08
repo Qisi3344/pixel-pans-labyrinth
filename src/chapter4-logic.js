@@ -9,7 +9,31 @@ export const FINAL_ALTAR=Object.freeze({x:1.1,z:-.65});
 export const FINAL_START=Object.freeze({x:-9.65,z:7.2});
 export const VIDAL_START=Object.freeze({x:-11.8,z:8.45});
 export const FINAL_CHOICE_RADIUS=2.15;
-export const FINAL_CINEMATIC=Object.freeze({mercy:8.7,offering:7.9});
+// Let the camera linger in the royal hall long enough for the King and Queen
+// to speak in separate world-anchored bubbles before the results card appears.
+export const ROYAL_ENTRY_TIME=Object.freeze({mercy:4.7,offering:3.6});
+export const FINAL_CINEMATIC=Object.freeze({mercy:17.6,offering:16.5});
+export const ROYAL_DIALOGUES=Object.freeze({
+ mercy:Object.freeze([
+  Object.freeze({speaker:'father',at:.35,text:'欢迎回来，我的女儿。我们一直在等你。'}),
+  Object.freeze({speaker:'father',at:3.55,text:'你宁愿流自己的血，也没有伤害无辜。你通过了最后的考验。'}),
+  Object.freeze({speaker:'mother',at:7.45,text:'回到我们身边吧。中间那张王座，始终是为你留的。'})
+ ]),
+ offering:Object.freeze([
+  Object.freeze({speaker:'father',at:.35,text:'你终于回来了，我的女儿。王国的大门为你而开。'}),
+  Object.freeze({speaker:'mother',at:3.65,text:'但这条路，留下了另一个无辜的生命。'}),
+  Object.freeze({speaker:'father',at:7.45,text:'你得到了王冠，也必须带着自己的选择走下去。'})
+ ])
+});
+export function royalDialogueAt(ending,cinematicTime){
+ const beats=ROYAL_DIALOGUES[ending],entry=ROYAL_ENTRY_TIME[ending];
+ if(!beats||!Number.isFinite(cinematicTime)||cinematicTime<entry)return null;
+ const relative=cinematicTime-entry;
+ if(relative<beats[0].at||relative>11.8)return null;
+ let active=null;
+ for(const beat of beats)if(relative>=beat.at)active=beat;
+ return active;
+}
 export const FINAL_OUTCOMES=Object.freeze({
  mercy:Object.freeze({
   id:'mercy',title:'无辜之血',subtitle:'原片结局 · 守护',
@@ -67,10 +91,10 @@ export function updateFinalTrial(state,dt){
   if(state.ending==='mercy'){
    state.brotherVisible=time<1.6;
    state.gunFlash=time>=2.16&&time<2.36;
-   state.royalShown=time>=4.7;
+   state.royalShown=time>=ROYAL_ENTRY_TIME.mercy;
   }else{
    state.brotherVisible=time<2.0;
-   state.royalShown=time>=3.6;
+   state.royalShown=time>=ROYAL_ENTRY_TIME.offering;
   }
   if(time>=FINAL_CINEMATIC[state.ending])state.phase='done';
  }
