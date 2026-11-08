@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
  CHAPTER4_TIME_LIMIT,CHAPTER4_SPEED,FINAL_START,FINAL_ALTAR,FINAL_OUTCOMES,
- newFinalTrial,nearFaun,decideFinal,updateFinalTrial,moveFinalPlayer,
+ newFinalTrial,nearFaun,advanceFaunDialogue,FINAL_DIALOGUE,decideFinal,updateFinalTrial,moveFinalPlayer,
  finalClockLabel,walkableFinal
 } from '../src/chapter4-logic.js';
 import {
@@ -35,6 +35,8 @@ test('offering at the stone well opens the invented route before the captain arr
  assert.equal(s.ending,null);
  s.player={...FINAL_ALTAR};
  updateFinalTrial(s,.05);
+ assert.equal(s.phase,'dialogue');
+ for(let i=0;i<FINAL_DIALOGUE.length;i++)assert.equal(advanceFaunDialogue(s),true);
  assert.equal(s.phase,'decision');
  assert.equal(decideFinal(s,'offering'),true);
  assert.equal(s.ending,'offering');
@@ -80,6 +82,8 @@ test('countdown remains live while the ritual choice is visible, and movement ca
  const start={...s.player},moved=moveFinalPlayer(s,1,0,.08);
  assert.ok(moved>0&&s.player.x>start.x);
  s.player={...FINAL_ALTAR};updateFinalTrial(s,.05);
+ assert.equal(s.phase,'dialogue');
+ for(let i=0;i<FINAL_DIALOGUE.length;i++)assert.equal(advanceFaunDialogue(s),true);
  assert.equal(s.phase,'decision');
  const remain=s.timeLeft;updateFinalTrial(s,1);
  assert.ok(s.timeLeft<remain,'no pause while choosing');
