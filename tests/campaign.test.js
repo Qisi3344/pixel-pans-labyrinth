@@ -10,10 +10,11 @@ function storage(){
  return {getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
 }
 test('one story preserves film task chronology while labeling prologue as a prologue',()=>{
- assert.deepEqual(CHAPTERS.map(x=>x.name),['石之迷宫','巨树之腹','苍白盛宴']);
+ assert.deepEqual(CHAPTERS.map(x=>x.name),['石之迷宫','巨树之腹','苍白盛宴','最后的石井']);
  assert.ok(CHAPTERS[0].kind.includes('序幕'));
  assert.ok(CHAPTERS[1].kind.includes('第一项试炼'));
  assert.ok(CHAPTERS[2].kind.includes('第二项试炼'));
+ assert.ok(CHAPTERS[3].kind.includes('第三项试炼'));
  assert.equal(CAMPAIGN_FINAL,'?screen=epilogue');
 });
 
@@ -35,7 +36,9 @@ test('new playthrough unlocks chapters in order and stores key/knife only when e
  assert.deepEqual(getItemNames(loadCampaign(s)),
   ['三枚归位的符印','黄金钥匙','祭仪匕首']);
  assert.equal(chapterUnlocked(3,loadCampaign(s)),true);
+ assert.equal(chapterUnlocked(4,loadCampaign(s)),true);
  assert.equal(campaignChapterUrl(2),'?stage=2&flow=1');
+ assert.equal(campaignChapterUrl(4),'?stage=4&flow=1');
 });
 
 test('user-chosen touch or keyboard controls persist and override device guess',()=>{
@@ -52,8 +55,8 @@ test('broken or hostile browser save cannot crash or unlock extra chapters',()=>
  const s=storage();s.setItem(SAVE_KEY,'{not json');
  assert.deepEqual(loadCampaign(s),defaultProgress());
  s.setItem(SAVE_KEY,JSON.stringify({completed:999,lastStage:999,mode:'gamepad'}));
- const p=loadCampaign(s);assert.equal(p.completed,3);assert.equal(p.mode,null);
- assert.equal(p.lastStage,3);
+ const p=loadCampaign(s);assert.equal(p.completed,4);assert.equal(p.mode,null);
+ assert.equal(p.lastStage,4);
 });
 
 test('boot hosts a real menu, prologue and epilogue, not three disconnected demos',()=>{
@@ -65,7 +68,7 @@ test('boot hosts a real menu, prologue and epilogue, not three disconnected demo
  const banquet=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(boot.includes('bootCampaignScreen(params)'));
  assert.ok(boot.includes('mountChapterFrame(Number(stage))'));
- for(const entry of ["import('./main.js')","import('./chapter2-main.js')","import('./chapter3-main.js')"])
+ for(const entry of ["import('./main.js')","import('./chapter2-main.js')","import('./chapter3-main.js')","import('./chapter4-main.js')"])
   assert.ok(boot.includes(entry),entry);
  assert.ok(ui.includes('modeMarkup()')&&ui.includes('prologueMarkup()'));
  assert.ok(ui.includes('installEpilogue()')&&ui.includes('installHome()'));
@@ -74,7 +77,7 @@ test('boot hosts a real menu, prologue and epilogue, not three disconnected demo
  assert.ok(first.includes('recordChapterComplete(1)'));
  assert.ok(tree.includes('recordChapterComplete(2)'));
  assert.ok(banquet.includes('recordChapterComplete(3)'));
- assert.ok(banquet.includes('CAMPAIGN_FINAL'));
+ assert.ok(banquet.includes('campaignChapterUrl(4)'));
  assert.ok(css.includes('.tale-chapter-list'));
  assert.ok(css.includes('html[data-input-mode="keyboard"] .touch-controls'));
  assert.ok(css.includes('html[data-input-mode="touch"] .pale-touch'));
