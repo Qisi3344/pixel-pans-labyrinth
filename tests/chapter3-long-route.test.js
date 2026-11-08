@@ -115,3 +115,10 @@ test('desktop and mobile both use follow camera and route signage is accessible'
  assert.ok(main.includes('SEAL_SECONDS-state.chaseTime'));
  assert.ok(!main.includes('沿长桌侧边绕到左后方'));
 });
+
+test('safe corridor preview is isolated to explicit QA URL only',()=>{
+ const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
+ assert.ok(main.includes("const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn')"));
+ assert.ok(main.includes("if(QA_RETURN_PREVIEW&&state.phase==='chase')return;"));
+ assert.ok(main.includes("if(!['chase','drawing'].includes(state.phase))return;"));
+});

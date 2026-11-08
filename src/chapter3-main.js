@@ -54,6 +54,7 @@ let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
+const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
 let drawPointer=null,drawPrevious=null;
 const movementCodes={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
@@ -316,7 +317,9 @@ function drivePlayer(dt){
  return moved;
 }
 function driveHunter(dt){
- // Deterministic pointer-drawing QA can run without a five-second death timer.
+ // QA-only long-passage visual inspection does not immediately end in death.
+ // Normal play still keeps pursuit, catching and drawing hazards intact.
+ if(QA_RETURN_PREVIEW&&state.phase==='chase')return;
  if(QA_CHALK_PREVIEW&&state.phase==='drawing')return;
  if(!['chase','drawing'].includes(state.phase))return;
  huntTime-=dt;
