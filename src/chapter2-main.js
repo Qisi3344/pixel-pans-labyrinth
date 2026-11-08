@@ -1,6 +1,6 @@
 import './chapter2-style.css';
 import {recordChapterComplete,campaignChapterUrl} from './campaign.js';
-import {NODES,STONE_NODES,TOAD_NODE,newChapter,step,interact,findPath,nextDirection,rootOpen,edgeAccessible} from './chapter2-logic.js';
+import {NODES,STONE_NODES,TOAD_NODE,TOAD_APPROACH_NODE,TOAD_INTERACTION_NODES,newChapter,step,interact,findPath,nextDirection,rootOpen,edgeAccessible} from './chapter2-logic.js';
 import {createTreeScene} from './chapter2-scene.js';
 import {note,chime,toggleSound} from './audio.js';
 import {nearEntrance,atTreeMouth,stepOnEarth,directionTo,distance2d} from './chapter2-overworld.js';
@@ -20,7 +20,7 @@ document.body.innerHTML=`
   <div class="root-tip" id="root-tip" role="status" aria-live="polite">点击石道上的节点，或使用方向键探索。</div>
   <div class="root-cinema" id="root-cinema" aria-live="polite" aria-atomic="true">
     <span class="root-cinema-mark">✦</span><span id="root-cinema-caption">古树正在苏醒</span>
-  </div><div class="root-amber-marker" id="amber-marker" aria-hidden="true"><strong>✦ 琥珀魔石</strong><small>金色岔路尽头</small></div>
+  </div>
   <section class="root-bottom"><div class="root-keys">WASD / 方向键 移动　·　E 交互　·　点击石道自动行走</div><a href="?stage=1" class="root-back">← 第一章</a></section>
   <div class="root-touch"><div id="root-pad" class="root-pad" role="group" aria-label="拖动虚拟摇杆移动"><div class="root-knob" id="root-knob"></div></div><button id="root-act" class="root-act" type="button">✦<small>交互</small></button></div>
   <div class="root-overlay" id="root-intro" role="dialog" aria-modal="true"><div class="root-card"><div class="root-orn">✦　✧　✦</div><small>CHAPTER II · BENEATH THE ANCIENT FIG</small><h2>巨树之腹</h2><p>石井的尽头，长着一棵正在死去的树。<br/>地下深处有三颗魔石，<br/>还有一个饥饿的守护者。</p><button id="root-start" type="button">探索巨树 ↗</button><footer>3D PIXEL DIORAMA · CUTAWAY ROOT WORLD</footer></div></div>
@@ -90,9 +90,9 @@ function drawHUD(){
  if(STONE_NODES.some((n,i)=>n===node&&!state.stones[i])) status='魔石就在这里。按 E 拾取。';
  else if(node===8&&!state.stones[2])status='这里有两条路：金色碎石指向前侧的琥珀洞室。先拿魔石，再推动巨石去见蟾蜍。';
  else if(node===8&&!state.boulderMoved)status='巨石挡住去往蟾蜍的通道，按 E 推开；琥珀魔石在另一条支路。';
- else if(node===10&&!state.stones.every(Boolean))status='巨蟾蜍还不肯吐出钥匙。回头检查未探索的岔路与魔石。';
+ else if(TOAD_INTERACTION_NODES.includes(node)&&state.boulderMoved&&!state.stones.every(Boolean))status='巨蟾蜍就在前方，不必再靠近。先找齐三颗魔石。';
  else if(node===4&&!rootOpen(state.time))status='树根收缩！等待它舒展开，再向前穿过。';
- else if(node===10&&state.stones.every(Boolean))status='按 E 将三颗魔石送进蟾蜍的嘴里。';
+ else if(TOAD_INTERACTION_NODES.includes(node)&&state.boulderMoved&&state.stones.every(Boolean))status='站在安全的石道上，按 E 向巨蟾蜍献上魔石。';
  $('root-status').textContent=status;
 }
 function enterTree(){
@@ -245,7 +245,10 @@ $('root-world').addEventListener('pointerup',event=>{
  }
  if(hit.kind==='node')follow(hit.index);
  if(hit.kind==='stone')follow(STONE_NODES[hit.index]);
- if(hit.kind==='toad')follow(TOAD_NODE);
+ if(hit.kind==='toad'){
+  if(TOAD_INTERACTION_NODES.includes(state.node)&&state.boulderMoved)action();
+  else follow(TOAD_APPROACH_NODE);
+ }
 });
 $('root-world').addEventListener('wheel',event=>{event.preventDefault();view.setZoom(event.deltaY>0?.88:1.16);},{passive:false});
 window.addEventListener('resize',view.resize);
@@ -291,7 +294,7 @@ function frame(now){
     if(t>=1){
      step(state,active.to);active=null;lastMove=now;drawHUD();
      if(state.node===STONE_NODES[2]&&!state.stones[2])tip('琥珀魔石就在眼前！按 E 拾取它。',4400);
-     if(state.node===TOAD_NODE)tip('巨蟾蜍就在面前。按 E 与它互动。',2500);
+     if(state.node===TOAD_APPROACH_NODE)tip('站在这里就能与巨蟾蜍互动。按 E 献上魔石，不用再靠近它。',3400);
     }
    }
   }
@@ -313,13 +316,6 @@ function frame(now){
    $('root-win').classList.remove('hidden');
   }
  }
- const marker=$('amber-marker');
- const anchored=(!outside&&!state.stones[2])?view.stoneScreenPosition(2):null;
- if(anchored&&anchored.onScreen){
-  marker.classList.add('visible');
-  marker.style.left=anchored.x+'px';
-  marker.style.top=anchored.y+'px';
- }else marker.classList.remove('visible');
  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
