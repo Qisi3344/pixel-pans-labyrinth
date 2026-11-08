@@ -9,6 +9,7 @@ export const FOOD=Object.freeze({x:-1.45,z:2.35});
 export const DOOR=Object.freeze({x:-29.65,z:0});
 export const CHAIR=Object.freeze({minX:-30.10,maxX:-29.20,minZ:-1.39,maxZ:-.47});
 export const MONSTER_START=Object.freeze({x:6.78,z:.12});
+export const MONSTER_INSPECT_RADIUS=2.35;
 export const PLAYER_SPEED=4.6;
 export const HUNTER_SPEED=4.15;
 export const AWAKEN_SECONDS=3.35;
@@ -64,11 +65,19 @@ export function newBanquet(){
  return {phase:'invitation',player:{...START},monster:{...MONSTER_START},
   eaten:false,awakeTime:0,chaseTime:0,doorProgress:0,doorSegment:0,
   segmentT:0,deathTime:0,winTime:0,crumbleTime:0,hasDragged:false,
-  sealed:false,distanceEscaped:0,climbTime:0};
+  sealed:false,distanceEscaped:0,climbTime:0,inspectedMonster:false};
 }
 export function eat(state){
  if(state.phase!=='invitation'||distance(state.player,FOOD)>1.48)return false;
  state.phase='awakening';state.eaten=true;state.awakeTime=0;return true;
+}
+// Looking at the seated creature is an observation, never a wake-up trigger.
+// A click may inspect it from afar; walking near it triggers the same line once.
+export function inspectSleepingMonster(state,{clicked=false}={}){
+ if(state.phase!=='invitation')return false;
+ if(!clicked&&distance(state.player,state.monster)>MONSTER_INSPECT_RADIUS)return false;
+ state.inspectedMonster=true;
+ return true;
 }
 export function atDoor(state){return distance(state.player,DOOR)<DOOR_RADIUS;}
 export function startDrawing(state){
