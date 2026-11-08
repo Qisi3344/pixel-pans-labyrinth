@@ -379,4 +379,23 @@ if(['dialogue','choice','mercy','offering','royalMercy','royalOffering'].include
   state.royalShown=true;state.brotherVisible=false;
  }
 }
+// Only visible to real browser tests when explicitly requested.
+if(params.get('qa')==='1'){
+ window.__finalQA={
+  snapshot:()=>({
+   started,phase:state.phase,ending:state.ending,
+   cinematicTime:state.cinematicTime,beat:state.cinematicBeat,
+   royalShown:state.royalShown,brotherVisible:state.brotherVisible,
+   gunFlash:state.gunFlash,...view.getQAFrame()
+  }),
+  seek:seconds=>{
+   if(state.phase!=='cinematic')return false;
+   const target=Math.max(state.cinematicTime,Math.min(25,Number(seconds)||0));
+   while(state.phase==='cinematic'&&state.cinematicTime<target-.0001)
+    updateFinalTrial(state,Math.min(.05,target-state.cinematicTime));
+   view.update(.016,elapsed);updateHud();
+   return window.__finalQA.snapshot();
+  }
+ };
+}
 requestAnimationFrame(frame);
