@@ -4,6 +4,7 @@ import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_S
 import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
 import {createChildShoePile} from './chapter3-shoes.js';
 import {createFrescoes} from './chapter3-fresco.js';
+import {createDaggerNiche} from './chapter3-dagger.js';
 import {deathBeat} from './chapter3-devour.js';
 
 // All props are real meshes in the same orthographic 3D world.
@@ -465,6 +466,7 @@ export function createBanquetScene(canvas,state){
  const hall=banquetHall(scene),passage=createProcessionalPassage(scene),table=buildTable(scene);
  const details=enrichForbiddenFeast(scene),shoePile=createChildShoePile(scene),pale=buildPaleMan(scene);
  const fresco=createFrescoes(scene);
+ const daggerNiche=createDaggerNiche(scene);
  const chalk=chalkPortal(scene);
  const player=createPlayer(scene,new THREE.Vector3(START.x,.03,START.z));
  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -513,6 +515,8 @@ export function createBanquetScene(canvas,state){
   const floorHit=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   const world=new THREE.Vector3();
   const foodHit=ray.intersectObjects(table.clickables,false)[0];
+  const daggerHit=state.phase==='invitation'&&!state.hasDagger?
+    ray.intersectObject(daggerNiche.target,false)[0]:null;
   // Frescoes are clickable painted planes. Inspect only while the room is
   // calm; during the chase, clicking must never interrupt player movement.
   const frescoHit=state.phase==='invitation'?
@@ -522,6 +526,7 @@ export function createBanquetScene(canvas,state){
   // Compare depths so table food in front of the monster remains selectable.
   const monsterHit=state.phase==='invitation'?
    ray.intersectObject(pale.root,true)[0]:null;
+  if(daggerHit&&(!foodHit||daggerHit.distance<foodHit.distance))return {kind:'dagger'};
   if(frescoHit&&(!foodHit||frescoHit.distance<foodHit.distance)&&
      (!monsterHit||frescoHit.distance<monsterHit.distance))
    return {kind:'fresco',index:frescoHit.object.userData.frescoIndex};
@@ -585,6 +590,7 @@ export function createBanquetScene(canvas,state){
    player.legs[1].rotation.x=state.phase==='climbing'?.4*Math.sin(step*Math.PI):.09;
    player.body.visible=up<.985;
   }
+  daggerNiche.update(dt,Boolean(state.hasDagger),now);
   table.grapes.scale.setScalar(state.eaten?.01:1);
   chalk.update(state.doorProgress,now,state);
   let target;
@@ -623,6 +629,6 @@ export function createBanquetScene(canvas,state){
   return devour;
  }
  resize(true);draw(0,.016,0);
- return {scene,renderer,camera,player,monster:pale,shoePile,fresco,chalk,draw,resize,pick,setZoom,
+ return {scene,renderer,camera,player,monster:pale,shoePile,fresco,daggerNiche,chalk,draw,resize,pick,setZoom,
   dispose:()=>renderer.dispose()};
 }
