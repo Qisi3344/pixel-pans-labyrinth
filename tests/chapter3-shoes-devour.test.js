@@ -60,7 +60,11 @@ test('the captured heroine stays normal size in the 3D cutscene until after swal
  assert.ok(scene.includes("jawPivot.position.y=2.21-open*.45"));
  assert.ok(scene.includes("maw.scale.set(.34+open*.12,.10+open*.44,.14)"));
  assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
- assert.ok(scene.includes("(portrait?2.25:4.2)*deathBeat(state.deathTime).grip"));
+ assert.ok(scene.includes("(portrait?2.7:5.4)*deathBeat(state.deathTime).grip"));
+ assert.ok(scene.includes("const deathCameraAngle=new THREE.Vector3(-.10,.55,1.7).normalize()"));
+ assert.ok(scene.includes("state.phase==='caught'?deathCameraAngle:angle"));
+ assert.ok(scene.includes("biteLight.intensity=.36+open*1.9"));
+ assert.ok(scene.includes(".19+.34*devour.jawOpen"));
  assert.ok(scene.includes("fragment.visible=elapsed>0&&elapsed<1.55"));
  assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
  assert.ok(!scene.includes("player.body.scale.setScalar(Math.max(.01,1-t))"));
