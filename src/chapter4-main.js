@@ -222,7 +222,9 @@ function cinematicNarration(){
 function showResult(){
  if(resultShown)return;resultShown=true;
  const kind=state.ending||'mercy',out=FINAL_OUTCOMES[kind];
- const stored=recordFinalOutcome(kind),seen=stored.endingsSeen||[];
+ // A QA freeze/preview must never create a real completed campaign save.
+ const stored=params.has('previewFinal')?loadCampaign():recordFinalOutcome(kind),
+  seen=stored.endingsSeen||[];
  $('final-result').dataset.ending=kind;
  $('final-result-symbol').textContent=kind==='mercy'?'✧':'✢';
  $('final-result-label').textContent=out.subtitle;
