@@ -3,6 +3,7 @@
 // the girl's own blood then unlocks the royal vision. The alternative route
 // (giving innocent blood) is an explicitly original, non-film what-if ending.
 import {blockedByFinalMaze,FINAL_WELL_CENTER} from './chapter4-maze-layout.js';
+import {FINAL_CUES,finalStage} from './chapter4-cinematic.js';
 export const CHAPTER4_TIME_LIMIT=62;
 export const CHAPTER4_SPEED=3.75;
 export const CHAPTER4_RADIUS=12.7;
@@ -20,7 +21,7 @@ export const FINAL_DIALOGUE=Object.freeze([
  Object.freeze({speaker:'潘神',text:'最后一项试炼，只需要一滴无辜之血。把你怀里的弟弟交给我。'}),
  Object.freeze({speaker:'奥菲莉娅',text:'你说的是……弟弟的血？如果我不答应呢？'})
 ]);
-export const FINAL_CINEMATIC=Object.freeze({mercy:15.35,offering:14.20});
+export const FINAL_CINEMATIC=Object.freeze({mercy:FINAL_CUES.mercy.end,offering:FINAL_CUES.offering.end});
 export const FINAL_OUTCOMES=Object.freeze({
  mercy:Object.freeze({
   id:'mercy',title:'无辜之血',subtitle:'原片结局 · 守护',
@@ -48,7 +49,7 @@ export function newFinalTrial(){
  return {phase:'approach',player:{...FINAL_START},vidal:{...VIDAL_START},
   timeLeft:CHAPTER4_TIME_LIMIT,elapsed:0,cinematicTime:0,ending:null,
   timeOut:false,foundAltar:false,dialogueShown:false,dialogueStep:0,royalShown:false,
-  brotherVisible:true,gunFlash:false};
+  brotherVisible:true,gunFlash:false,cinematicBeat:null};
 }
 export function nearFaun(state){return distance(state.player,FINAL_ALTAR)<=FINAL_CHOICE_RADIUS;}
 export function advanceFaunDialogue(state){
@@ -66,6 +67,7 @@ export function decideFinal(state,decision){
  state.ending=decision;
  state.phase='cinematic';
  state.cinematicTime=0;
+ state.cinematicBeat=finalStage(decision,0);
  state.dialogueShown=true;
  return true;
 }
@@ -83,18 +85,18 @@ export function updateFinalTrial(state,dt){
   if(state.timeLeft<=0){
    state.ending='mercy';state.timeOut=true;
    state.phase='cinematic';state.cinematicTime=0;
+   state.cinematicBeat=finalStage('mercy',0);
   }
  }else if(state.phase==='cinematic'){
   state.cinematicTime+=d;
   const time=state.cinematicTime;
-  if(state.ending==='mercy'){
-   state.brotherVisible=time<1.6;
-   state.gunFlash=time>=2.16&&time<2.36;
-   state.royalShown=time>=4.7;
-  }else{
-   state.brotherVisible=time<2.0;
-   state.royalShown=time>=3.6;
-  }
+  const cues=FINAL_CUES[state.ending];
+  state.cinematicBeat=finalStage(state.ending,time);
+  state.brotherVisible=time<cues.handOff;
+  state.gunFlash=state.ending==='mercy'&&time>=cues.shot&&time<cues.shotEnd;
+  // The end-state cannot skip ahead to the palace while either ending
+  // still shows the character at the well.
+  state.royalShown=time>=cues.royalAt;
   if(time>=FINAL_CINEMATIC[state.ending])state.phase='done';
  }
  return state;

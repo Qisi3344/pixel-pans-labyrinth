@@ -3,6 +3,7 @@ import {newFinalTrial,updateFinalTrial,moveFinalPlayer,walkableFinal,
  nearFaun,advanceFaunDialogue,FINAL_DIALOGUE,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
  finalClockLabel,distance} from './chapter4-logic.js';
 import {createFinalScene} from './chapter4-scene.js';
+import {FINAL_CUES,finalStage} from './chapter4-cinematic.js';
 import {activeRoyalDialogue} from './chapter4-royal-dialogue.js';
 import {recordFinalOutcome,loadCampaign,campaignChapterUrl,CAMPAIGN_FINAL} from './campaign.js';
 
@@ -99,7 +100,7 @@ const state=newFinalTrial(),view=createFinalScene($('final-world'),state);
 const keyboard=new Set();
 let started=false,lastTime=0,elapsed=0,moveTo=null,pad={x:0,z:0},padPointer=null;
 let lastNote='',resultShown=false,selectedEnding=null,sound=true;
-let cachedPhase='',screenUpdate=0,royalBubbleKey='',royalPreviouslyShown=false;
+let cachedPhase='',screenUpdate=0,royalBubbleKey='',royalPreviouslyShown=false,lastCinematicBeat='';
 const CANVAS=$('final-world');
 const toMenu=()=>{location.href='?screen=menu';};
 const showMessage=t=>{
@@ -238,17 +239,25 @@ joy.addEventListener('pointermove',e=>{if(padPointer===e.pointerId)setPad(e);});
 for(const kind of ['pointerup','pointercancel','lostpointercapture'])
  joy.addEventListener(kind,e=>{if(e.pointerId===padPointer)clearPad();});
 function cinematicNarration(){
- const t=state.cinematicTime,mercy=state.ending==='mercy';
- if(mercy){
-  if(t<1.3)return '潘神伸出手。奥菲莉娅把弟弟抱得更紧。';
-  if(t<2.17)return '靴声已至。维达尔看不见潘神，只看见抱着孩子的少女。';
-  if(t<3.35)return '枪声打碎了沉默。弟弟被带走，她倒在冰冷的石沿旁。';
-  if(t<4.7)return '鲜红的血顺着石阶滑入井底。古老的石门亮了起来。';
-  return '金色王宫里，父亲与母亲仍在等待。她听见有人唤她公主。';
+ const beat=finalStage(state.ending,state.cinematicTime);
+ if(state.ending==='mercy'){
+  switch(beat){
+   case 'vidal-approaches':return '石道上响起军靴声。维达尔朝奥菲莉娅走来。';
+   case 'baby-taken':return '维达尔终于赶到井边，夺走了弟弟。';
+   case 'captain-aims':return '维达尔举起枪。奥菲莉娅留在石井边缘。';
+   case 'shot':return '枪声打碎了沉默。她倒在冰冷的石沿旁。';
+   case 'blood-descends':return '鲜红的血顺着螺旋石阶，一点点流入井底。';
+   case 'well-opens':return '井壁深处亮起光芒。古老的王国之门开启了。';
+   default:return '王宫里的父王与母后，终于等到了她。';
+  }
  }
- if(t<1.55)return '一滴无辜之血滴向井口。潘神的影子没有动。';
- if(t<3.6)return '弟弟的声音留在了门外。石井却真的为她打开。';
- return '王宫终于在眼前亮起。她所盼望的家，终于出现了。';
+ switch(beat){
+  case 'approach-well':return '奥菲莉娅抱着弟弟走到井边，俯视盘旋向下的石阶。';
+  case 'lift-ritual-knife':return '她接过潘神的匕首。刀刃在井口上方缓缓举起。';
+  case 'blood-descends':return '一滴无辜之血落下，沿着螺旋石阶进入井底。';
+  case 'well-opens':return '猩红的光从井底升起。那扇归家的门终于打开。';
+  default:return '王国已在眼前。她必须带着自己的选择走下去。';
+ }
 }
 function renderRoyalDialogue(){
  const line=activeRoyalDialogue(state.ending,state.cinematicTime,state.royalShown);
@@ -337,6 +346,15 @@ function frame(t){
   elapsed+=dt;
   movement(dt);
   updateFinalTrial(state,dt);
+  if(state.phase==='cinematic'&&state.cinematicBeat!==lastCinematicBeat){
+   lastCinematicBeat=state.cinematicBeat;
+   if(state.cinematicBeat==='vidal-approaches')tone(260,.14,'triangle');
+   if(state.cinematicBeat==='captain-aims')tone(155,.22,'sawtooth');
+   if(state.cinematicBeat==='shot')tone(95,.32,'sawtooth');
+   if(state.cinematicBeat==='lift-ritual-knife')tone(385,.30,'triangle');
+   if(state.cinematicBeat==='blood-descends')tone(435,.19,'sine');
+   if(state.cinematicBeat==='well-opens')tone(615,.42,'triangle');
+  }
  }
  view.update(active?dt:0,elapsed);
  const royalNow=Boolean(state.royalShown);
@@ -356,7 +374,8 @@ if(['dialogue','choice','mercy','offering','royalMercy','royalOffering'].include
  if(preview==='mercy'||preview==='offering')choose(preview);
  if(preview==='royalMercy'||preview==='royalOffering'){
   choose(preview==='royalMercy'?'mercy':'offering');
-  state.cinematicTime=preview==='royalMercy'?5.45:4.3;
+  state.cinematicTime=preview==='royalMercy'?
+   FINAL_CUES.mercy.royalAt+.82:FINAL_CUES.offering.royalAt+.82;
   state.royalShown=true;state.brotherVisible=false;
  }
 }

@@ -40,13 +40,17 @@ test('offering at the stone well opens the invented route before the captain arr
  assert.equal(s.phase,'decision');
  assert.equal(decideFinal(s,'offering'),true);
  assert.equal(s.ending,'offering');
- forward(s,1);
+ forward(s,2.5);
  assert.equal(s.brotherVisible,true);
- forward(s,1.5);
+ assert.equal(s.royalShown,false,'approach scene cannot skip to the palace');
+ forward(s,3);
  assert.equal(s.brotherVisible,false);
- forward(s,1.5);
+ assert.equal(s.royalShown,false,'the drop must enter the shaft before the palace');
+ forward(s,3);
+ assert.equal(s.royalShown,false,'portal remains in the actual well for the finale');
+ forward(s,1.1);
  assert.equal(s.royalShown,true);
- forward(s,11);
+ forward(s,12);
  assert.equal(s.phase,'done');
  assert.equal(s.gunFlash,false);
 });
@@ -58,15 +62,18 @@ test('refusing the Faun keeps the baby alive, Vidal takes the baby and Ofelia se
  for(let i=0;i<FINAL_DIALOGUE.length;i++)advanceFaunDialogue(s);
  assert.equal(s.phase,'decision');
  assert.equal(decideFinal(s,'mercy'),true);
- forward(s,1.7);
- assert.equal(s.brotherVisible,false,'Vidal takes the baby away from Ofelia');
- forward(s,.55);
- assert.equal(s.gunFlash,true,'short non-graphic shot beat');
- forward(s,.5);
+ forward(s,3.55);
+ assert.equal(s.brotherVisible,true,'Vidal must actually arrive before taking the baby');
+ assert.equal(s.royalShown,false);
+ forward(s,.9);
+ assert.equal(s.brotherVisible,false,'Vidal carries the baby only after reaching the well');
+ forward(s,1.6);
+ assert.equal(s.gunFlash,true,'brief shot AFTER the captain approaches');
+ forward(s,.4);
  assert.equal(s.gunFlash,false);
- forward(s,3);
- assert.equal(s.royalShown,true);
- forward(s,10);
+ forward(s,3.65);
+ assert.equal(s.royalShown,true,'the girl must bleed into the stone well first');
+ forward(s,12);
  assert.equal(s.phase,'done');
 });
 
@@ -76,7 +83,7 @@ test('a player who runs out of time without harming the infant enters canon refu
  assert.equal(s.ending,'mercy');
  assert.equal(s.phase,'cinematic');
  assert.equal(decideFinal(s,'offering'),false);
- forward(s,16);assert.equal(s.phase,'done');
+ forward(s,22);assert.equal(s.phase,'done');
 });
 
 test('countdown remains live while the ritual choice is visible, and movement cannot move the camera out of the diorama',()=>{
