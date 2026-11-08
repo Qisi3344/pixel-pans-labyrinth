@@ -343,6 +343,26 @@ export function royalHall(root){
  const centerThrone=throneGroups[1];
  const faun=buildFaun(root,7.65,.12,-5.25);
  faun.scale.setScalar(.82);faun.rotation.y=.34;
+ // Exactly ONE Faun on the royal stage. The distant accompanying creatures
+ // in the film are FAIRIES, not more copies of the Faun. Keep them restrained.
+ const fairies=[];
+ for(let i=0;i<7;i++){
+  const side=i%2?-1:1;
+  const winged=new THREE.Group();
+  winged.position.set(side*(3.6+i*.49),2.9+(i%3)*.45,
+   -3.5+(i%4)*1.06);
+  const light=new THREE.Mesh(new THREE.IcosahedronGeometry(.105,0),
+   new THREE.MeshBasicMaterial({color:i%3?0xf1ddad:0xcde3d5}));
+  winged.add(light);
+  for(const wingSide of [-1,1]){
+   const wing=new THREE.Mesh(new THREE.TetrahedronGeometry(.145,0),
+    new THREE.MeshLambertMaterial({color:0xcabf9b,flatShading:true}));
+   wing.position.set(wingSide*.15,.025,0);
+   wing.scale.set(1.0,.55,.30);wing.rotation.z=wingSide*.42;
+   winged.add(wing);
+  }
+  root.add(winged);fairies.push(winged);
+ }
  // A handful of candles/sconces, no glitter or busy particles.
  for(const sign of [-1,1])for(const z of [-9.6,-3.6,3.1]){
   const lamp=stone(root,0xdec69a,sign*10.56,3.26,z,.16,0);
@@ -354,7 +374,7 @@ export function royalHall(root){
  const keyLight=new THREE.PointLight(0xffd6a0,1.15,17,2);
  keyLight.position.set(0,7.7,-5.7);root.add(keyLight);
  return {
-  father,mother,faun,centerThrone,throneGroups,podium,columns,
+  father,mother,faun,fairies,centerThrone,throneGroups,podium,columns,
   surface,floor,light,keyLight,
   speechAnchors:{father:father.userData.speechAnchor,mother:mother.userData.speechAnchor}
  };
@@ -427,8 +447,19 @@ export function createFinalScene(canvas,state){
    throne.floor.material.color.setHex(state.ending==='offering'?0x423034:0x675340);
   }
   if(isRoyal){
-   hero.body.position.set(0,.13,6.00);hero.body.rotation.y=Math.PI;
+   // The centre seat remains VACANT until after the parents' invitation.
+   // Ofelia arrives at the red carpet first, and walks toward her seat
+   // only during the mother's lines; she does not materialize sitting.
+   const invitation=state.ending==='mercy'?9.40:8.28;
+   const walkT=Math.max(0,Math.min(1,(state.cinematicTime-invitation)/4.6));
+   const eased=walkT*walkT*(3-2*walkT);
+   hero.body.position.set(0,.13,6.00-eased*8.0);
+   hero.body.rotation.y=Math.PI;
    baby.visible=false;
+   hero.walkDistance=eased>0&&eased<1?d*1.55:0;
+   throne.fairies.forEach((f,i)=>{
+    f.position.y=2.9+(i%3)*.45+.09*Math.sin(elapsed*1.65+i*1.1);
+   });
    focus.lerp(temp.set(0,2.48,-3.40),Math.min(1,d*4.4));
   }else{
    hero.body.position.set(state.player.x,.13,state.player.z);
