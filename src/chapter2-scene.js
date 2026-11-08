@@ -45,7 +45,11 @@ export function createTreeScene(canvas,state){
  const direction=new THREE.Vector3(1,1.05,1.3).normalize();
  // Rotate only the underground view; the ground-level tree keeps its camera.
  // The frog's face, mouth and three offerings now face the player.
- const cavernDirection=new THREE.Vector3(-.60,1.24,1.54).normalize();
+ // Preserve the ORIGINAL camera elevation exactly. Only the horizontal
+ // azimuth changes: this remains a fixed Three.js OrthographicCamera diorama.
+ const cavernDirection=new THREE.Vector3(
+  -.60,1.05,Math.sqrt(1*1+1.3*1.3-.60*.60)
+ ).normalize();
  const focus=new THREE.Vector3(0,-1.7,0);
  let width=-1,height=-1,zoom=1,portrait=false,cameraReady=false;
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),mat(0xffffff));ground.rotation.x=-Math.PI/2;ground.position.y=-5.7;ground.receiveShadow=true;scene.add(ground);
