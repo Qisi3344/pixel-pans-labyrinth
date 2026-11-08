@@ -3,6 +3,20 @@
 export const HALL=Object.freeze({minX:-9.3,maxX:9.3,minZ:-4.7,maxZ:4.7});
 export const CORRIDOR=Object.freeze({minX:-33.2,maxX:-8.45,minZ:-1.72,maxZ:1.72});
 export const TABLE=Object.freeze({minX:-4.35,maxX:5.25,minZ:-1.13,maxZ:1.13});
+// Frescoes are embedded in the rear stone wall. A solid clearance strip keeps
+// the red-dressed avatar on the CAMERA side, instead of walking behind a mural.
+export const FRESCO_POINTS=Object.freeze([
+ Object.freeze({x:-5.10,z:-4.27}),Object.freeze({x:2.88,z:-4.27})
+]);
+export const FRESCO_INSPECT_RADIUS=2.35;
+export function nearestFresco(point,radius=FRESCO_INSPECT_RADIUS){
+ let best=-1,closest=radius;
+ for(let i=0;i<FRESCO_POINTS.length;i++){
+  const d=Math.hypot(point.x-FRESCO_POINTS[i].x,point.z-FRESCO_POINTS[i].z);
+  if(d<closest){best=i;closest=d;}
+ }
+ return best;
+}
 export const ENTRANCE=Object.freeze({x:-9.02,z:0});
 export const START=Object.freeze({x:-30.95,z:.06});
 export const FOOD=Object.freeze({x:-1.45,z:2.35});
@@ -45,6 +59,13 @@ export function walkable(p,radius=.25){
  if(inRect(p,TABLE,radius+.07))return false;
  // Solid chair: walk beside it, then climb through the scripted interaction.
  if(inRect(p,CHAIR,radius*.55))return false;
+ // Wall paintings have real depth. Stop the character BEFORE their frames,
+ // rather than allowing her head to be occluded by a hanging art panel.
+ if(p.z< -4.03){
+  for(const fresco of FRESCO_POINTS){
+   if(Math.abs(p.x-fresco.x)<1.20+radius)return false;
+  }
+ }
  return true;
 }
 export function moveActor(point,xAxis,zAxis,dt,speed=PLAYER_SPEED,radius=.25){

@@ -3,6 +3,7 @@ import {createPlayer,animatePlayer} from './player.js';
 import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,CHAIR_CLIMB_SECONDS,ESCAPE_CLIMB_SECONDS,zone} from './chapter3-logic.js';
 import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
 import {createChildShoePile} from './chapter3-shoes.js';
+import {createFrescoes} from './chapter3-fresco.js';
 import {deathBeat} from './chapter3-devour.js';
 
 // All props are real meshes in the same orthographic 3D world.
@@ -460,6 +461,7 @@ export function createBanquetScene(canvas,state){
  ground.rotation.x=-Math.PI/2;ground.position.y=-1.62;ground.receiveShadow=true;scene.add(ground);
  const hall=banquetHall(scene),passage=createProcessionalPassage(scene),table=buildTable(scene);
  const details=enrichForbiddenFeast(scene),shoePile=createChildShoePile(scene),pale=buildPaleMan(scene);
+ const fresco=createFrescoes(scene);
  const chalk=chalkPortal(scene);
  const player=createPlayer(scene,new THREE.Vector3(START.x,.03,START.z));
  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -502,16 +504,22 @@ export function createBanquetScene(canvas,state){
   const b=canvas.getBoundingClientRect();
   pointer.set(((cx-b.left)/b.width)*2-1,1-((cy-b.top)/b.height)*2);
   ray.setFromCamera(pointer,camera);
-  const targets=[...table.clickables,chalk.target];
-  // Invisible floor collider at y=0 intercepts all unobstructed floor taps.
+  // Invisible floor collider at y=0 intercepts unobstructed floor taps.
   const floorHit=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   const world=new THREE.Vector3();
   const foodHit=ray.intersectObjects(table.clickables,false)[0];
+  // Frescoes are clickable painted planes. Inspect only while the room is
+  // calm; during the chase, clicking must never interrupt player movement.
+  const frescoHit=state.phase==='invitation'?
+   ray.intersectObjects(fresco.targets,false)[0]:null;
   // Directly clicking the creature is an investigation, not a command to
   // walk to the dinner table or a second way to awaken it.
   // Compare depths so table food in front of the monster remains selectable.
   const monsterHit=state.phase==='invitation'?
    ray.intersectObject(pale.root,true)[0]:null;
+  if(frescoHit&&(!foodHit||frescoHit.distance<foodHit.distance)&&
+     (!monsterHit||frescoHit.distance<monsterHit.distance))
+   return {kind:'fresco',index:frescoHit.object.userData.frescoIndex};
   if(monsterHit&&(!foodHit||monsterHit.distance<foodHit.distance))
    return {kind:'monster'};
   if(foodHit)return {kind:'food'};
@@ -606,6 +614,6 @@ export function createBanquetScene(canvas,state){
   return devour;
  }
  resize(true);draw(0,.016,0);
- return {scene,renderer,camera,player,monster:pale,shoePile,chalk,draw,resize,pick,setZoom,
+ return {scene,renderer,camera,player,monster:pale,shoePile,fresco,chalk,draw,resize,pick,setZoom,
   dispose:()=>renderer.dispose()};
 }

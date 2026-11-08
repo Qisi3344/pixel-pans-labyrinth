@@ -130,15 +130,9 @@ export function enrichForbiddenFeast(scene){
    }
   }
  }
- // Oppressive ceremonial frescoes plus piles of tiny discarded shoes.
- for(const x of [-4.48,3.56]){
-  cube(props,0x6a413b,x,2.35,-4.27,2.12,2.18,.13);
-  cube(props,0x332c28,x,2.35,-4.18,1.84,1.92,.09);
-  for(let i=0;i<9;i++){
-   const px=x-.61+(i%3)*.63,py=1.74+Math.floor(i/3)*.58;
-   stone(props,i%2?0x785045:0x8b604d,px,py,-4.08,.23,.25,.06);
-  }
- }
+ // The original nine-cube mural placeholders have been deleted. The finished
+ // procedural frescoes now live in chapter3-fresco.js, mounted flush with
+ // the Gothic rear wall, with their own hit targets and viewing gallery.
  // The former cubes were placeholder footwear. The separate chapter3-shoes
  // module now creates individually modelled leather shoes instead.
  // Small dagger in a niche for film fidelity; not a mandatory fetch quest.
