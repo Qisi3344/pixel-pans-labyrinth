@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 // A clustered pile of recognisable small worn shoes, never anonymous boxes.
 // Children's footwear is a quiet environmental story clue in the banquet hall.
-export const CHILD_SHOE_PILE=Object.freeze({x:6.35,z:-3.20});
+export const CHILD_SHOE_PILE=Object.freeze({x:6.48,z:3.17});
 export const SHOE_INSPECT_RADIUS=1.55;
-export const SHOE_MESSAGE='这里堆着许多小孩子的鞋子……鞋尖已经磨破，有的还系着鞋带。';
+export const SHOE_MESSAGE='这些都是小孩的鞋子……鞋尖已经磨破，有的还系着鞋带。';
 const leathers=[0x4b342d,0x655041,0x322f30,0x755d4b,0x51473e,0x6d5045,0x403536,0x82735e];
 const soles=[0x2f302d,0x4a3930,0x272727,0x514136];
 const random=n=>{const v=Math.sin(n*127.23+17.47)*43758.545;return v-Math.floor(v);};
@@ -94,6 +94,16 @@ function shoeChild(style,w,l,leather,sole,seed){
 export function createChildShoePile(scene,{count=23}={}){
  const root=new THREE.Group();root.position.set(CHILD_SHOE_PILE.x,0,CHILD_SHOE_PILE.z);
  root.userData.kind='child-shoe-pile';scene.add(root);
+ // On the camera-facing banquet-hall floor rather than hidden behind the
+ // raised long table. The contrast plinth is flush with the stone tiles.
+ const rug=mesh(root,new THREE.BoxGeometry(2.85,.055,2.42),
+  0x80786b,0,-.22,-.03);
+ rug.castShadow=false;rug.receiveShadow=true;rug.userData.kind='shoe-display-ground';
+ const lip=mesh(root,new THREE.BoxGeometry(2.98,.045,2.55),
+  0xb1a18a,0,-.255,-.03);lip.receiveShadow=true;lip.castShadow=false;
+ // Dedicated gentle warm bounce light: legible, without a glowing quest marker.
+ const light=new THREE.PointLight(0xf3d0a1,1.18,4.2,2);
+ light.position.set(0,1.72,.3);root.add(light);
  // A slightly messy cluster: soles, noses and raised ankle shafts create
  // recognisable silhouettes at the game's orthographic pixel resolution.
  const shoes=[];
@@ -102,19 +112,20 @@ export function createChildShoePile(scene,{count=23}={}){
   const style=['mary-jane','boot','lace-up'][n%3];
   const shoe=shoeChild(style,w,l,leathers[n%leathers.length],
    soles[n%soles.length],n);
-  const col=n%6,row=Math.floor(n/6);
-  shoe.position.set((col-2.5)*.34+(random(n*9)-.5)*.16,
-   row*.09,
-   (row-1.5)*.29+(random(n*13)-.5)*.15);
+  const col=n%5,row=Math.floor(n/5);
+  // Spaced enough that the tiny footwear actually reads as FOOTWEAR.
+  shoe.position.set((col-2)*.48+(random(n*9)-.5)*.11,
+   -.23+row*.07,
+   (row-2)*.39+(random(n*13)-.5)*.09);
   shoe.rotation.y=random(n*41)*Math.PI*2;
   shoe.rotation.z=(random(n*33)-.5)*.28;
   shoe.rotation.x=(random(n*23)-.5)*.20;
   root.add(shoe);shoes.push(shoe);
  }
  // One displaced pair beside the pile tells the player what these objects are.
- for(const [i,x,z] of [[0,-1.20,.65],[1,-.75,.69]]){
+ for(const [i,x,z] of [[0,-1.28,.59],[1,-.78,.70]]){
   const shoe=shoeChild('mary-jane',.39,.68,0x685347,0x342e2a,i);
-  shoe.position.set(x,0,z);shoe.rotation.y=.35+i*.15;
+  shoe.position.set(x,-.23,z);shoe.rotation.y=.35+i*.15;
   root.add(shoe);shoes.push(shoe);
  }
  return {root,shoes,point:{...CHILD_SHOE_PILE}};

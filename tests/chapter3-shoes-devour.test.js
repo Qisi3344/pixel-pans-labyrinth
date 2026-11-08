@@ -23,7 +23,7 @@ test('child shoes are shaped leather shoes with soles, toes, laces and straps, n
   assert.ok(geometries.has('SphereGeometry'),'shoe should have rounded toe/heel geometry');
   assert.ok(child.children.length>=6,'models need actual straps or laces/details');
  }
- assert.ok(SHOE_MESSAGE.includes('小孩子的鞋子'));
+ assert.ok(SHOE_MESSAGE.includes('小孩的鞋子'));
  assert.ok(SHOE_INSPECT_RADIUS>1.1);
  assert.ok(distance({...CHILD_SHOE_PILE},CHILD_SHOE_PILE)<SHOE_INSPECT_RADIUS);
 });
