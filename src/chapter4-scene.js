@@ -446,12 +446,17 @@ export function createFinalScene(canvas,state){
    const p=chase?Math.min(1,localT/1.68):
     Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-22)/(CHAPTER4_TIME_LIMIT-22)));
    const pursuitTarget=state.timeOut?state.player:FINAL_ALTAR;
+   const beforeVidal=vidal.root.position.clone();
    vidal.root.position.set(
     THREE.MathUtils.lerp(VIDAL_START.x,pursuitTarget.x-.95,p),
     .10,THREE.MathUtils.lerp(VIDAL_START.z,pursuitTarget.z+.75,p));
-   vidal.root.rotation.y=-.6;
-   vidal.pistol.visible=chase&&localT>=1.48;
-   vidal.arm.rotation.x=chase?-.72:0;
+   const vx=vidal.root.position.x-beforeVidal.x;
+   const vz=vidal.root.position.z-beforeVidal.z;
+   const strideDistance=Math.hypot(vx,vz);
+   if(strideDistance>.0001)vidal.root.rotation.y=Math.atan2(vx,vz);
+   const aiming=chase&&localT>=1.48;
+   vidal.pistol.visible=aiming;
+   animateVidal(vidal,d,strideDistance,aiming);
    vidalBaby.visible=chase&&localT>=1.6;
    const portalAt=state.ending==='mercy'?3.23:1.53;
    const portalDuration=state.ending==='mercy'?1.40:1.92;
