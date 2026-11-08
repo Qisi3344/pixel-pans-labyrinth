@@ -49,6 +49,7 @@ test('fourth chapter has a real off-center cutout; solid grass cannot cap the sp
 
 test('raycasts see THROUGH the cutout and hit real spiral stair geometry below',()=>{
  const stage=new THREE.Group(),{ground,cap}=createFinalStageWithCutout(stage);
+ stage.updateMatrixWorld(true);
  const ray=new THREE.Raycaster();
  ray.set(new THREE.Vector3(FINAL_WELL_CENTER.x,6,FINAL_WELL_CENTER.z),
   new THREE.Vector3(0,-1,0));
@@ -58,6 +59,7 @@ test('raycasts see THROUGH the cutout and hit real spiral stair geometry below',
  assert.ok(ray.intersectObjects([ground,cap]).length>=1,
   'ground stays solid everywhere except the actual shaft');
  const well=buildFinalSpiralWell(stage);
+ stage.updateMatrixWorld(true);
  const firstStepRadius=(3.12)*WELL.visualScale;
  ray.set(new THREE.Vector3(FINAL_WELL_CENTER.x,4,
   FINAL_WELL_CENTER.z-firstStepRadius),new THREE.Vector3(0,-1,0));
