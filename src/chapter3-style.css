@@ -6,24 +6,14 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
 .pale-game{position:relative;width:100%;height:100vh;height:100dvh;min-height:100svh;overflow:hidden;background:#fff;isolation:isolate;touch-action:none}
 #pale-world{display:block;position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
 .pale-header{position:absolute;z-index:3;left:clamp(18px,3.4vw,60px);right:clamp(18px,3.4vw,60px);top:clamp(17px,3.4vh,40px);pointer-events:none;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.pale-brand small,.pale-side>small,.pale-card small,.draw-heading small{display:block;font-size:10px;letter-spacing:.22em;font-weight:700;color:#998573}
+.pale-brand small,.pale-card small,.draw-heading small{display:block;font-size:10px;letter-spacing:.22em;font-weight:700;color:#998573}
 .pale-brand h1{font-size:clamp(25px,3.2vw,42px);letter-spacing:.13em;font-weight:600;margin:9px 0 5px;color:#3c3e39}
 .pale-brand h1 em{font-style:normal;font-size:12px;letter-spacing:.1em;color:#b4ada1}
 .pale-brand p{font-size:12px;letter-spacing:.03em;color:#a5a196;margin:0;line-height:1.8}
 .pale-tools{display:flex;gap:5px;pointer-events:auto}
 .pale-tools button{width:37px;height:37px;border-radius:8px;border:1px solid #d8d5cc;background:#fffefde5;color:#746d63;font-size:19px;box-shadow:0 3px 16px #27282209}
 .pale-tools button:active,.pale-tools button:hover{background:#f0e9dc}
-.pale-side{position:absolute;z-index:3;top:clamp(145px,22vh,235px);left:clamp(18px,3.4vw,60px);width:235px;max-width:30vw;pointer-events:none}
-.pale-side h2{font-weight:500;font-size:19px;letter-spacing:.08em;margin:11px 0 10px}
-.pale-side p{font-size:12px;line-height:1.9;color:#807e73;letter-spacing:.02em;margin:0}
-.pale-danger{display:none;align-items:center;gap:11px;background:#3f2d2b;color:#f4d7ce;margin-top:23px;padding:12px 13px;border-radius:10px;border:1px solid #724b42}
-.pale-danger.active{display:flex;animation:pulse-alert 1.7s ease-in-out infinite}
-.pale-danger>span{width:9px;height:9px;flex-shrink:0;border-radius:50%;background:#d78c72;box-shadow:0 0 10px #e89070}
-.pale-danger b{display:block;font-size:12px;letter-spacing:.08em}.pale-danger small{display:block;font-size:10px;line-height:1.6;margin-top:4px;opacity:.75}
-.pale-timer{font-size:11px;color:#ab7365;margin-top:12px;letter-spacing:.07em}
-.pale-game[data-phase="chase"] .pale-side h2,.pale-game[data-phase="drawing"] .pale-side h2{color:#a35c4f}
 .pale-game[data-phase="caught"] .pale-brand h1{color:#8f403d}
-@keyframes pulse-alert{0%,100%{box-shadow:0 0 0 #7d3f3200}50%{box-shadow:0 0 20px #923e3238}}
 .pale-tip{position:absolute;z-index:6;top:clamp(112px,13vh,150px);left:50%;transform:translateX(-50%);background:#3e3936f0;color:#fff4e5;padding:10px 19px;border-radius:30px;font-size:12px;max-width:90vw;text-align:center;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;box-shadow:0 10px 27px #211a1b2b;opacity:0;pointer-events:none;transition:opacity .20s}
 .pale-tip.show{opacity:1}
 .pale-bottom{position:absolute;z-index:3;bottom:clamp(18px,4.5vh,46px);left:clamp(18px,3.4vw,60px);right:clamp(18px,3.4vw,60px);display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;letter-spacing:.02em;color:#9b968a;pointer-events:none}
@@ -58,7 +48,7 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
 #pale-chalk{display:block;width:min(100%,270px);height:auto;aspect-ratio:5/6;image-rendering:auto;touch-action:none;border:2px solid #837e6c;border-radius:5px;cursor:crosshair;box-shadow:inset 0 2px 9px #121a1a66}
 .draw-meter{width:100%;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #d3cab9;padding-top:10px;color:#7f7060;font-size:11px}
 #draw-percent{color:#6d5545;font-weight:700;font-size:19px}
-.pale-game[data-phase="awakening"] .pale-side,.pale-game[data-phase="awakening"] .pale-suggest,.pale-game[data-phase="awakening"] .pale-touch{opacity:0;pointer-events:none}
+.pale-game[data-phase="awakening"] .pale-suggest,.pale-game[data-phase="awakening"] .pale-touch{opacity:0;pointer-events:none}
 .pale-game[data-phase="caught"] .pale-suggest,.pale-game[data-phase="escape"] .pale-suggest{visibility:hidden}
 @media(max-width:820px){
  .pale-header{left:16px;right:16px;top:16px}
@@ -67,13 +57,6 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
  .pale-brand p{font-size:10px;max-width:210px}
  .pale-tools{gap:3px}
  .pale-tools button{width:32px;height:33px;font-size:17px}
- .pale-side{top:112px;left:15px;max-width:43vw;width:174px;border:1px solid #e4d9ce;background:#fffefaed;border-radius:10px;padding:11px 12px;box-shadow:0 5px 17px #2d282013}
- .pale-side>small{font-size:8px;letter-spacing:.13em}
- .pale-side h2{font-size:13px;margin:6px 0}
- .pale-side p{font-size:10px;line-height:1.6}
- .pale-danger{margin-top:9px;padding:7px 8px;gap:6px}
- .pale-danger b{font-size:10px}
- .pale-danger small{font-size:9px;line-height:1.35}
  .pale-tip{top:clamp(215px,28vh,260px);font-size:10px;white-space:normal;min-width:130px;padding:8px 13px}
  .pale-bottom{bottom:calc(17px + env(safe-area-inset-bottom));right:17px;justify-content:flex-end}
  .pale-bottom>div{display:none}
@@ -95,13 +78,11 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
 }
 @media(max-width:375px){
  .pale-brand h1{font-size:20px}.pale-brand p{display:none}.pale-brand small{max-width:166px;font-size:7px}
- .pale-side{max-width:43vw;top:97px;padding:9px}
  .pale-pad{width:128px;height:128px}.pale-knob{width:58px;height:58px}
  .pale-act{width:68px;height:68px}
  .pale-suggest{bottom:calc(155px + env(safe-area-inset-bottom))}
 }
 @media(max-width:820px) and (orientation:landscape){
- .pale-side{top:90px}
  .pale-pad{width:95px;height:95px}.pale-knob{width:46px;height:46px}
  .pale-act{width:62px;height:62px}
  .pale-suggest{bottom:calc(115px + env(safe-area-inset-bottom));width:min(350px,65vw)}
@@ -131,8 +112,6 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
  .pale-escape-guide strong{font-size:10px}
  .pale-escape-guide small{font-size:9px}
  .pale-escape-track{margin:7px 1px 5px}
- .pale-game[data-phase="chase"] .pale-side{top:183px}
- .pale-game[data-phase="drawing"] .pale-side{top:183px}
 }
 
 /* Environmental discovery: anchored above the world without swallowing input. */
@@ -197,7 +176,6 @@ button:focus-visible,a:focus-visible{outline:2px solid #c1a783;outline-offset:3p
  .pale-game[data-phase="drawing"] #pale-chalk{
   width:min(100%,172px);max-height:30dvh;
  }
- .pale-game[data-phase="drawing"] .pale-side,
  .pale-game[data-phase="drawing"] .pale-escape-guide,
  .pale-game[data-phase="drawing"] .pale-touch{
   opacity:0;pointer-events:none;

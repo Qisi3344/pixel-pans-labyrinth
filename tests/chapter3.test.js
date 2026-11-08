@@ -188,3 +188,15 @@ test('third chapter invites free exploration instead of sending the player direc
  assert.ok(scene.includes("ray.intersectObject(pale.root,true)"));
  assert.ok(scene.includes("return {kind:'monster'}"));
 });
+
+test('third chapter uses the world itself for clues, without the old side task card',()=>{
+ const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/chapter3-style.css',import.meta.url),'utf8');
+ for(const dead of ['pale-side','pale-objective','pale-description','pale-danger','pale-timer','pale-relic-hint']){
+  assert.ok(!main.includes(dead),'remove detached sidebar reference '+dead);
+  assert.ok(!css.includes(dead),'remove unused sidebar styling '+dead);
+ }
+ assert.ok(main.includes('pale-suggest'),'keep the small contextual interactable hint');
+ assert.ok(main.includes('pale-escape-guide'),'keep chase directions');
+ assert.ok(main.includes("remaining+' 秒后入口关闭'"),'keep the timed chase information');
+});
