@@ -194,21 +194,37 @@ export function mountChapterFrame(stage){
  setting.title='操作方式';setting.setAttribute('aria-label','切换操作方式');
  setting.className='tale-hud-action';
  parent.prepend(setting);parent.prepend(menu);
+ if(stage===1){
+  document.getElementById('begin')?.addEventListener('click',()=>{
+   const tip=document.getElementById('game-tip');
+   if(tip){
+    tip.textContent=selectedInputMode()==='touch'
+     ?'拖动圆形摇杆移动；右侧按钮互动。轻点地面也可以寻路。'
+     :'按 WASD / 方向键移动；靠近符印后按 E，或点击地面寻路。';
+    tip.classList.add('show');
+   }
+  },{once:true});
+ }
  setting.addEventListener('click',()=>{
   if(document.getElementById('campaign-dialog-host'))return;
+  // Pause simulation while changing controls, including the Pale Man chase.
+  window.__pansModalOpen=true;
+  window.dispatchEvent(new Event('blur'));
   const host=document.createElement('div');host.id='campaign-dialog-host';host.innerHTML=modeMarkup(true);
   document.body.appendChild(host);
   const sheet=$('tale-mode-dialog');
-  const close=()=>host.remove();
+  let capture=null;
+  const close=()=>{
+   window.__pansModalOpen=false;
+   window.removeEventListener('keydown',capture,true);
+   host.remove();
+  };
   addSelectionHandlers(sheet,close,close);
   sheet.querySelector('.tale-modal').focus({preventScroll:true});
-  // Capture keyboard before the scene handlers while the modal is open.
-  const capture=e=>{
-   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();window.removeEventListener('keydown',capture,true);return;}
+  capture=e=>{
+   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();return;}
    if(e.key!=='Tab'){e.preventDefault();e.stopImmediatePropagation();}
   };
-  const closeOnce=close;
-  sheet.querySelectorAll('[data-mode-accept],[data-mode-cancel]').forEach(b=>b.addEventListener('click',()=>window.removeEventListener('keydown',capture,true),{once:true}));
   window.addEventListener('keydown',capture,true);
  });
 }
