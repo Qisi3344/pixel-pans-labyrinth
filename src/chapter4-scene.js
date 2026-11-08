@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {FINAL_START,FINAL_ALTAR,FINAL_BLOOD_STAND,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
-import {FINAL_FAUN_POSITION} from './chapter4-maze-layout.js';
+import {FINAL_FAUN_POSITION,FINAL_WELL_CENTER} from './chapter4-maze-layout.js';
 import {buildFirstMazeCenterFragment} from './chapter4-maze-center.js';
 import {buildFinalSpiralWell,createFinalStageWithCutout} from './chapter4-well.js';
 import {FINAL_CUES,VIDAL_CINEMATIC_ENTRY,normalizedBeat} from './chapter4-cinematic.js';
