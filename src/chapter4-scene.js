@@ -289,19 +289,20 @@ export function createFinalScene(canvas,state){
    hero.body.rotation.y=THREE.MathUtils.lerp(hero.body.rotation.y,
     state.phase==='cinematic'?2.3:hero.body.rotation.y,.12);
    baby.visible=state.brotherVisible;
-   focus.lerp(temp.set(state.phase==='cinematic'?FINAL_ALTAR.x:state.player.x,
+   const lastLook=state.phase==='cinematic'&&!state.timeOut;
+   focus.lerp(temp.set(lastLook?FINAL_ALTAR.x:state.player.x,
     state.phase==='cinematic'?1.24:.80,
-    state.phase==='cinematic'?FINAL_ALTAR.z:state.player.z),Math.min(1,d*4.8));
-   const approaching=1-Math.max(0,Math.min(1,(state.timeLeft-3)/CHAPTER4_TIME_LIMIT));
-   // Vidal is on his own approach; during the refusal he suddenly reaches
-   // Ofelia at the altar and visibly carries away the baby.
+    lastLook?FINAL_ALTAR.z:state.player.z),Math.min(1,d*4.8));
+   // The captain arrives at the moment the 62-second clock expires, not
+   // six seconds before it. On timeout he pursues Ofelia WHERE she stands.
    const localT=state.cinematicTime||0;
    const chase=state.phase==='cinematic'&&state.ending==='mercy';
    const p=chase?Math.min(1,localT/1.68):
-    Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-24)/32));
+    Math.max(0,Math.min(1,(CHAPTER4_TIME_LIMIT-state.timeLeft-22)/(CHAPTER4_TIME_LIMIT-22)));
+   const pursuitTarget=state.timeOut?state.player:FINAL_ALTAR;
    vidal.root.position.set(
-    THREE.MathUtils.lerp(VIDAL_START.x,FINAL_ALTAR.x-.95,p),
-    .10,THREE.MathUtils.lerp(VIDAL_START.z,FINAL_ALTAR.z+.75,p));
+    THREE.MathUtils.lerp(VIDAL_START.x,pursuitTarget.x-.95,p),
+    .10,THREE.MathUtils.lerp(VIDAL_START.z,pursuitTarget.z+.75,p));
    vidal.root.rotation.y=-.6;
    vidal.pistol.visible=chase&&localT>=1.48;
    vidal.arm.rotation.x=chase?-.72:0;
