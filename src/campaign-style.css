@@ -281,3 +281,42 @@ body.campaign-chapter .joystick-knob{background:radial-gradient(circle at 38% 30
  html[data-input-mode="touch"] .pale-touch .pale-act{
   width:72px;height:72px;border-radius:50%;pointer-events:auto}
 }
+
+/* Final trial epilogue: two royal returns must be visibly distinct. */
+.tale-ending-page[data-ending="mercy"]{
+ background:radial-gradient(ellipse at 50% 18%,#777e6650,transparent 53%),
+ linear-gradient(150deg,#2a3230,#131a19 73%);
+}
+.tale-ending-page[data-ending="offering"]{
+ background:radial-gradient(ellipse at 50% 18%,#955e6250,transparent 50%),
+ linear-gradient(150deg,#30252a,#17171a 73%);
+}
+.tale-ending-page[data-ending="offering"] .tale-ending-content{
+ border-color:#a26f75;background:#35292de8;
+}
+.tale-ending-page[data-ending="offering"] .tale-crest,
+.tale-ending-page[data-ending="offering"] .tale-eyebrow{color:#dcaaa6}
+.tale-epilogue-prose{white-space:pre-line}
+.tale-royal-blessing{border-top:1px solid #b5a17b7d;
+ border-bottom:1px solid #b5a17b7d;margin:24px 0 22px;padding:20px 10px}
+.tale-royal-blessing blockquote{
+ font-size:clamp(12px,1.6vw,16px);line-height:2.0;letter-spacing:.1em;
+ font-weight:400;color:#e6d5b8;margin:12px 0 0}
+.tale-ending-page[data-ending="offering"] .tale-royal-blessing blockquote{color:#deb6ad}
+.tale-end-archive{border-top:1px solid #88775c69;margin:26px 0 15px;padding-top:16px}
+.tale-end-tabs{display:flex;justify-content:center;gap:12px;margin:13px 0}
+.tale-end-tabs button{border:1px solid #97876b;padding:11px 18px;
+ border-radius:4px;background:#262c29;color:#d8cbb9;min-width:120px}
+.tale-end-tabs button[aria-pressed=true]{background:#ac926b;color:#1c2420}
+.tale-end-archive>p{font-size:10px;color:#a5a092;line-height:1.8;margin:14px}
+.tale-ending-page[data-ending="offering"] .tale-end-tabs button[aria-pressed=true]{
+ background:#ab747a;color:#20171b}
+.tale-ending-content .tale-relics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tale-ending-content .tale-ending-actions{flex-wrap:wrap}
+.tale-ending-content .tale-ending-actions button{min-width:145px;flex:1}
+@media(max-width:620px){
+ .tale-ending-content .tale-relics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tale-end-tabs button{font-size:11px;padding:11px 8px;min-width:0;flex:1}
+ .tale-ending-content .tale-ending-actions{flex-direction:column}
+ .tale-ending-content .tale-ending-actions button{width:100%}
+}
