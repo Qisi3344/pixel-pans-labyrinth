@@ -47,6 +47,24 @@ test('fourth chapter has a real off-center cutout; solid grass cannot cap the sp
  assert.ok(read('../src/chapter4-scene.js').includes('createFinalStageWithCutout(root)'));
 });
 
+test('raycasts see THROUGH the cutout and hit real spiral stair geometry below',()=>{
+ const stage=new THREE.Group(),{ground,cap}=createFinalStageWithCutout(stage);
+ const ray=new THREE.Raycaster();
+ ray.set(new THREE.Vector3(FINAL_WELL_CENTER.x,6,FINAL_WELL_CENTER.z),
+  new THREE.Vector3(0,-1,0));
+ assert.equal(ray.intersectObjects([ground,cap]).length,0,
+  'unbroken stage cylinders must not occlude the well opening');
+ ray.set(new THREE.Vector3(0,6,0),new THREE.Vector3(0,-1,0));
+ assert.ok(ray.intersectObjects([ground,cap]).length>=1,
+  'ground stays solid everywhere except the actual shaft');
+ const well=buildFinalSpiralWell(stage);
+ const firstStepRadius=(3.12)*WELL.visualScale;
+ ray.set(new THREE.Vector3(FINAL_WELL_CENTER.x,4,
+  FINAL_WELL_CENTER.z-firstStepRadius),new THREE.Vector3(0,-1,0));
+ const hits=ray.intersectObject(well.well,true);
+ assert.ok(hits.length>0,'actual descent treads must be visible from above');
+});
+
 test('each ending has a blood path FROM Ofelia at the stone lip INTO the same spiral',()=>{
  const scene=new THREE.Group(),well=buildFinalSpiralWell(scene);
  const start=well.bloodCurve.getPoint(0),end=well.bloodCurve.getPoint(1);
