@@ -61,6 +61,14 @@ let inspectedShoes=false,shoeClueUntil=0,deathStage='';
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
 const QA_DEVOUR_PREVIEW=new URLSearchParams(location.search).has('previewDevour');
+// A held-frame diagnostic for visibility of the actual in-engine biting pose.
+// Entirely inert in normal gameplay. ?previewDevour=1&poseAt=1.92
+const QA_POSE_AT=(()=>{
+ const q=new URLSearchParams(location.search);
+ if(!q.has('previewDevour')||!q.has('poseAt'))return null;
+ const t=Number(q.get('poseAt'));
+ return Number.isFinite(t)?Math.max(0,Math.min(3.60,t)):null;
+})();
 let drawPointer=null,drawPrevious=null;
 const movementCodes={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
@@ -383,6 +391,7 @@ function frame(now){
   $('pale-shoe-clue').classList.remove('visible');
  }
  if(started)tickBanquet(state,dt);
+ if(QA_POSE_AT!==null&&state.phase==='caught')state.deathTime=QA_POSE_AT;
  if(started)driveHunter(dt);
  updateTransition();
  if(state.phase==='awakening'){
