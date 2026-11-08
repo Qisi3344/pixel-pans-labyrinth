@@ -115,7 +115,7 @@ export function createChildShoePile(scene,{count=23}={}){
   const col=n%5,row=Math.floor(n/5);
   // Spaced enough that the tiny footwear actually reads as FOOTWEAR.
   shoe.position.set((col-2)*.48+(random(n*9)-.5)*.11,
-   .018+row*.07,
+   -.23+row*.07,
    (row-2)*.39+(random(n*13)-.5)*.09);
   shoe.rotation.y=random(n*41)*Math.PI*2;
   shoe.rotation.z=(random(n*33)-.5)*.28;
@@ -125,7 +125,7 @@ export function createChildShoePile(scene,{count=23}={}){
  // One displaced pair beside the pile tells the player what these objects are.
  for(const [i,x,z] of [[0,-1.28,.59],[1,-.78,.70]]){
   const shoe=shoeChild('mary-jane',.39,.68,0x685347,0x342e2a,i);
-  shoe.position.set(x,0,z);shoe.rotation.y=.35+i*.15;
+  shoe.position.set(x,-.23,z);shoe.rotation.y=.35+i*.15;
   root.add(shoe);shoes.push(shoe);
  }
  return {root,shoes,point:{...CHILD_SHOE_PILE}};
