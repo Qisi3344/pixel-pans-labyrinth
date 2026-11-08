@@ -224,3 +224,60 @@ html[data-input-mode="touch"] .touch-controls{pointer-events:auto}
  .tale-chapter-words strong{font-size:15px}
  .tale-epilogue-prose{font-size:11px}
 }
+
+/* Final polish: every legacy chapter shares the same candlelit backdrop. */
+*,*::before,*::after{box-sizing:border-box}
+body.campaign-chapter .overlay,body.campaign-chapter .root-overlay,
+body.campaign-chapter .pale-overlay{background:rgba(15,20,19,.72);backdrop-filter:blur(9px)}
+body.campaign-chapter .root-win-overlay{background:rgba(15,20,19,.56)}
+body.campaign-chapter .root-win-overlay .root-card{background:#242a27f7;color:var(--tale-cream)}
+body.campaign-chapter .root-win-overlay .root-card .secondary-end{
+ background:transparent;color:#dfd0ba;border-color:#9b8866}
+body.campaign-chapter .root-win-overlay .root-card footer a,
+body.campaign-chapter .pale-card footer a{color:#d6b789}
+body.campaign-chapter .pale-card .pale-replay{
+ display:block;width:100%;margin-top:11px;padding:10px;background:transparent;
+ border:1px solid rgba(210,179,133,.5);border-radius:4px;color:#cfc3ad;
+ font-size:11px;letter-spacing:.1em}
+body.campaign-chapter .pale-card .pale-replay:hover{border-color:#e7c793}
+body.campaign-chapter .pale-relic-hint,
+body.campaign-chapter #pale-relic-hint{font-size:11px;letter-spacing:.06em;color:#83654f;
+ margin-top:10px;line-height:1.6}
+body.campaign-chapter .tale-reward{
+ display:flex;align-items:center;justify-content:center;gap:11px;margin:13px auto 20px;
+ padding:11px 14px;width:fit-content;max-width:100%;
+ color:#e4c695;background:rgba(162,129,80,.14);border:1px solid rgba(219,178,118,.42);
+ font-size:12px;letter-spacing:.08em}
+body.campaign-chapter .tale-reward span{font-size:24px;color:#d9ad66}
+body.campaign-chapter .pale-draw{background:#2a2d29;color:#eee5d5;border-color:#b69c78}
+body.campaign-chapter .pale-draw .draw-heading strong{color:#f0e8d9}
+body.campaign-chapter .pale-draw .draw-heading p{color:#bfb4a2}
+body.campaign-chapter .root-pad,body.campaign-chapter .pale-pad,
+body.campaign-chapter .joystick{border-color:#a8926e;background:radial-gradient(circle at 43% 36%,#9b957477,#3b4339b0)}
+body.campaign-chapter .root-knob,body.campaign-chapter .pale-knob,
+body.campaign-chapter .joystick-knob{background:radial-gradient(circle at 38% 30%,#c5bc9d,#675e4d 66%,#41473f);
+ border-color:#aa9270}
+@media(max-width:620px){
+ #zoom-in,#zoom-out,#root-less,#root-more,#pale-zoom-in,#pale-zoom-out{display:none!important}
+ body.campaign-chapter .pale-tools,body.campaign-chapter .root-tools{gap:4px}
+ body.campaign-chapter .pale-brand small,body.campaign-chapter .root-head small{font-size:8px}
+ body.campaign-chapter .root-head h1,body.campaign-chapter .pale-brand h1{font-size:21px;margin-top:4px}
+ body.campaign-chapter .root-head p,body.campaign-chapter .pale-brand p{font-size:9px}
+ body.campaign-chapter .tale-hud-action{width:31px!important;height:31px!important}
+}
+/* A selected touch mode can be used on a desktop emulator or tablet. */
+@media(min-width:821px){
+ html[data-input-mode="touch"] .touch-controls,
+ html[data-input-mode="touch"] .root-touch,
+ html[data-input-mode="touch"] .pale-touch{
+  position:absolute;bottom:20px;left:22px;right:22px;z-index:7;
+  align-items:flex-end;justify-content:space-between;pointer-events:none}
+ html[data-input-mode="touch"] .touch-controls .joystick,
+ html[data-input-mode="touch"] .root-touch .root-pad,
+ html[data-input-mode="touch"] .pale-touch .pale-pad{
+  width:138px;height:138px;border-radius:50%;pointer-events:auto}
+ html[data-input-mode="touch"] .touch-controls .touch-act,
+ html[data-input-mode="touch"] .root-touch .root-act,
+ html[data-input-mode="touch"] .pale-touch .pale-act{
+  width:72px;height:72px;border-radius:50%;pointer-events:auto}
+}
