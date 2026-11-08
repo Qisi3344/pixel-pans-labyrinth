@@ -133,8 +133,8 @@ test('closed original doorway is flush wall chalk; actual exit is a raised ceili
  assert.equal(hatch.lines.length,4,'full four-sided chalk rectangle in ceiling');
  assert.ok(hatch.stool.children.length>=8,'seat, legs, backrest and bracing are modelled');
  assert.equal(hatch.target.material.opacity,0,'the raycast target must be invisible');
- assert.ok(hatch.parent.children.every(child=>child!==hatch.opening),
-  'the exit belongs to the roof group, not a free-standing panel');
+ assert.equal(hatch.darkOpening.parent,hatch.roof,
+  'the exit belongs to the elevated ceiling, not a freestanding wall panel');
  assert.ok(walkable(DOOR,.25),'approach interaction point stays navigable');
  assert.equal(walkable({x:DOOR.x,z:-.92},.25),false,'the chair body cannot be walked through');
 });
@@ -146,7 +146,7 @@ test('film-like escape: climb stool, trace four sides on ceiling, then pull up t
  assert.equal(state.phase,'climbing');
  hatch.update(0,.1,state);
  assert.equal(hatch.darkOpening.visible,false);
- for(let i=0;i<9;i++)tickBanquet(state,.10);
+ for(let i=0;i<10;i++)tickBanquet(state,.10);
  assert.equal(state.phase,'drawing');
  assert.equal(state.doorProgress,0);
  for(let i=0;i<DOOR_POLYLINE.length-1;i++){
