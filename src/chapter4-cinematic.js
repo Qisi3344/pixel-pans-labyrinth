@@ -10,7 +10,7 @@ export const FINAL_CUES=Object.freeze({
  offering:Object.freeze({
   approachEnd:2.65,knifeStart:2.75,knifeLiftEnd:4.45,
   bloodMoment:5.10,handOff:5.12,
-  bloodStart:5.35,bloodEnd:7.35,portalStart:7.26,
+  bloodStart:5.35,bloodEnd:7.35,portalStart:7.50,
   royalAt:9.30,end:20.60
  })
 });
