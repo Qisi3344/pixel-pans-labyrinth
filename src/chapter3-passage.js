@@ -86,7 +86,7 @@ export function createProcessionalPassage(scene){
  stick(section,0x938576,[-8.62,3.38,-2.30],[-8.62,4.40,0],.19);
  stick(section,0x938576,[-8.62,4.40,0],[-8.62,3.38,2.30],.19);
  // Distinct hourglass set into an illuminated wall niche at the exit.
- const hourglass=new THREE.Group();hourglass.position.set(-29.8,.54,-1.12);section.add(hourglass);
+ const hourglass=new THREE.Group();hourglass.position.set(-32.05,.54,-1.12);section.add(hourglass);
  for(const y of [-.33,.58])disk(hourglass,0xbba171,0,y,0,.34,.11);
  for(const x of [-.24,.24])for(const z of [-.21,.21])
   stick(hourglass,0x886b47,[x,-.31,z],[x,.61,z],.045);
