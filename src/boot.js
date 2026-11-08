@@ -4,10 +4,11 @@
 import {bootCampaignScreen,mountChapterFrame} from './campaign-ui.js';
 const params=new URLSearchParams(window.location.search);
 const stage=params.get('stage');
-if(!['1','2','3'].includes(stage)||params.get('screen')==='menu'||params.get('screen')==='epilogue'){
+if(!['1','2','3','4'].includes(stage)||params.get('screen')==='menu'||params.get('screen')==='epilogue'){
  bootCampaignScreen(params);
 }else{
- const loading=stage==='3'?import('./chapter3-main.js'):
+ const loading=stage==='4'?import('./chapter4-main.js'):
+  stage==='3'?import('./chapter3-main.js'):
   stage==='2'?import('./chapter2-main.js'):import('./main.js');
  loading.then(()=>{
   mountChapterFrame(Number(stage));
