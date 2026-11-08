@@ -256,7 +256,8 @@ function renderRoyalDialogue(){
  const margin=13;
  const x=Math.max(margin+width*.5,
   Math.min(surface.width-margin-width*.5,anchor.x));
- const y=Math.max(100,Math.min(surface.height*.77,anchor.y-8));
+ const minY=window.innerWidth<=820?138:150;
+ const y=Math.max(minY,Math.min(surface.height*.77,anchor.y-8));
  bubble.style.left=x+'px';
  bubble.style.top=y+'px';
 }
