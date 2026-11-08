@@ -352,7 +352,7 @@ function buildPaleMan(scene){
  }
  return {root,rig,hands,jawPivot,maw,pose};
 }
-function chalkPortal(scene){
+export function chalkPortal(scene){
  // The existing attic entrance has CLOSED: its old chalk trace stays flush
  // with masonry. Escape instead uses a CHAIR and a CEILING trapdoor.
  const parent=new THREE.Group();scene.add(parent);
@@ -558,6 +558,7 @@ export function createBanquetScene(canvas,state){
     .03+step*.72+up*2.72,
     THREE.MathUtils.lerp(state.player.z,DOOR.z-.92,step)-up*.08
    );
+   player.body.rotation.y=dampHeading(player.body.rotation.y,Math.PI,10,dt);
    player.arms[0].rotation.x=-1.17;
    player.arms[1].rotation.x=state.phase==='climbing'?- .42:-1.30;
    player.legs[0].rotation.x=state.phase==='climbing'?.55*Math.sin(step*Math.PI):-.12;
