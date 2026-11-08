@@ -167,6 +167,9 @@ function buildTable(scene){
  return {group,grapes,clickables};
 }
 // The iris must sit on the UPPER HALF of the faceless head, not by its mouth.
+// Anatomical base dimensions for the head mesh (unit icosahedron).
+// The Pale Man has an elongated, near-human skull, not a giant round bobblehead.
+export const PALE_HEAD_BASE_SCALE=Object.freeze({x:.32,y:.46,z:.29});
 export const PALE_UPPER_FACE_Y=2.67;
 export function palmEyePosition(sign,awakened){
  return {x:sign*(.64-(.64-.285)*awakened),
@@ -186,7 +189,8 @@ function buildPaleMan(scene){
  }
  // A gaunt elongated pale torso, sagging skin fold silhouettes.
  const torso=ico(rig,bone,0,1.47,0,.44,.80,.34,1);
- torso.scale.x=.66;
+ // Preserve the narrow ribcage. A giant torso makes the head appear even more doll-like.
+ torso.scale.x=.43;
  for(let i=0;i<5;i++){
   beam(rig,shade,[-.33,1.25+i*.12,.14],[.32,1.25+i*.12,.14],.031,5);
  }
@@ -194,7 +198,10 @@ function buildPaleMan(scene){
   ico(rig,fold,sign*.43,1.48,.06,.20,.34,.29);
  }
  const neck=beam(rig,bone,[0,1.80,0],[0,2.32,-.06],.16,7);
- const head=ico(rig,0xd8c5b0,0,2.53,-.03,.35,.49,.33,1);
+ const head=ico(rig,0xd8c5b0,0,2.53,-.03,
+  PALE_HEAD_BASE_SCALE.x,PALE_HEAD_BASE_SCALE.y,PALE_HEAD_BASE_SCALE.z,1);
+ // Geometry is a UNIT icosahedron. Never reset head.scale to (1,1,1):
+ // that inflates the skull to nearly triple its modeled width in idle pose.
  // Hinged lower jaw and dark inner mouth, only opened for real devouring.
  // A static sad face plus a vanishing protagonist is not a death animation.
  // The eating close-up needs an unmistakable open throat, NOT a 10-pixel
@@ -317,7 +324,11 @@ function buildPaleMan(scene){
    lip.scale.set(1+open*.24,.37+open*1.25,1);
    lip.position.y=2.29-open*.15;
    head.rotation.x=-open*.35;
-   head.scale.set(1+open*.10,1+open*.22,1);
+   head.scale.set(
+    PALE_HEAD_BASE_SCALE.x*(1+open*.06),
+    PALE_HEAD_BASE_SCALE.y*(1+open*.10),
+    PALE_HEAD_BASE_SCALE.z
+   );
    const nod=Math.sin(beat.time*12)*(open*.13);
    rig.rotation.z=nod;
    scraps.forEach((fragment,i)=>{
@@ -334,7 +345,8 @@ function buildPaleMan(scene){
    biteLight.intensity=0;
    teeth.forEach(tooth=>{tooth.visible=false;});
    scraps.forEach(fragment=>{fragment.visible=false;});
-   head.position.y=2.53;head.rotation.x=0;head.scale.set(1,1,1);
+   head.position.y=2.53;head.rotation.x=0;
+   head.scale.set(PALE_HEAD_BASE_SCALE.x,PALE_HEAD_BASE_SCALE.y,PALE_HEAD_BASE_SCALE.z);
    rig.rotation.x=0;
   }
  }
