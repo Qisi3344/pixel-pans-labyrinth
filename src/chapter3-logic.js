@@ -6,7 +6,8 @@ export const TABLE=Object.freeze({minX:-4.35,maxX:5.25,minZ:-1.13,maxZ:1.13});
 export const ENTRANCE=Object.freeze({x:-9.02,z:0});
 export const START=Object.freeze({x:-30.95,z:.06});
 export const FOOD=Object.freeze({x:-1.45,z:2.35});
-export const DOOR=Object.freeze({x:-31.62,z:0});
+export const DOOR=Object.freeze({x:-29.65,z:0});
+export const CHAIR=Object.freeze({minX:-30.10,maxX:-29.20,minZ:-1.39,maxZ:-.47});
 export const MONSTER_START=Object.freeze({x:6.78,z:.12});
 export const PLAYER_SPEED=4.6;
 export const HUNTER_SPEED=4.15;
@@ -41,6 +42,8 @@ export function walkable(p,radius=.25){
   p.z>CORRIDOR.minZ+radius&&p.z<CORRIDOR.maxZ-radius;
  if(!(inHall||inPassage))return false;
  if(inRect(p,TABLE,radius+.07))return false;
+ // Solid chair: walk beside it, then climb through the scripted interaction.
+ if(inRect(p,CHAIR,radius*.55))return false;
  return true;
 }
 export function moveActor(point,xAxis,zAxis,dt,speed=PLAYER_SPEED,radius=.25){
