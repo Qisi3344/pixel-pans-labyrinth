@@ -69,8 +69,10 @@ test('hourglass marks the sealing of the original exit while chalk escape stays 
  assert.equal(s.sealed,true,'original doorway must close during the long chase');
  s.player={...DOOR};
  assert.equal(atDoor(s),true);
- assert.equal(startDrawing(s),true,'player can redraw the closed portal');
- for(let i=0;i<3;i++){
+ assert.equal(startDrawing(s),true,'player can climb chair and redraw the ceiling portal');
+ for(let n=0;n<10;n++)tickBanquet(s,.1);
+ assert.equal(s.phase,'drawing');
+ for(let i=0;i<DOOR_POLYLINE.length-1;i++){
   const a=DOOR_POLYLINE[i],b=DOOR_POLYLINE[i+1];
   for(let k=0;k<=100;k++){
    const t=k/100;
@@ -109,7 +111,7 @@ test('desktop and mobile both use follow camera and route signage is accessible'
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(scene.includes("const hall=banquetHall(scene),passage=createProcessionalPassage(scene)"));
  assert.ok(scene.includes("const lead=zone(state.player)==='passage'"));
- assert.ok(scene.includes("const cx=DOOR.x,z=-1.72"));
+ assert.ok(scene.includes("const cx=DOOR.x,oldX=-31.62"));
  assert.ok(main.includes('id="pale-escape-guide"'));
  assert.ok(main.includes('previewReturn'));
  assert.ok(main.includes('SEAL_SECONDS-state.chaseTime'));
@@ -120,5 +122,5 @@ test('safe corridor preview is isolated to explicit QA URL only',()=>{
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(main.includes("const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn')"));
  assert.ok(main.includes("if(QA_RETURN_PREVIEW&&state.phase==='chase')return;"));
- assert.ok(main.includes("if(!['chase','drawing'].includes(state.phase))return;"));
+ assert.ok(main.includes("if(!['chase','climbing','drawing'].includes(state.phase))return;"));
 });
