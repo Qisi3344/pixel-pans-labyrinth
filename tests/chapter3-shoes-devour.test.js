@@ -86,3 +86,11 @@ test('shoe clue is encountered physically, shown once and has a safe visual QA e
  assert.ok(scene.includes('shoePile=createChildShoePile(scene)'));
  assert.ok(!passage.includes("const shoe=cube(props,"));
 });
+
+test('QA-only frozen bite frame allows exact visual inspection without altering live gameplay',()=>{
+ const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
+ assert.ok(main.includes("q.has('previewDevour')"));
+ assert.ok(main.includes("q.has('poseAt')"));
+ assert.ok(main.includes("if(QA_POSE_AT!==null&&state.phase==='caught')state.deathTime=QA_POSE_AT;"));
+ assert.ok(main.includes("Math.max(0,Math.min(3.60,t))"));
+});
