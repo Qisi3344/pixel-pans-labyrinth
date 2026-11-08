@@ -1,7 +1,7 @@
 import './chapter4-style.css';
 import {newFinalTrial,updateFinalTrial,moveFinalPlayer,walkableFinal,
  nearFaun,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
- finalClockLabel,distance} from './chapter4-logic.js';
+ finalClockLabel,distance,royalDialogueAt} from './chapter4-logic.js';
 import {createFinalScene} from './chapter4-scene.js';
 import {recordFinalOutcome,loadCampaign,campaignChapterUrl,CAMPAIGN_FINAL} from './campaign.js';
 
@@ -23,6 +23,14 @@ document.body.innerHTML=`
    </div>
   </div>
   <div class="final-message hidden" id="final-message" role="status"></div>
+  <div class="final-royal-dialogues" id="final-royal-dialogues" aria-live="polite" aria-atomic="true">
+   <div id="final-royal-father" class="final-royal-bubble hidden" data-speaker="father">
+    <small>♛ 父王</small><p id="final-royal-father-text"></p>
+   </div>
+   <div id="final-royal-mother" class="final-royal-bubble hidden" data-speaker="mother">
+    <small>♕ 母后</small><p id="final-royal-mother-text"></p>
+   </div>
+  </div>
   <div class="final-guide" id="final-guide">
    <span id="final-guide-text">石井在迷宫的中央。潘神正在等你。</span>
    <button id="final-guide-action" type="button">前往石井 ↗</button>
@@ -79,7 +87,7 @@ const state=newFinalTrial(),view=createFinalScene($('final-world'),state);
 const keyboard=new Set();
 let started=false,lastTime=0,elapsed=0,moveTo=null,pad={x:0,z:0},padPointer=null;
 let lastNote='',resultShown=false,selectedEnding=null,sound=true;
-let cachedPhase='',screenUpdate=0;
+let cachedPhase='',screenUpdate=0,lastRoyalBeat='';
 const CANVAS=$('final-world');
 const toMenu=()=>{location.href='?screen=menu';};
 const showMessage=t=>{
@@ -219,8 +227,43 @@ function cinematicNarration(){
  if(t<3.6)return '弟弟的声音留在了门外。石井却真的为她打开。';
  return '王宫终于在眼前亮起。她所盼望的家，终于出现了。';
 }
+function hideRoyalBubbles(){
+ $('final-royal-father').classList.add('hidden');
+ $('final-royal-mother').classList.add('hidden');
+ lastRoyalBeat='';
+}
+function updateRoyalDialogue(){
+ const beat=royalDialogueAt(state.ending,state.cinematicTime);
+ if(!beat){hideRoyalBubbles();return;}
+ const key=state.ending+':'+beat.speaker+':'+beat.at;
+ if(lastRoyalBeat!==key){
+  lastRoyalBeat=key;
+  for(const speaker of ['father','mother']){
+   const bubble=$('final-royal-'+speaker);
+   const on=speaker===beat.speaker;
+   bubble.classList.toggle('hidden',!on);
+   if(on)$('final-royal-'+speaker+'-text').textContent=beat.text;
+  }
+ }
+}
+function positionRoyalBubble(){
+ if(!state.royalShown||state.phase!=='cinematic')return;
+ for(const speaker of ['father','mother']){
+  const bubble=$('final-royal-'+speaker);
+  if(bubble.classList.contains('hidden'))continue;
+  const at=view.projectRoyalSpeaker(speaker);
+  if(!at){bubble.style.opacity='0';continue;}
+  bubble.style.opacity=at.visible?'1':'0';
+  const board=$('final-game'),half=bubble.offsetWidth*.5;
+  const x=Math.max(half+12,Math.min(board.clientWidth-half-12,at.x));
+  const y=Math.max(bubble.offsetHeight+24,Math.min(board.clientHeight-12,at.y-15));
+  bubble.style.left=x.toFixed(1)+'px';
+  bubble.style.top=y.toFixed(1)+'px';
+ }
+}
 function showResult(){
  if(resultShown)return;resultShown=true;
+ hideRoyalBubbles();
  const kind=state.ending||'mercy',out=FINAL_OUTCOMES[kind];
  // A QA freeze/preview must never create a real completed campaign save.
  const stored=params.has('previewFinal')?loadCampaign():recordFinalOutcome(kind),
@@ -230,7 +273,10 @@ function showResult(){
  $('final-result-label').textContent=out.subtitle;
  $('final-result-title').textContent=out.title;
  $('final-result-banner').textContent='恭喜完成最后的试炼。'+out.banner;
- $('final-result-speech').textContent='王座上的父母说：“'+out.speech+'”';
+ // Their actual words have already appeared above their 3D thrones.
+ $('final-result-speech').textContent=kind==='mercy'
+  ?'三张王座中有一张空着。父王与母后亲口欢迎她归来。'
+  :'王宫终于出现。父王与母后的话语，却无法抹去那条路的代价。';
  $('final-result-text').textContent=out.second+'\n'+out.last;
  $('final-ending-count').textContent='已发现的命运：'+seen.length+' / 2';
  $('final-result').classList.remove('hidden');
@@ -254,7 +300,14 @@ function updateHud(){
   showMessage(time<=17?'维达尔的脚步越来越近，快做决定。':
    '月光落在石井上。潘神正等待你的到来。');
  }else if(state.phase==='cinematic'){
-  showMessage(cinematicNarration());
+  $('final-game').classList.toggle('is-royal',state.royalShown);
+  if(state.royalShown){
+   showMessage(''); // no static overlay blocking the speaking parents
+   updateRoyalDialogue();
+  }else{
+   hideRoyalBubbles();
+   showMessage(cinematicNarration());
+  }
   $('final-gun-flash').classList.toggle('show',state.gunFlash);
  }else if(state.phase==='done')showResult();
 }
@@ -268,6 +321,7 @@ function frame(t){
   updateFinalTrial(state,dt);
  }
  view.update(active?dt:0,elapsed);
+ positionRoyalBubble();
  if(t-screenUpdate>90||state.phase!==cachedPhase){
   cachedPhase=state.phase;screenUpdate=t;updateHud();
  }
