@@ -60,6 +60,7 @@ let inspectedShoes=false,shoeClueUntil=0,deathStage='';
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
+const QA_DEVOUR_PREVIEW=new URLSearchParams(location.search).has('previewDevour');
 let drawPointer=null,drawPrevious=null;
 const movementCodes={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',
  ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
@@ -405,7 +406,11 @@ function frame(now){
    if(deathStage==='gulp')note(72,.30,'triangle',.07);
   }
   if(beat.completed&&!endingShown){
-   endingShown=true;$('pale-death').classList.remove('hidden');
+   if(QA_DEVOUR_PREVIEW){
+    state.deathTime=0;deathStage='';
+   }else{
+    endingShown=true;$('pale-death').classList.remove('hidden');
+   }
   }
  }else{
   $('pale-death-vignette').style.opacity='0';
@@ -434,8 +439,12 @@ if(params.has('previewDoor')){
  beginChalk();
 }
 if(params.has('previewShoes')){
- start();state.player={x:CHILD_SHOE_PILE.x-1.09,z:CHILD_SHOE_PILE.z+.08};
- updateHUD();
+ start();state.player={x:CHILD_SHOE_PILE.x-1.02,z:CHILD_SHOE_PILE.z+.06};
+ // Persist the environmental clue in QA mode so browser testers can
+ // see the exact narration even when they inspect several seconds later.
+ inspectedShoes=true;shoeClueUntil=Infinity;
+ $('pale-shoe-clue').classList.add('visible');
+ tell(SHOE_MESSAGE,45000);updateHUD();
 }
 if(params.has('previewDevour')){
  start();state.player={x:6.49,z:.76};state.monster={x:6.78,z:.12};
