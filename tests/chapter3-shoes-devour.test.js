@@ -98,3 +98,18 @@ test('QA-only frozen bite frame allows exact visual inspection without altering 
  assert.ok(main.includes("if(QA_POSE_AT!==null&&state.phase==='caught')state.deathTime=QA_POSE_AT;"));
  assert.ok(main.includes("Math.max(0,Math.min(3.60,t))"));
 });
+
+// Regression: the huge spherical head was caused by resetting a UNIT icosahedron
+// to scale=(1,1,1) every idle frame, overriding its .35/.49/.33 modeling scale.
+test('Pale Man retains human-sized elongated head in idle, chase and death poses',()=>{
+ const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
+ assert.ok(scene.includes('export const PALE_HEAD_BASE_SCALE=Object.freeze({x:.32,y:.46,z:.29})'));
+ assert.ok(scene.includes('head.scale.set(PALE_HEAD_BASE_SCALE.x,PALE_HEAD_BASE_SCALE.y,PALE_HEAD_BASE_SCALE.z)'),
+  'rest pose must use anatomical dimensions, not unit mesh scale');
+ assert.ok(scene.includes('PALE_HEAD_BASE_SCALE.x*(1+open*.06)'),
+  'bite animation must stretch the skull relative to its base shape');
+ assert.ok(!scene.includes('head.scale.set(1,1,1)'),
+  'setting a unit icosahedron to 1,1,1 inflates the head dramatically');
+ assert.ok(!scene.includes('head.scale.set(1+open*.10,1+open*.22,1)'),
+  'bite must not grow the head to a 2+ world-unit ball');
+});
