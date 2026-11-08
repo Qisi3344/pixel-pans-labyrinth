@@ -39,6 +39,15 @@ function buildFaun(root,x,y,z){
   beam(body,0x73765d,[sign*.30,2.95,-.02],[sign*.51,3.07,.18],.047,5);
  }
  stone(body,0x9e987c,0,2.53,.34,.11,0).scale.set(1,.46,.38);
+ // The ritual knife recovered from the Pale Man's chamber is genuinely
+ // visible in the Faun's hand at the well, not merely described in UI.
+ const ritualBlade=new THREE.Group();
+ ritualBlade.position.set(.68,1.27,.37);
+ ritualBlade.rotation.z=-.32;body.add(ritualBlade);
+ box(ritualBlade,0x533d34,0,-.13,0,.10,.30,.09);
+ box(ritualBlade,0xb7a16b,0,.045,0,.32,.067,.12);
+ const blade=new THREE.Mesh(new THREE.ConeGeometry(.10,.54,4),
+  mat(0xcbd0c8));blade.position.y=.32;ritualBlade.add(blade);
  body.rotation.y=-.22;
  return body;
 }
@@ -93,10 +102,20 @@ function spiralWell(root){
    Math.cos(a)*rr,.40,Math.sin(a)*rr,.76,.23,.48);
   tile.rotation.y=-a;
  }
+ // A genuine magical opening appears INSIDE the circular stone well.
+ // Both variants use the same geometry, but each color tells a different fate.
+ const portal=new THREE.Mesh(new THREE.CircleGeometry(1.40,28),
+  new THREE.MeshBasicMaterial({
+   color:0xb0d7c4,transparent:true,opacity:0,
+   depthWrite:false,side:THREE.DoubleSide
+  }));
+ portal.rotation.x=-Math.PI/2;
+ portal.position.set(0,.49,0);
+ portal.visible=false;well.add(portal);
  const droplet=new THREE.Mesh(new THREE.IcosahedronGeometry(.18,0),
   new THREE.MeshBasicMaterial({color:0xa8484d,transparent:true,opacity:0}));
- droplet.position.set(0,.48,0);well.add(droplet);
- return {well,dark,droplet};
+ droplet.position.set(0,.54,0);well.add(droplet);
+ return {well,dark,droplet,portal};
 }
 function buildMaze(root){
  const ground=box(root,0x383f3c,-.1,-.64,.20,27.7,1.1,27.2);
@@ -307,6 +326,15 @@ export function createFinalScene(canvas,state){
    vidal.pistol.visible=chase&&localT>=1.48;
    vidal.arm.rotation.x=chase?-.72:0;
    vidalBaby.visible=chase&&localT>=1.6;
+   const portalAt=state.ending==='mercy'?3.23:1.53;
+   const portalDuration=state.ending==='mercy'?1.40:1.92;
+   const pulse=Math.max(0,Math.min(1,(localT-portalAt)/portalDuration));
+   maze.well.portal.visible=state.phase==='cinematic'&&localT>=portalAt;
+   maze.well.portal.material.color.setHex(
+    state.ending==='offering'?0x9d3f50:0xc5e8ca);
+   maze.well.portal.material.opacity=maze.well.portal.visible?
+    .15+.72*pulse:0;
+   maze.well.portal.scale.setScalar(.78+.26*Math.sin(elapsed*2.7));
    maze.well.droplet.visible=state.phase==='cinematic'&&
     state.cinematicTime>(state.ending==='mercy'?3.25:1.55);
    maze.well.droplet.material.opacity=maze.well.droplet.visible?.82:0;
