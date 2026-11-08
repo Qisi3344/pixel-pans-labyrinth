@@ -1,0 +1,283 @@
+/* Shared art direction across all three miniature Three.js chapters.
+   Dark fairytale / aged masonry / candlelight, not a dashboard. */
+:root{--tale-ink:#131719;--tale-rock:#202524;--tale-panel:#252a28;
+ --tale-cream:#eee7d7;--tale-mist:#bcb4a4;--tale-gold:#bfa67b;
+ --tale-ember:#7c4242;--tale-border:rgba(198,171,127,.36);}
+html:root{font-family:'DM Sans','Noto Sans SC','PingFang SC',system-ui,sans-serif}
+body.campaign-root,body.campaign-chapter{
+ margin:0;background:#161a19;color:var(--tale-cream);
+ -webkit-font-smoothing:antialiased;
+}
+.tale-page{min-height:100vh;min-height:100dvh;position:relative;overflow:auto;
+ color:var(--tale-cream);background:
+ radial-gradient(ellipse at 50% 17%,rgba(82,89,78,.16),transparent 43%),
+ radial-gradient(ellipse at 87% 84%,rgba(103,50,50,.12),transparent 42%),
+ linear-gradient(142deg,#1f2524,#111516 68%,#211f1e);
+}
+.tale-page:before,.tale-page:after{content:"";position:fixed;pointer-events:none;z-index:0;
+ width:min(460px,60vw);height:min(420px,50vh);opacity:.16;
+ border:1px solid #8d8977;transform:rotate(45deg);}
+.tale-page:before{left:-320px;top:18%}.tale-page:after{right:-320px;bottom:14%}
+.tale-vine{position:absolute;pointer-events:none;z-index:0;width:240px;height:500px;opacity:.16;
+ background:repeating-linear-gradient(137deg,transparent 0 36px,#807b69 37px,#807b69 38px,transparent 39px 63px);
+ mask-image:linear-gradient(to bottom,transparent,#000 25%,#000 67%,transparent);}
+.tale-vine-a{left:-70px;top:0;transform:skewX(-18deg)}
+.tale-vine-b{right:-70px;bottom:-80px;transform:rotate(180deg) skewX(-18deg)}
+.tale-page-inner{position:relative;z-index:1;max-width:1080px;margin:auto;
+ min-height:100dvh;display:flex;flex-direction:column;padding:clamp(23px,4.8vh,52px) clamp(22px,5vw,66px) 25px;}
+.tale-title{text-align:center}
+.tale-eyebrow{text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.29em;color:var(--tale-gold)}
+.tale-crest{font-size:32px;color:#c5a77c;line-height:1.2;margin:17px 0 4px;
+ text-shadow:0 0 24px rgba(210,175,110,.17)}
+.tale-title h1,.tale-ending-content h1,.tale-modal h2{
+ font-family:'DM Sans','Noto Sans SC','PingFang SC',sans-serif;letter-spacing:.22em;
+ font-weight:400;color:var(--tale-cream)}
+.tale-title h1{font-size:clamp(35px,5.2vw,61px);margin:0 0 8px}
+.tale-english{font-size:10px;letter-spacing:.42em;color:#b49b77}
+.tale-rule{max-width:275px;height:27px;margin:10px auto 8px;display:flex;
+ align-items:center;gap:12px;color:var(--tale-gold)}
+.tale-rule:before,.tale-rule:after{content:"";height:1px;flex:1;
+ background:linear-gradient(90deg,transparent,rgba(190,160,117,.62))}
+.tale-rule:after{transform:scaleX(-1)}
+.tale-title p{margin:8px 0 0;font-size:12px;line-height:1.9;letter-spacing:.11em;color:#b3afa4}
+.tale-menu-main{display:grid;grid-template-columns:minmax(240px,.94fr) minmax(300px,1.06fr);
+ gap:clamp(30px,5vw,90px);align-items:center;flex:1;padding:clamp(23px,4vh,48px) 0}
+.tale-hero-menu{display:flex;flex-direction:column;align-items:center;gap:35px}
+.tale-gate{width:170px;height:240px;border:10px solid #424841;border-bottom-width:16px;
+ border-radius:94px 94px 8px 8px;position:relative;
+ background:radial-gradient(ellipse at 50% 20%,#29332f,#141817 65%,#0a0e0f);
+ box-shadow:inset 0 0 0 3px #77735e,inset 0 0 32px #040807,0 18px 48px #0506067f,
+  0 0 0 6px #292e2b;}
+.tale-gate:before{content:"";position:absolute;left:-32px;right:-32px;height:16px;bottom:-27px;
+ background:linear-gradient(90deg,#282e2b,#6a6959,#30352f);border-radius:3px}
+.tale-gate-in{position:absolute;inset:24px 19px 14px;border:1px solid #544f40;
+ border-radius:75px 75px 3px 3px;display:grid;place-items:center;color:#b59e7a;
+ box-shadow:inset 0 0 45px #000a;}
+.tale-gate-in span{font-size:40px;text-shadow:0 0 40px #b4a07965}
+.tale-main-actions{width:min(350px,100%);display:flex;flex-direction:column;gap:10px}
+.tale-primary,.tale-secondary,.tale-text-button{
+ font:inherit;cursor:pointer;min-height:49px;border-radius:5px;padding:12px 20px;
+ font-size:12px;font-weight:600;letter-spacing:.16em;transition:transform .16s,border .16s,background .16s;}
+.tale-primary{border:1px solid #d2b98e;background:#a88b64;color:#171b19;
+ display:flex;align-items:center;justify-content:space-between}
+.tale-primary span,.tale-secondary span{font-size:17px;margin-left:18px}
+.tale-secondary{border:1px solid rgba(182,169,143,.40);
+ background:rgba(34,39,37,.65);color:var(--tale-cream);
+ display:flex;align-items:center;justify-content:space-between}
+.tale-text-button{border:0;background:transparent;color:#b8ad9c}
+.tale-primary:hover,.tale-secondary:hover{transform:translateY(-2px);border-color:#dfc79e}
+.tale-primary:focus-visible,.tale-secondary:focus-visible,.tale-chapter:focus-visible,
+.tale-modal button:focus-visible{outline:2px solid #d8be8a;outline-offset:3px}
+.tale-save{color:#aaa597;font-size:10px;text-align:center;line-height:1.7;margin:6px 0}
+.tale-chapter-list{border:1px solid var(--tale-border);
+ padding:25px 25px 16px;background:rgba(28,34,32,.56);
+ box-shadow:inset 0 1px 0 #ffffff09,0 22px 55px #00000022}
+.tale-panel-heading{display:flex;align-items:center;justify-content:space-between;
+ border-bottom:1px solid #786b5863;padding-bottom:17px;margin-bottom:6px}
+.tale-panel-heading span{font-size:10px;color:var(--tale-gold);letter-spacing:.24em}
+.tale-panel-heading strong{font-size:13px;font-weight:500;color:#d8cfbd;letter-spacing:.09em}
+.tale-chapter{display:flex;text-align:left;align-items:center;gap:15px;width:100%;
+ background:transparent;border:0;border-bottom:1px solid #6a615555;
+ padding:21px 7px;color:#efe8d8;cursor:pointer;min-width:0}
+.tale-chapter:hover:not(:disabled){background:#a5957a12}
+.tale-chapter-num{font-size:26px;font-weight:300;color:#b59c74;font-variant-numeric:tabular-nums}
+.tale-chapter-words{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.tale-chapter-words small{font-size:10px;color:#b8a990;letter-spacing:.05em}
+.tale-chapter-words strong{font-weight:500;letter-spacing:.16em;font-size:17px}
+.tale-chapter-words em{font-size:9px;letter-spacing:.14em;color:#a7a197;font-style:normal}
+.tale-chapter-end{font-size:19px;color:#bfa57d}
+.tale-chapter.is-locked{opacity:.36;cursor:not-allowed}
+.tale-panel-foot{text-align:center;font-size:10px;color:#948b7b;line-height:1.75;margin:15px 0 1px}
+.tale-page-foot{display:flex;justify-content:space-between;gap:10px;
+ border-top:1px solid rgba(176,151,111,.20);padding-top:19px;
+ color:#86877c;font-size:10px;letter-spacing:.07em}
+/* Setup and chapter settings */
+#campaign-dialog-host{position:fixed;z-index:1000;inset:0}
+.tale-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(11,15,15,.91);
+ display:flex;justify-content:center;align-items:center;padding:20px;overflow-y:auto}
+.tale-modal{width:min(530px,100%);max-height:calc(100dvh - 24px);overflow-y:auto;
+ background:linear-gradient(155deg,#30332d,#202525 85%);
+ color:#eae2d3;border:1px solid rgba(205,178,134,.50);
+ box-shadow:0 25px 90px #0009;text-align:center;padding:clamp(22px,4vw,42px)}
+.tale-modal h2{font-size:clamp(23px,3vw,29px);margin:7px 0 13px;font-weight:400}
+.tale-modal p{font-size:12px;line-height:1.9;color:#b8b5a9;margin:0 auto 23px}
+.tale-options{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:22px 0}
+.tale-options button{display:flex;flex-direction:column;align-items:flex-start;
+ text-align:left;gap:10px;min-height:154px;
+ border:1px solid #79746a7c;border-radius:4px;
+ background:#202524;color:#ebe4d6;padding:16px;cursor:pointer}
+.tale-options button[aria-pressed=true]{border-color:#dfbd83;background:#564d3b;
+ box-shadow:inset 0 0 0 1px #d9ba7d5c}
+.tale-mode-symbol{font-size:26px;color:#c2a27a}
+.tale-options strong{font-size:14px;font-weight:600;letter-spacing:.08em}
+.tale-options small{font-size:10px;line-height:1.7;color:#bbb4a8}
+.tale-modal-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:13px}
+.tale-modal-actions .tale-primary{flex:1}
+.tale-prologue-art{height:82px;width:82px;border:1px solid #bfa77c66;
+ display:grid;place-items:center;border-radius:50%;margin:22px auto;color:#c5a77c;font-size:30px}
+.tale-prologue p{margin-bottom:25px}
+.tale-prologue .tale-primary{width:100%}
+/* Ending page */
+.tale-ending-page{display:flex;justify-content:center;align-items:center;padding:25px}
+.tale-ending-content{position:relative;z-index:1;max-width:720px;width:100%;
+ text-align:center;padding:40px clamp(22px,5vw,65px);
+ border:1px solid #a08a6966;background:#242a28a6;box-shadow:0 0 90px #0004}
+.tale-ending-content h1{font-size:clamp(29px,5vw,45px);margin:9px 0 10px}
+.tale-epilogue-prose{line-height:2.3;letter-spacing:.12em;font-size:14px;color:#e1d9cb}
+.tale-relics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:34px 0 25px}
+.tale-relics>div{padding:16px 7px;display:flex;flex-direction:column;gap:9px;align-items:center;
+ border:1px solid #9c866744;background:#11181788}
+.tale-relics span{font-size:30px;color:#d1ae72}
+.tale-relics small{font-size:9px;color:#928b7a}
+.tale-relics strong{font-size:12px;font-weight:500}
+.tale-epilogue-note{font-size:11px;line-height:1.9;color:#a7a69b}
+.tale-ending-actions{display:flex;gap:10px;justify-content:center;margin-top:25px}
+.tale-ending-actions button{min-width:150px}
+/* Darker chapter HUD surfaces; preserve miniatures and scene fidelity */
+body.campaign-chapter:after{content:"";position:fixed;z-index:1;inset:0;
+ pointer-events:none;background:radial-gradient(ellipse at 50% 52%,transparent 39%,rgba(22,24,21,.22) 100%)}
+body.campaign-chapter .topbar,body.campaign-chapter .root-head,
+body.campaign-chapter .pale-header{z-index:5}
+body.campaign-chapter .brand-name,body.campaign-chapter .root-head h1,
+body.campaign-chapter .pale-brand h1{color:#332e29}
+body.campaign-chapter .eyebrow,body.campaign-chapter .root-head small,
+body.campaign-chapter .pale-brand small{color:#8d6945}
+body.campaign-chapter .chapter,body.campaign-chapter .root-inventory,
+body.campaign-chapter .pale-side{color:#4b4136}
+body.campaign-chapter .hint,body.campaign-chapter .pale-suggest{
+ background:rgba(34,39,38,.95);color:#f0e9d9;
+ border:1px solid #b9a0788c;border-radius:5px;box-shadow:0 12px 34px #0005}
+body.campaign-chapter .hint #hint-content,
+body.campaign-chapter #pale-suggest-text{color:#e1d5c3}
+body.campaign-chapter .game-tip,body.campaign-chapter .root-tip,
+body.campaign-chapter .pale-tip,body.campaign-chapter .pale-escape-guide{
+ background:#272b29ed;border:1px solid #bba5817e;color:#ece4d5;border-radius:6px}
+body.campaign-chapter .tool,body.campaign-chapter .root-tools button,
+body.campaign-chapter .pale-tools button{
+ background:rgba(37,42,39,.94);border:1px solid #bbaa88a1;
+ color:#e9ddc7;border-radius:5px;box-shadow:0 3px 15px #0003}
+body.campaign-chapter .tool:hover,body.campaign-chapter .root-tools button:hover,
+body.campaign-chapter .pale-tools button:hover{background:#4b4b3f}
+body.campaign-chapter .interact,body.campaign-chapter .root-act,
+body.campaign-chapter .pale-act{background:#514538;color:#f3ead9}
+body.campaign-chapter .bottom-panel,body.campaign-chapter .root-bottom,
+body.campaign-chapter .pale-bottom{color:#554a3c}
+/* Unified page-turn-like chapter intros and endings */
+body.campaign-chapter .start-card,body.campaign-chapter .root-card,
+body.campaign-chapter .pale-card{
+ background:linear-gradient(150deg,rgba(44,49,44,.97),rgba(27,31,30,.98));
+ color:#eae0cd;border:1px solid #c7a77f9e;
+ border-radius:6px;box-shadow:0 22px 74px #090b0a80;
+}
+body.campaign-chapter .start-card h2,body.campaign-chapter .root-card h2,
+body.campaign-chapter .pale-card h2{color:#f0e6d6;letter-spacing:.16em}
+body.campaign-chapter .start-card p,body.campaign-chapter .root-card p,
+body.campaign-chapter .pale-card p{color:#c8c1b2}
+body.campaign-chapter .start-en,body.campaign-chapter .start-sub,
+body.campaign-chapter .root-card small,body.campaign-chapter .pale-card small,
+body.campaign-chapter .start-ornament{color:#c5a37c}
+body.campaign-chapter .main-button,body.campaign-chapter .root-card>button,
+body.campaign-chapter .root-next-chapter,body.campaign-chapter .pale-primary{
+ background:#a68d69;color:#1b211f;border:1px solid #cbb18b;border-radius:5px}
+body.campaign-chapter .root-card>button:hover,body.campaign-chapter .pale-primary:hover,
+body.campaign-chapter .main-button:hover{background:#ceb286}
+body.campaign-chapter .pale-fresco-sheet{border-color:#b59f79}
+body.campaign-chapter .pale-draw{z-index:9}
+body.campaign-chapter .pale-death-vignette{z-index:8}
+/* If player chooses keyboard on a touch device, don't cover the screen
+   with a joystick they aren't using. Opposite choice is respected as well. */
+html[data-input-mode="keyboard"] .touch-controls,
+html[data-input-mode="keyboard"] .root-touch,
+html[data-input-mode="keyboard"] .pale-touch{display:none!important}
+html[data-input-mode="touch"] .touch-controls,
+html[data-input-mode="touch"] .root-touch,
+html[data-input-mode="touch"] .pale-touch{display:flex!important}
+html[data-input-mode="touch"] .touch-controls{pointer-events:auto}
+.tale-hud-action{font-size:16px!important}
+@media(max-width:780px){
+ .tale-page-inner{padding:24px 18px 16px;min-height:100dvh}
+ .tale-title h1{font-size:34px}
+ .tale-menu-main{grid-template-columns:1fr;gap:26px;padding:25px 0}
+ .tale-hero-menu{gap:25px}
+ .tale-gate{width:108px;height:152px;border-width:7px;border-bottom-width:12px;border-radius:70px 70px 5px 5px}
+ .tale-gate:before{bottom:-19px;height:10px}
+ .tale-gate-in{inset:13px 12px 8px}
+ .tale-main-actions{width:min(410px,100%)}
+ .tale-chapter-list{padding:17px 15px}
+ .tale-page-foot{flex-direction:column;text-align:center;gap:7px}
+ .tale-chapter{padding:14px 5px}
+ .tale-epilogue-prose{font-size:12px}
+ .tale-ending-content{padding:26px 15px}
+ .tale-relics strong{font-size:10px}
+ .tale-options button{min-height:155px;padding:11px}
+ .tale-english{letter-spacing:.23em}
+ body.campaign-chapter .root-head,
+ body.campaign-chapter .pale-header{top:12px}
+ body.campaign-chapter .root-tools button,
+ body.campaign-chapter .pale-tools button{width:34px;height:34px}
+ body.campaign-chapter .topbar .tool{width:34px;height:34px}
+}
+@media(max-width:400px){
+ .tale-options{gap:8px}
+ .tale-options button{min-height:168px;padding:9px}
+ .tale-options strong{font-size:12px}
+ .tale-chapter-words strong{font-size:15px}
+ .tale-epilogue-prose{font-size:11px}
+}
+
+/* Final polish: every legacy chapter shares the same candlelit backdrop. */
+*,*::before,*::after{box-sizing:border-box}
+body.campaign-chapter .overlay,body.campaign-chapter .root-overlay,
+body.campaign-chapter .pale-overlay{background:rgba(15,20,19,.72);backdrop-filter:blur(9px)}
+body.campaign-chapter .root-win-overlay{background:rgba(15,20,19,.56)}
+body.campaign-chapter .root-win-overlay .root-card{background:#242a27f7;color:var(--tale-cream)}
+body.campaign-chapter .root-win-overlay .root-card .secondary-end{
+ background:transparent;color:#dfd0ba;border-color:#9b8866}
+body.campaign-chapter .root-win-overlay .root-card footer a,
+body.campaign-chapter .pale-card footer a{color:#d6b789}
+body.campaign-chapter .pale-card .pale-replay{
+ display:block;width:100%;margin-top:11px;padding:10px;background:transparent;
+ border:1px solid rgba(210,179,133,.5);border-radius:4px;color:#cfc3ad;
+ font-size:11px;letter-spacing:.1em}
+body.campaign-chapter .pale-card .pale-replay:hover{border-color:#e7c793}
+body.campaign-chapter .pale-relic-hint,
+body.campaign-chapter #pale-relic-hint{font-size:11px;letter-spacing:.06em;color:#83654f;
+ margin-top:10px;line-height:1.6}
+body.campaign-chapter .tale-reward{
+ display:flex;align-items:center;justify-content:center;gap:11px;margin:13px auto 20px;
+ padding:11px 14px;width:fit-content;max-width:100%;
+ color:#e4c695;background:rgba(162,129,80,.14);border:1px solid rgba(219,178,118,.42);
+ font-size:12px;letter-spacing:.08em}
+body.campaign-chapter .tale-reward span{font-size:24px;color:#d9ad66}
+body.campaign-chapter .pale-draw{background:#2a2d29;color:#eee5d5;border-color:#b69c78}
+body.campaign-chapter .pale-draw .draw-heading strong{color:#f0e8d9}
+body.campaign-chapter .pale-draw .draw-heading p{color:#bfb4a2}
+body.campaign-chapter .root-pad,body.campaign-chapter .pale-pad,
+body.campaign-chapter .joystick{border-color:#a8926e;background:radial-gradient(circle at 43% 36%,#9b957477,#3b4339b0)}
+body.campaign-chapter .root-knob,body.campaign-chapter .pale-knob,
+body.campaign-chapter .joystick-knob{background:radial-gradient(circle at 38% 30%,#c5bc9d,#675e4d 66%,#41473f);
+ border-color:#aa9270}
+@media(max-width:620px){
+ #zoom-in,#zoom-out,#root-less,#root-more,#pale-zoom-in,#pale-zoom-out{display:none!important}
+ body.campaign-chapter .pale-tools,body.campaign-chapter .root-tools{gap:4px}
+ body.campaign-chapter .pale-brand small,body.campaign-chapter .root-head small{font-size:8px}
+ body.campaign-chapter .root-head h1,body.campaign-chapter .pale-brand h1{font-size:21px;margin-top:4px}
+ body.campaign-chapter .root-head p,body.campaign-chapter .pale-brand p{font-size:9px}
+ body.campaign-chapter .tale-hud-action{width:31px!important;height:31px!important}
+}
+/* A selected touch mode can be used on a desktop emulator or tablet. */
+@media(min-width:821px){
+ html[data-input-mode="touch"] .touch-controls,
+ html[data-input-mode="touch"] .root-touch,
+ html[data-input-mode="touch"] .pale-touch{
+  position:absolute;bottom:20px;left:22px;right:22px;z-index:7;
+  align-items:flex-end;justify-content:space-between;pointer-events:none}
+ html[data-input-mode="touch"] .touch-controls .joystick,
+ html[data-input-mode="touch"] .root-touch .root-pad,
+ html[data-input-mode="touch"] .pale-touch .pale-pad{
+  width:138px;height:138px;border-radius:50%;pointer-events:auto}
+ html[data-input-mode="touch"] .touch-controls .touch-act,
+ html[data-input-mode="touch"] .root-touch .root-act,
+ html[data-input-mode="touch"] .pale-touch .pale-act{
+  width:72px;height:72px;border-radius:50%;pointer-events:auto}
+}

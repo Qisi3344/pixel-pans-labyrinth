@@ -135,9 +135,6 @@ export function enrichForbiddenFeast(scene){
  // the Gothic rear wall, with their own hit targets and viewing gallery.
  // The former cubes were placeholder footwear. The separate chapter3-shoes
  // module now creates individually modelled leather shoes instead.
- // Small dagger in a niche for film fidelity; not a mandatory fetch quest.
- cube(props,0x72675b,-6.17,.45,-3.84,1.02,.69,.70);
- stick(props,0xb6bdba,[-6.16,.71,-3.84],[-6.16,1.37,-3.84],.065);
- cube(props,0xad8b63,-6.16,.74,-3.84,.34,.085,.16);
+ // The real locked ritual-dagger cabinet is authored in chapter3-dagger.js.
  return props;
 }

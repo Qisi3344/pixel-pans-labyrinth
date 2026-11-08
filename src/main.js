@@ -1,4 +1,5 @@
 import './style.css';
+import {recordChapterComplete,campaignChapterUrl} from './campaign.js';
 import {generateMaze,availablePath,same,CELL} from './maze.js';
 import {stepRune} from './rune-turn.js';
 import {createRuneInspector} from './rune-inspector.js';
@@ -142,11 +143,12 @@ function beginAutoDescent(){
 }
 function wonGame(){
  if(won)return;won=true;route=[];moving=null;
+ recordChapterComplete(1);
  chime();setTimeout(()=>chime(),320);
  $('victory').classList.remove('hidden');
 }
 function update(now){
- const dt=Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
+ const dt=window.__pansModalOpen?0:Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
  let distanceMoved=0;
  if(started&&!won&&!inspector.isOpen()){
   // Carry remaining frame time across a tile seam, so long-press movement is
@@ -203,7 +205,7 @@ function update(now){
 requestAnimationFrame(update);
 
 $('begin').addEventListener('click',startGame);
-$('play-again').addEventListener('click',()=>{location.href='?stage=2';});
+$('play-again').addEventListener('click',()=>{location.href=campaignChapterUrl(2);});
 $('restart').addEventListener('click',()=>location.reload());
 $('interact').addEventListener('click',()=>interact());
 $('touch-interact').addEventListener('click',()=>interact());

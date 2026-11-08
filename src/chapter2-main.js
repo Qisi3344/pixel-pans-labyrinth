@@ -1,4 +1,5 @@
 import './chapter2-style.css';
+import {recordChapterComplete,campaignChapterUrl} from './campaign.js';
 import {NODES,STONE_NODES,TOAD_NODE,newChapter,step,interact,findPath,nextDirection,rootOpen,edgeAccessible} from './chapter2-logic.js';
 import {createTreeScene} from './chapter2-scene.js';
 import {note,chime,toggleSound} from './audio.js';
@@ -28,9 +29,9 @@ document.body.innerHTML=`
       <div class="root-orn">✦　✦　✦</div>
       <small>CHAPTER II · COMPLETE</small>
       <h2>获得黄金钥匙</h2>
-      <p>巨树再一次萌发新芽。</p>
+      <p>三颗魔石沉入蟾蜍腹中。<br>黄金钥匙从阴影里浮现，古树重新长出嫩叶。</p><div class="tale-reward"><span>⚷</span> 黄金钥匙</div>
       <button id="root-review" type="button">重看 3D 结算演出 ↻</button>
-      <a href="?stage=3" class="root-next-chapter">进入第三章 · 苍白盛宴 ↗</a><button id="root-repeat" type="button" class="secondary-end">重新探索第二章</button>
+      <a href="?stage=3&flow=1" class="root-next-chapter">继续 · 苍白盛宴 ↗</a><button id="root-repeat" type="button" class="secondary-end">重新探索第二章</button>
       <footer><a href="?stage=1">返回第一章</a></footer>
     </div>
    </div>
@@ -249,7 +250,7 @@ $('root-world').addEventListener('pointerup',event=>{
 $('root-world').addEventListener('wheel',event=>{event.preventDefault();view.setZoom(event.deltaY>0?.88:1.16);},{passive:false});
 window.addEventListener('resize',view.resize);
 function frame(now){
- const dt=Math.min(.10,last?(now-last)/1000:.016);last=now;
+ const dt=window.__pansModalOpen?0:Math.min(.10,last?(now-last)/1000:.016);last=now;
  let distance=0;
  if(started&&!state.won){
   if(outside){
@@ -306,6 +307,8 @@ function frame(now){
   }
   if(ending.done&&!finaleCompleted){
    finaleCompleted=true;
+   recordChapterComplete(2);
+   document.querySelector('.root-next-chapter').href=campaignChapterUrl(3);
    $('root-cinema').classList.remove('visible');
    $('root-win').classList.remove('hidden');
   }

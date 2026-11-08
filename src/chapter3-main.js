@@ -1,4 +1,6 @@
 import './chapter3-style.css';
+import {loadCampaign,recordChapterComplete,campaignChapterUrl,CAMPAIGN_FINAL} from './campaign.js';
+import {DAGGER_POINT,DAGGER_RADIUS} from './chapter3-dagger.js';
 import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  newBanquet,walkable,moveActor,distance,eat,atDoor,startDrawing,cancelDrawing,traceChalk,
  tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone,
@@ -15,9 +17,9 @@ document.body.innerHTML=[
   '<header class="pale-header"><div class="pale-brand"><small>CHAPTER III · THE FORBIDDEN BANQUET</small><h1>苍白盛宴 <em>/ 03</em></h1>',
    '<p>席间的食物，究竟是为谁准备的？</p></div>',
    '<div class="pale-tools"><button id="pale-zoom-out" title="缩小">−</button><button id="pale-zoom-in" title="放大">+</button><button id="pale-sound" title="音效">♫</button><button id="pale-reset" title="重开">↻</button></div></header>',
-  '<aside class="pale-side"><small>THE THIRD TRIAL</small><h2 id="pale-objective">穿过古老石廊</h2><p id="pale-description">魔法粉笔门在身后，前方还有一段很长的甬道。</p>',
+  '<aside class="pale-side"><small>THE SECOND TRIAL · THE DAGGER</small><h2 id="pale-objective">穿过古老石廊</h2><p id="pale-description">魔法粉笔门在身后，前方还有一段很长的甬道。</p>',
    '<div class="pale-danger" id="pale-danger"><span></span><div><b>它苏醒了</b><small>别让它靠近！回到椅子旁，在天花板画出逃生门。</small></div></div>',
-   '<div class="pale-timer" id="pale-timer"></div>',
+   '<div class="pale-timer" id="pale-timer"></div><div class="pale-relic-hint" id="pale-relic-hint">⚷ 黄金钥匙 · 待寻找锁孔</div>',
   '</aside>',
   '<div id="pale-tip" class="pale-tip" role="status" aria-live="polite"></div>',
   '<div id="pale-escape-guide" class="pale-escape-guide" aria-live="polite"><strong>← 原路冲回旧木椅</strong><div class="pale-escape-track"><span id="pale-escape-fill"></span></div><small id="pale-escape-distance">沿长廊撤退</small></div>',
@@ -42,7 +44,7 @@ document.body.innerHTML=[
    '<div class="draw-meter"><span id="draw-percent">0%</span><span>粉笔描画进度</span></div></div></div>',
   '<section id="pale-intro" class="pale-overlay" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✦　◈　✦</div><small>CHAPTER III · PALE MAN</small><h2>苍白盛宴</h2>',
-   '<p>你来到了一条陌生的古老石廊。<br>墙上的图案、地上的痕迹，似乎都隐藏着秘密。<br>先四处看看吧，不必急着往前走。</p>',
+   '<p>黄金钥匙在掌中微微发烫。<br>墙上的图案、废弃的鞋子与封住的石柜都藏着秘密。<br>先四处看看吧。记住：不要碰宴席上的食物。</p>',
    '<button id="pale-start" class="pale-primary" type="button">踏入石廊 ↗</button><footer>LONG PURSUIT · BANQUET & CHALK ESCAPE</footer>',
   '</div></section>',
   '<section id="pale-death" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
@@ -52,8 +54,8 @@ document.body.innerHTML=[
    '<footer>每次重试都从宴会入口开始</footer></div></section>',
   '<section id="pale-win" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✧　✦　✧</div><small>CHAPTER III · COMPLETE</small><h2>粉笔划开了黑暗</h2>',
-   '<p>你穿过刚刚画出的门。<br>长桌、盛宴与那双眼睛，被留在身后。</p>',
-   '<button id="pale-again" class="pale-primary" type="button">再次挑战 ↻</button>',
+   '<p>钥匙打开了石柜，祭仪匕首回到了你手里。<br>天花板的粉笔门在身后闭合。<br>这项试炼结束了，故事却还没有结束。</p><div class="tale-reward"><span>✢</span> 祭仪匕首</div>',
+   '<button id="pale-again" class="pale-primary" type="button">走向尾声 ↗</button><button id="pale-replay" class="pale-replay" type="button">重玩本章 ↻</button>',
    '<footer><a href="?stage=1">返回石之迷宫</a></footer></div></section>',
  '</main>'
 ].join('');
@@ -65,6 +67,8 @@ let started=false,last=0,currentTime=0,moveDistance=0,navPath=[],navAction=null;
 let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
 let inspectedShoes=false,shoeClueUntil=0,monsterClueUntil=0,deathStage='';
+const hasGoldenKey=loadCampaign().completed>=2||
+ !new URLSearchParams(location.search).has('flow'); // Standalone QA preserves access.
 let frescoOpen=false,lastFrescoFocus=null;
 const viewedFrescoes=new Set();
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
@@ -125,9 +129,10 @@ $('pale-fresco-modal').addEventListener('click',e=>{
 function updateHUD(){
  const phase=state.phase;
  const inPassage=zone(state.player)==='passage';
- let title=inPassage?'先四处看看吧':'这场宴席有些不对劲';
+ let title=inPassage?'先四处看看吧':state.hasDagger?'这场宴席有些不对劲':'金色钥匙在掌心发烫';
  let desc=inPassage?'看看墙壁、石拱和旧木椅。石廊尽头似乎还有东西。':
-  '这里摆满食物，也藏着值得仔细观察的痕迹。';
+  (state.hasDagger?'这项试炼的匕首已经到手。桌上的食物却仍散发甜香。':
+   '墙边有三个封住的小石柜，其中一个锁孔像是等待着黄金钥匙。');
  if(phase==='invitation'&&currentTime<monsterClueUntil){
   title='他好像在沉睡……';
   desc='苍白的身影坐在宴席尽头，低垂着头，一动不动。';
@@ -165,23 +170,27 @@ function updateHUD(){
  $('pale-escape-fill').style.width=(progress*100).toFixed(1)+'%';
  $('pale-escape-distance').textContent=
   Math.ceil(distance(state.player,DOOR))+' 米 · '+(inPassage?'直走，出口在前方':'先离开宴会厅');
- const canEat=phase==='invitation'&&distance(state.player,FOOD)<1.55;
+ const canDagger=phase==='invitation'&&!state.hasDagger&&
+  distance(state.player,DAGGER_POINT)<DAGGER_RADIUS;
+ const canEat=phase==='invitation'&&state.hasDagger&&distance(state.player,FOOD)<1.55;
  const canDraw=phase==='chase'&&atDoor(state);
  const suggest=phase==='invitation'||canDraw;
  $('pale-suggest').classList.toggle('show',suggest);
  const nearMonster=phase==='invitation'&&
   distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS;
- $('pale-suggest-text').textContent=canEat?'✧ 葡萄就在手边。要品尝一颗吗？':
+ $('pale-suggest-text').textContent=canDagger?'⚷ 柜门的锁孔与黄金钥匙吻合。':
+  canEat?'✧ 葡萄就在手边。要品尝一颗吗？':
   canDraw?'✦ 木椅就在这里：踩上去画出头顶的出口':
   nearMonster?'✧ 这个苍白的身影似乎在沉睡……':
   inPassage?'✧ 先四处看看吧。石廊的墙上似乎藏着线索。':
   '✧ 不妨仔细看看这里的食物、壁画与角落。';
  const actionButton=$('pale-suggest-act');
- actionButton.textContent=canEat?'品尝 E':'爬椅子 E';
- actionButton.hidden=!(canEat||canDraw);
- actionButton.style.display=(canEat||canDraw)?'':'none';
+ actionButton.textContent=canDagger?'开柜 E':canEat?'品尝 E':'爬椅子 E';
+ actionButton.hidden=!(canDagger||canEat||canDraw);
+ actionButton.style.display=(canDagger||canEat||canDraw)?'':'none';
  $('pale-act').innerHTML=phase==='drawing'?'✎<small>画门中</small>':
-  canEat?'🍇<small>吃一口</small>':canDraw?'🪑<small>爬椅子</small>':'✦<small>交互</small>';
+  canDagger?'⚷<small>开柜</small>':canEat?'🍇<small>吃一口</small>':canDraw?'🪑<small>爬椅子</small>':'✦<small>交互</small>';
+ $('pale-relic-hint').textContent=state.hasDagger?'✢ 祭仪匕首 · 已取得':'⚷ 黄金钥匙 · 寻找被锁的石柜';
 }
 function start(){
  if(started)return;started=true;$('pale-intro').classList.add('hidden');
@@ -203,8 +212,25 @@ function setActionTarget(target,action=null){
  }
  navPath=path;navAction=action;
 }
+function takeDagger(){
+ if(state.phase!=='invitation'||state.hasDagger)return;
+ if(distance(state.player,DAGGER_POINT)>DAGGER_RADIUS){
+  setActionTarget(DAGGER_POINT,'dagger');return;
+ }
+ if(!hasGoldenKey){
+  tell('石柜被牢牢锁住。或许要先从巨树的蟾蜍那里取得钥匙。',4200);return;
+ }
+ state.hasDagger=true;
+ navPath=[];navAction=null;keyboard.clear();
+ chime();tell('金色钥匙旋转了一圈。石柜打开，祭仪匕首落入掌中。',4600);
+ updateHUD();
+}
 function doEat(){
  if(state.phase!=='invitation')return;
+ if(!state.hasDagger){
+  tell('妖异的食物在诱惑你……但锁住的石柜里还有这次试炼要取的东西。',4000);
+  return;
+ }
  if(!eat(state)){setActionTarget(FOOD,'eat');tell('走向长桌前的葡萄……');return;}
  navPath=[];navAction=null;keyboard.clear();
  note(560,.2,'sine',.04);
@@ -226,6 +252,7 @@ function beginChalk(){
 function interact(){
  if(!started)return;
  if(state.phase==='invitation'){
+  if(!state.hasDagger&&distance(state.player,DAGGER_POINT)<DAGGER_RADIUS){takeDagger();return;}
   if(distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS){
    showSleepingObservation();return;
   }
@@ -315,8 +342,9 @@ $('pale-draw-close').addEventListener('click',cancelChalk);
 $('pale-suggest-act').addEventListener('click',interact);
 $('pale-act').addEventListener('click',interact);
 $('pale-start').addEventListener('click',start);
-$('pale-retry').addEventListener('click',()=>location.replace('?stage=3'));
-$('pale-again').addEventListener('click',()=>location.replace('?stage=3'));
+$('pale-retry').addEventListener('click',()=>location.replace(campaignChapterUrl(3)));
+$('pale-again').addEventListener('click',()=>location.href=CAMPAIGN_FINAL);
+$('pale-replay').addEventListener('click',()=>location.replace(campaignChapterUrl(3)));
 $('pale-reset').addEventListener('click',()=>location.replace('?stage=3'));
 $('pale-zoom-in').addEventListener('click',()=>view.setZoom(.12));
 $('pale-zoom-out').addEventListener('click',()=>view.setZoom(-.12));
@@ -369,6 +397,7 @@ $('pale-world').addEventListener('pointerup',e=>{
  if(hit.kind==='monster'){
   showSleepingObservation();return;
  }
+ if(hit.kind==='dagger'){setActionTarget(DAGGER_POINT,'dagger');return;}
  if(hit.kind==='food'){setActionTarget(FOOD,'eat');return;}
  if(hit.kind==='door'){setActionTarget(DOOR,'draw');return;}
  if(hit.kind==='floor'&&walkable(hit,.28))setActionTarget(hit);
@@ -409,6 +438,7 @@ function drivePlayer(dt){
  }
  if(!navPath.length&&navAction){
   const action=navAction;navAction=null;
+  if(action==='dagger'&&distance(state.player,DAGGER_POINT)<DAGGER_RADIUS)takeDagger();
   if(action==='eat'&&distance(state.player,FOOD)<1.55)doEat();
   if(action==='draw'&&atDoor(state))beginChalk();
  }
@@ -460,7 +490,7 @@ function updateTransition(){
  }
 }
 function frame(now){
- const dt=Math.min(.08,last?(now-last)/1000:.016);last=now;
+ const dt=window.__pansModalOpen?0:Math.min(.08,last?(now-last)/1000:.016);last=now;
  currentTime=now/1000;
  moveDistance=started?drivePlayer(dt):0;
  // One-time automatic invitation when approaching either fresco. The scene
@@ -528,6 +558,7 @@ function frame(now){
  }
  if(state.phase==='escape'&&state.winTime>2.55&&!endingShown){
   endingShown=true;state.phase='escaped';
+  if(state.hasDagger)recordChapterComplete(3);
   $('pale-win').classList.remove('hidden');chime();
  }
  if(started&&Math.floor(now/240)!==Math.floor((now-dt*1000)/240))updateHUD();
