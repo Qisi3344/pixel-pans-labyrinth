@@ -48,13 +48,13 @@ test('all three stones still have distinct accessible grottoes',()=>{
  }
 });
 
-test('the amber beacon and the clickable route guide are connected to actual gameplay',()=>{
+test('amber floor beacon remains discoverable without the intrusive floating tag',()=>{
  const main=readFileSync(new URL('../src/chapter2-main.js',import.meta.url),'utf8');
  const scene=readFileSync(new URL('../src/chapter2-scene.js',import.meta.url),'utf8');
- assert.match(main,/id="amber-marker"/);
+ assert.doesNotMatch(main,/id="amber-marker"/);
  assert.match(main,/id="amber-guide"/);
  assert.match(main,/follow\(STONE_NODES\[2\]\)/);
- assert.match(main,/stoneScreenPosition\(2\)/);
+ assert.doesNotMatch(main,/stoneScreenPosition\(2\)/);
  assert.match(scene,/createCavern\(stage\)/);
  assert.match(scene,/new THREE\.OctahedronGeometry\(i===2\?\.55/);
  assert.doesNotMatch(scene,/block\(stage,0x313d39,\[0,-4\.25,0\]/,

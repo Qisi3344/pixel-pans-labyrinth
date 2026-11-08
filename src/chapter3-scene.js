@@ -105,7 +105,7 @@ function banquetHall(scene){
  }
  return hall;
 }
-function buildTable(scene){
+export function buildTable(scene){
  const group=new THREE.Group();scene.add(group);
  const cx=(TABLE.minX+TABLE.maxX)/2,length=TABLE.maxX-TABLE.minX;
  box(group,0x3d2725,cx,.95,0,length,1.05,2.40);
@@ -161,12 +161,20 @@ function buildTable(scene){
  beam(grapes,0x78906a,[-.14,.35,-.04],[.14,.58,.04],.035,5);
  const clickables=[];
  grapes.traverse(m=>{if(m.isMesh){m.userData.kind='food';clickables.push(m);}});
- const rest=box(group,0x6a3f38,6.52,.45,-.25,.89,.7,.88);
- box(group,0x684842,6.66,1.17,-.58,.88,1.55,.27);
+ // The Pale Man's BANQUET CHAIR (not Ofelia's chalk-door stool).
+ // Rotate clockwise by a quarter turn around the actual seat center so
+ // its carved back sits to the monster's right instead of crossing its arm.
+ const monsterChair=new THREE.Group();
+ monsterChair.position.set(6.52,0,-.25);
+ monsterChair.rotation.y=-Math.PI/2;
+ group.add(monsterChair);
+ box(monsterChair,0x6a3f38,0,.45,0,.89,.7,.88);
+ box(monsterChair,0x684842,.14,1.17,-.33,.88,1.55,.27);
  for(let i=0;i<5;i++){
-  beam(group,0xa18e73,[6.38+i*.13,.83,-.42],[6.38+i*.13,1.78,-.42],.04);
+  beam(monsterChair,0xa18e73,[-.14+i*.13,.83,-.17],
+   [-.14+i*.13,1.78,-.17],.04);
  }
- return {group,grapes,clickables};
+ return {group,grapes,clickables,monsterChair};
 }
 // The iris must sit on the UPPER HALF of the faceless head, not by its mouth.
 // Anatomical base dimensions for the head mesh (unit icosahedron).

@@ -142,13 +142,14 @@ test('scene heading rotation is browser-safe and wraps across +/- PI',()=>{
  assert.equal(typeof dampHeading,'function');
 });
 
-test('awakening zoom is cinematic and chalk QA does not alter normal chase',()=>{
+test('awakening zoom is cinematic and even chalk QA keeps the monster chasing',()=>{
  const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
  const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
  assert.ok(scene.includes("const cinematicZoom=1+Math.max(0,reveal)"));
  assert.ok(scene.includes("state.awakeTime/AWAKEN_SECONDS"));
- assert.ok(main.includes("const QA_CHALK_PREVIEW="));
- assert.ok(main.includes("if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;"));
+ assert.ok(main.includes("if(params.has('previewDoor'))"));
+ assert.ok(!main.includes("if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;"),
+  'no silent QA chase freeze while Ofelia traces the ceiling door');
  assert.ok(main.includes("if(!['chase','climbing','drawing'].includes(state.phase))return;"));
 });
 

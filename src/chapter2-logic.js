@@ -2,11 +2,14 @@
 export const NODES = Object.freeze([
   {x:-8,z:1},{x:-6,z:1},{x:-4,z:1},{x:-4,z:-1},
   {x:-2,z:1},{x:0,z:1},{x:2,z:1},{x:2,z:-1},
-  {x:4,z:1},{x:6,z:1},{x:8,z:1},{x:4,z:3}
+  {x:4,z:1},{x:6,z:1},{x:7.15,z:2.55},{x:4,z:3}
 ]);
 export const EDGES = Object.freeze([[0,1],[1,2],[2,3],[2,4],[4,5],[5,6],[6,7],[6,8],[8,9],[9,10],[8,11]]);
 export const STONE_NODES = Object.freeze([3,7,11]);
 export const TOAD_NODE = 10;
+// Offer the gems from the clear front approach tile, *not inside* the toad.
+export const TOAD_APPROACH_NODE = 9;
+export const TOAD_INTERACTION_NODES = Object.freeze([TOAD_APPROACH_NODE,TOAD_NODE]);
 export const ROOT_EDGE = '4-5';
 export const BOULDER_EDGE = '8-9';
 export const rootOpen = time => (time % 4.2) < 2.45;
@@ -36,7 +39,7 @@ export function interact(state) {
  if(state.node===8&&!state.boulderMoved) {
   state.boulderMoved=true;return {type:'boulder'};
  }
- if(state.node===TOAD_NODE) {
+ if(state.node===TOAD_NODE || (state.node===TOAD_APPROACH_NODE&&state.boulderMoved)) {
   const collected=state.stones.filter(Boolean).length;
   if(collected<3)return {type:'need-stones',remaining:3-collected};
   if(state.offerings<3){

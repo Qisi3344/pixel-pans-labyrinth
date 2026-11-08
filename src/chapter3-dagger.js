@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 // The golden key obtained from the tree becomes a real gameplay item here.
 // Ofelia takes the ritual dagger BEFORE disobeying the no-food instruction.
-export const DAGGER_POINT=Object.freeze({x:-7.52,z:-3.16});
+// A freestanding reliquary in the open, camera-facing left side of the hall.
+// Keep its front approach away from the mural wall and the stone arch pillars.
+export const CABINET_CENTER=Object.freeze({x:-7.35,z:3.05});
+export const DAGGER_POINT=Object.freeze({x:-7.35,z:4.05});
 export const DAGGER_RADIUS=1.55;
 const material=(color)=>new THREE.MeshLambertMaterial({color,flatShading:true});
 function block(root,color,x,y,z,w,h,d){
@@ -20,14 +23,21 @@ function blade(root){
  block(g,0xb59a66,0,-.20,.09,.48,.09,.14);
  const end=new THREE.Mesh(new THREE.IcosahedronGeometry(.12,0),gold);
  end.position.set(0,-.53,.10);g.add(end);
- g.position.set(DAGGER_POINT.x,1.18,-3.96);
+ g.position.set(CABINET_CENTER.x,1.18,CABINET_CENTER.z+.10);
  g.rotation.z=.06;
  return g;
 }
 export function createDaggerNiche(scene){
  const root=new THREE.Group();scene.add(root);
- const x=DAGGER_POINT.x,z=-4.06;
- // A real miniature wall cabinet with three narrow sealed niches.
+ const x=CABINET_CENTER.x,z=CABINET_CENTER.z;
+ // A freestanding camera-facing reliquary on a broad stone plinth. It is
+ // readable from the playfield, not wedged behind the arch columns.
+ block(root,0x343c38,x,-.10,z,2.42,.33,1.25);
+ block(root,0x918577,x,.08,z,2.30,.08,1.19);
+ block(root,0x423c35,x,1.27,z-.25,2.15,1.72,.22);
+ for(const side of [-1,1])
+  block(root,0x79674e,x+side*1.03,1.27,z,.17,1.82,.70);
+ // The ritual-dagger cabinet has three separate inset bays.
  block(root,0x4d453e,x,1.33,z,.62,1.70,.42);
  block(root,0x987b57,x,1.33,z+.235,.70,1.75,.08);
  for(let i=0;i<3;i++){

@@ -43,6 +43,13 @@ export function createTreeScene(canvas,state){
  const fill=new THREE.PointLight(0xaab9a6,1.6,18);fill.position.set(2,-.4,8);scene.add(fill);
  const camera=new THREE.OrthographicCamera(-13,13,9,-9,.1,120);
  const direction=new THREE.Vector3(1,1.05,1.3).normalize();
+ // Rotate only the underground view; the ground-level tree keeps its camera.
+ // The frog's face, mouth and three offerings now face the player.
+ // Preserve the ORIGINAL camera elevation exactly. Only the horizontal
+ // azimuth changes: this remains a fixed Three.js OrthographicCamera diorama.
+ const cavernDirection=new THREE.Vector3(
+  -.60,1.05,Math.sqrt(1*1+1.3*1.3-.60*.60)
+ ).normalize();
  const focus=new THREE.Vector3(0,-1.7,0);
  let width=-1,height=-1,zoom=1,portrait=false,cameraReady=false;
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),mat(0xffffff));ground.rotation.x=-Math.PI/2;ground.position.y=-5.7;ground.receiveShadow=true;scene.add(ground);
@@ -94,7 +101,10 @@ export function createTreeScene(canvas,state){
   return {group,gem,collar,halo,beam,star};
  });
  // The ancient toad is a volumetric low-poly creature with articulated mouth.
- const toad=new THREE.Group();toad.position.set(8.7,-2.5,1);toad.rotation.y=-.4;stage.add(toad);
+ const toad=new THREE.Group();toad.position.set(8.7,-2.5,1);
+ // Original model's mouth points along -X. Turn the whole toad to
+ // face the new near-front orthographic camera rather than showing its flank.
+ toad.rotation.y=1.08;stage.add(toad);
  const body=sphere(toad,0x586b4f,1.25,[0,.53,0],1);body.scale.set(1.14,.75,1.0);
  const belly=sphere(toad,0x9b9c72,.89,[-.62,.39,.12],1);belly.scale.set(.59,.53,.94);
  for(const z of [-.69,.69]){
@@ -199,8 +209,13 @@ export function createTreeScene(canvas,state){
  function draw(seconds,dt,travel){
   rootPivot.rotation.z=rootOpen(state.time)?-.62:0;
   rootGate.scale.y=rootOpen(state.time)?.28:1;
-  boulder.position.x=state.boulderMoved?7.5:5;
-  boulder.rotation.z=state.boulderMoved?-.65:0;
+  // Push laterally into an unused wall recess. Never slide the boulder
+  // along the main route into the frog's face.
+  const lateral=state.boulderMoved?1:0;
+  boulder.position.x=THREE.MathUtils.damp(boulder.position.x,5.05*lateral+5*(1-lateral),5,dt);
+  boulder.position.z=THREE.MathUtils.damp(boulder.position.z,1-2.20*lateral,5,dt);
+  boulder.rotation.x=THREE.MathUtils.damp(boulder.rotation.x,-.28*lateral,4,dt);
+  boulder.rotation.z=THREE.MathUtils.damp(boulder.rotation.z,-.31*lateral,4,dt);
   stoneModels.forEach((stone,i)=>{
    stone.group.visible=!state.stones[i];
    stone.gem.rotation.y=seconds*.7+i;
@@ -221,7 +236,9 @@ export function createTreeScene(canvas,state){
     framing.focus.x,framing.focus.y,framing.focus.z
   );
   focus.lerp(point,1-Math.exp(-Math.max(dt,.016)*(portrait?8:3.8)));
-  camera.position.copy(focus).addScaledVector(direction,33);camera.lookAt(focus);
+  camera.position.copy(focus).addScaledVector(
+   area==='interior'?cavernDirection:direction,33);
+  camera.lookAt(focus);
   renderer.render(scene,camera);
   return cinematic;
  }
@@ -237,7 +254,7 @@ export function createTreeScene(canvas,state){
   return {x:(p.x+1)*rect.width*.5,y:(1-p.y)*rect.height*.5,
     onScreen:Math.abs(p.x)<.94&&Math.abs(p.y)<.83};
  }
- return {renderer,scene,camera,player,pos,pick,draw,resize,setZoom,setArea,
+ return {renderer,scene,camera,player,toad,boulder,pos,pick,draw,resize,setZoom,setArea,
   exterior,stoneScreenPosition,
   playOffering:index=>ending.playOffering(index),
   startFinale:()=>ending.start(),
