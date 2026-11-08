@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // The golden key obtained from the tree becomes a real gameplay item here.
 // Ofelia takes the ritual dagger BEFORE disobeying the no-food instruction.
-export const DAGGER_POINT=Object.freeze({x:-6.65,z:-3.16});
+export const DAGGER_POINT=Object.freeze({x:-7.52,z:-3.16});
 export const DAGGER_RADIUS=1.55;
 const material=(color)=>new THREE.MeshLambertMaterial({color,flatShading:true});
 function block(root,color,x,y,z,w,h,d){
@@ -20,7 +20,7 @@ function blade(root){
  block(g,0xb59a66,0,-.20,.09,.48,.09,.14);
  const end=new THREE.Mesh(new THREE.IcosahedronGeometry(.12,0),gold);
  end.position.set(0,-.53,.10);g.add(end);
- g.position.set(-6.65,1.18,-3.96);
+ g.position.set(DAGGER_POINT.x,1.18,-3.96);
  g.rotation.z=.06;
  return g;
 }
