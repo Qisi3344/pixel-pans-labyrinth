@@ -2,7 +2,7 @@ import './chapter3-style.css';
 import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  newBanquet,walkable,moveActor,distance,eat,atDoor,startDrawing,cancelDrawing,traceChalk,
  tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone,
- MONSTER_INSPECT_RADIUS,inspectSleepingMonster} from './chapter3-logic.js';
+ MONSTER_INSPECT_RADIUS,inspectSleepingMonster,nearestFresco,FRESCO_POINTS} from './chapter3-logic.js';
 import {createBanquetScene} from './chapter3-scene.js';
 import {note,chime,toggleSound} from './audio.js';
 import {CHILD_SHOE_PILE,SHOE_INSPECT_RADIUS,SHOE_MESSAGE} from './chapter3-shoes.js';
@@ -27,6 +27,13 @@ document.body.innerHTML=[
   '<div id="pale-suggest" class="pale-suggest"><span id="pale-suggest-text">✧ 先四处看看吧。注意墙壁和宴会厅里的细节。</span><button id="pale-suggest-act" type="button" hidden>交互 E</button></div>',
   '<div id="pale-cinematic" class="pale-cinematic" aria-live="polite"></div>',
   '<div id="pale-shoe-clue" class="pale-shoe-clue" role="status" aria-live="polite"><small>环境线索 · 遗失的鞋子</small><p>这些都是小孩的鞋子……</p></div>',
+  '<section id="pale-fresco-modal" class="pale-fresco-modal hidden" role="dialog" aria-modal="true" aria-labelledby="pale-fresco-title" tabindex="-1">',
+   '<div class="pale-fresco-sheet"><div class="pale-fresco-head"><span>THE FORGOTTEN FRESCO · 壁画残卷</span>',
+    '<button id="pale-fresco-close" type="button" aria-label="关闭壁画欣赏">×</button></div>',
+    '<figure class="pale-fresco-figure"><img id="pale-fresco-image" alt="一幅描绘苍白巨人与消失孩童的古老褪色壁画"/></figure>',
+    '<small id="pale-fresco-number"></small><h2 id="pale-fresco-title">失落的壁画</h2>',
+    '<p id="pale-fresco-description"></p><footer>ESC / 点击空白处关闭 · 继续探索</footer>',
+   '</div></section>',
   '<div id="pale-death-vignette" class="pale-death-vignette" aria-hidden="true"></div>',
   '<div id="pale-draw" class="pale-draw hidden"><div class="draw-frame">',
    '<div class="draw-heading"><div><small>CHALK GATE · DOOR</small><strong>在天花板画出出口</strong><p>踩在摇晃的木椅上！沿四条边完成粉笔门，苍白怪还在逼近。</p></div>',
@@ -58,6 +65,8 @@ let started=false,last=0,currentTime=0,moveDistance=0,navPath=[],navAction=null;
 let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
 let inspectedShoes=false,shoeClueUntil=0,monsterClueUntil=0,deathStage='';
+let frescoOpen=false,lastFrescoFocus=null;
+const viewedFrescoes=new Set();
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
@@ -79,9 +88,40 @@ function tell(message,duration=3200){
  clearTimeout(tipTimer);tipTimer=setTimeout(()=>n.classList.remove('show'),duration);
 }
 function allowedMovement(){
- return started&&state.phase!=='awakening'&&
+ return started&&!frescoOpen&&state.phase!=='awakening'&&
   !['climbing','drawing','caught','escape','escaped'].includes(state.phase);
 }
+function openFresco(index){
+ if(state.phase!=='invitation'||!started)return false;
+ const item=view.fresco.items[index];
+ if(!item)return false;
+ viewedFrescoes.add(index);frescoOpen=true;
+ keyboard.clear();resetPad();navPath=[];navAction=null;
+ const modal=$('pale-fresco-modal');
+ $('pale-fresco-image').src=item.canvas.toDataURL('image/png');
+ $('pale-fresco-image').alt='古老壁画《'+item.title+'》，以灰蓝、暗红及赭石绘出无眼巨人与孩童';
+ $('pale-fresco-number').textContent=item.number;
+ $('pale-fresco-title').textContent=item.title;
+ $('pale-fresco-description').textContent=item.detail;
+ modal.classList.remove('hidden');
+ lastFrescoFocus=document.activeElement;
+ $('pale-fresco-close').focus({preventScroll:true});
+ note(340,.18,'triangle',.023);
+ return true;
+}
+function closeFresco(){
+ if(!frescoOpen)return;
+ frescoOpen=false;$('pale-fresco-modal').classList.add('hidden');
+ keyboard.clear();resetPad();
+ if(lastFrescoFocus&&lastFrescoFocus!==document.body){
+  lastFrescoFocus.focus?.({preventScroll:true});
+ }
+ lastFrescoFocus=null;
+}
+$('pale-fresco-close').addEventListener('click',closeFresco);
+$('pale-fresco-modal').addEventListener('click',e=>{
+ if(e.target===$('pale-fresco-modal'))closeFresco();
+});
 function updateHUD(){
  const phase=state.phase;
  const inPassage=zone(state.player)==='passage';
@@ -288,7 +328,12 @@ window.addEventListener('keydown',e=>{
  const k=movementCodes[e.code]||(e.key||'').toLowerCase();
  if(['w','a','s','d',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
  if(!started){if(k==='enter')start();return;}
- if(k==='escape'){cancelChalk();return;}
+ if(k==='escape'){
+  if(frescoOpen)closeFresco();
+  else cancelChalk();
+  return;
+ }
+ if(frescoOpen)return;
  if(['e',' ','enter'].includes(k)&&!e.repeat){interact();return;}
  if(['w','a','s','d'].includes(k)&&allowedMovement()){
   const first=!keyboard.has(k);
@@ -318,6 +363,9 @@ $('pale-world').addEventListener('pointerup',e=>{
  pointerStart=null;
  const hit=view.pick(e.clientX,e.clientY);
  if(!hit||!allowedMovement())return;
+ if(hit.kind==='fresco'){
+  openFresco(hit.index);return;
+ }
  if(hit.kind==='monster'){
   showSleepingObservation();return;
  }
@@ -415,6 +463,12 @@ function frame(now){
  const dt=Math.min(.08,last?(now-last)/1000:.016);last=now;
  currentTime=now/1000;
  moveDistance=started?drivePlayer(dt):0;
+ // One-time automatic invitation when approaching either fresco. The scene
+ // itself stays readable, and clicking the picture reopens it later.
+ if(started&&state.phase==='invitation'&&!frescoOpen){
+  const frescoIndex=nearestFresco(state.player);
+  if(frescoIndex>=0&&!viewedFrescoes.has(frescoIndex))openFresco(frescoIndex);
+ }
  // The seated Pale Man can be quietly observed on approach. This is a
  // one-time proximity clue, and never triggers eat() or the chase.
  if(started&&state.phase==='invitation'&&!state.inspectedMonster&&
@@ -494,6 +548,10 @@ if(params.has('previewReturn')){
 if(params.has('previewDoor')){
  start();state.player={...DOOR};state.phase='chase';state.monster={x:6.7,z:2.5};
  beginChalk();
+}
+if(params.has('previewFresco')){
+ start();state.player={x:FRESCO_POINTS[0].x,z:-3.22};
+ openFresco(0);
 }
 if(params.has('previewShoes')){
  start();state.player={x:CHILD_SHOE_PILE.x-1.02,z:CHILD_SHOE_PILE.z+.06};
