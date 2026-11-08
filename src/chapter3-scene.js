@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
-import {HALL,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS} from './chapter3-logic.js';
+import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,zone} from './chapter3-logic.js';
+import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
 
 // All props are real meshes in the same orthographic 3D world.
 // No external textures, models, assets or full-screen 2D fake scenery.
@@ -163,6 +164,13 @@ function buildTable(scene){
  }
  return {group,grapes,clickables};
 }
+// The iris must sit on the UPPER HALF of the faceless head, not by its mouth.
+export const PALE_UPPER_FACE_Y=2.67;
+export function palmEyePosition(sign,awakened){
+ return {x:sign*(.64-(.64-.285)*awakened),
+  y:1.0+(PALE_UPPER_FACE_Y-1.0)*awakened,
+  z:.55-(.55-.47)*awakened};
+}
 function buildPaleMan(scene){
  const root=new THREE.Group();root.position.set(MONSTER_START.x,0,MONSTER_START.z);scene.add(root);
  const rig=new THREE.Group();root.add(rig);
@@ -216,8 +224,10 @@ function buildPaleMan(scene){
   root.position.set(state.monster.x,0,state.monster.z);
   const active=['chase','drawing','caught','escape'].includes(state.phase);
   const awakening=state.phase==='awakening'?smooth(state.awakeTime/AWAKEN_SECONDS):active?1:0;
-  const bob=active&&state.phase!=='caught'?Math.sin(time*8)*.09:0;
-  rig.position.y=.10+awakening*.35+bob;
+  const bob=active&&state.phase!=='caught'?Math.sin(time*8)*.070:0;
+  // Slow rise from the chair AFTER hands have started seeking the eye sockets.
+  const standing=smooth((awakening-.28)/.65);
+  rig.position.y=-.28+standing*.39+bob;
   rig.rotation.z=active?Math.sin(time*6)*.065:Math.sin(time*1.0)*.014;
   const dx=state.player.x-state.monster.x,dz=state.player.z-state.monster.z;
   if(active||awakening>.3){
@@ -225,65 +235,71 @@ function buildPaleMan(scene){
   }else root.rotation.y=-1.25;
   for(let k=0;k<2;k++){
    const sign=k===0?-1:1;
-   const idle=new THREE.Vector3(sign*.67,.85,.50);
-   const awake=new THREE.Vector3(sign*.29,2.31,.45);
-   const aim=idle.lerp(awake,awakening);
-   aim.y+=(active?Math.sin(time*7+sign)*.11:0);
+   const up=palmEyePosition(sign,awakening);
+   const aim=new THREE.Vector3(up.x,up.y,up.z);
+   // Palms remain centered at forehead/eye height while stalking.
+   aim.y+=(active?Math.sin(time*5.2+sign)*.018:0);
    hands[k].position.copy(aim);
-   hands[k].rotation.z=sign*(.07+awakening*.13);
+   hands[k].rotation.z=sign*(.08+awakening*.09);
    const shoulder=new THREE.Vector3(sign*.40,1.82,0);
    positionArm(arms[k],shoulder,aim.clone().add(new THREE.Vector3(0,.25,-.08)));
-   limbs[k].rotation.x=active?Math.sin(time*8+k*Math.PI)*.33:0;
+   limbs[k].rotation.x=THREE.MathUtils.lerp(-.95,active?Math.sin(time*8+k*Math.PI)*.33:0,standing);
   }
  }
  return {root,rig,hands,pose};
 }
 function chalkPortal(scene){
- // Not an ordinary wooden door: an impossible rectangle drawn with chalk on
- // the hall's inner rear wall. The player completes its U-shaped contour.
+ // The original entry portal is at the FAR END of the vaulted passage.
+ // When its hourglass expires it fades; the player must draw a new doorway.
  const parent=new THREE.Group();scene.add(parent);
- const cx=-8.0,z=-4.66;
- const p=[[-8.79,.05,z],[-8.79,2.70,z],[-7.23,2.70,z],[-7.23,.05,z]];
- // Permanent faint wall glyphs show where to run before it becomes interactive.
- for(const [x,y] of [[-8.79,.05],[-8.79,2.70],[-7.23,2.70],[-7.23,.05]]){
-  ico(parent,0xc4c1ad,x,y,z+.015,.07,.07,.055,0);
+ const cx=DOOR.x,z=-1.72;
+ const left=cx-.76,right=cx+.76;
+ const points=[[left,.08,z],[left,2.74,z],[right,2.74,z],[right,.08,z]];
+ for(const [x,y] of points){
+  ico(parent,0xd1c9b2,x,y,z+.08,.075,.075,.065,0);
  }
- const portal=box(parent,0x151c21,cx,1.40,z-.01,1.45,2.52,.028,false);
- portal.visible=false;portal.material=new THREE.MeshBasicMaterial({
-  color:0x182533,transparent:true,opacity:0,depthWrite:false
+ const portal=box(parent,0x172838,cx,1.43,z+.06,1.44,2.56,.040,false);
+ portal.material=new THREE.MeshBasicMaterial({
+  color:0x4f8292,transparent:true,opacity:.34,depthWrite:false,side:THREE.DoubleSide
  });
+ // The former chalk lines vanish, until the player draws a new doorway.
  const linePieces=[];
  for(let i=0;i<3;i++){
-  const start=new THREE.Vector3(...p[i]),end=new THREE.Vector3(...p[i+1]),delta=end.clone().sub(start);
-  const segment=new THREE.Mesh(new THREE.CylinderGeometry(.041,.048,1,6),ink(0xf0e8d1));
-  segment.userData={start,delta,length:delta.length()};
-  segment.visible=false;parent.add(segment);linePieces.push(segment);
+  const a=new THREE.Vector3(...points[i]),b=new THREE.Vector3(...points[i+1]);
+  const segment=new THREE.Mesh(new THREE.CylinderGeometry(.044,.044,1,7),
+   new THREE.MeshBasicMaterial({color:0xf4e9cc}));
+  segment.visible=false;segment.userData={a,b,distance:a.distanceTo(b)};
+  parent.add(segment);linePieces.push(segment);
  }
- const runes=[];
- for(let k=0;k<6;k++){
-  const a=k*Math.PI*2/6;
-  const spark=ico(parent,0xd6e9e4,cx+Math.cos(a)*.85,1.37+Math.sin(a)*1.41,z+.06,.05);
-  spark.visible=false;runes.push(spark);
- }
- const glow=new THREE.PointLight(0xa2c4d4,0,5,2);glow.position.set(cx,1.35,z+1);parent.add(glow);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.035,5,28),
+  new THREE.MeshBasicMaterial({color:0x9bc9c9,transparent:true,opacity:.55}));
+ ring.position.set(cx,1.43,z+.13);parent.add(ring);
+ const glow=new THREE.PointLight(0x9fcee0,0,6,2);
+ glow.position.set(cx,1.32,z+.55);parent.add(glow);
  function update(progress,time,state){
   for(let i=0;i<3;i++){
+   const segment=linePieces[i],{a,b,distance}=segment.userData;
    const amount=clamp(progress*3-i);
-   const seg=linePieces[i],{start,delta,length}=seg.userData;
-   seg.visible=amount>.002;
-   seg.scale.set(1,Math.max(.002,length*amount),1);
-   seg.position.copy(start).addScaledVector(delta,amount*.5);
-   seg.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
+   segment.visible=amount>.001;
+   segment.position.copy(a).lerp(b,amount*.5);
+   segment.scale.set(1,Math.max(.001,distance*amount),1);
+   segment.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
+    b.clone().sub(a).normalize());
   }
   const ready=['escape','escaped'].includes(state.phase);
-  portal.visible=ready;portal.material.opacity=ready?(.73+.10*Math.sin(time*5)):0;
-  runes.forEach((r,i)=>{r.visible=ready;r.scale.setScalar(.7+.35*Math.sin(time*4+i));});
-  glow.intensity=ready?1.65:state.phase==='drawing'?.55:0;
+  const unsealed=!state.sealed&&!ready;
+  const fading=state.phase==='awakening'?.72:
+   state.phase==='invitation'?.85:clamp(1-state.chaseTime/SEAL_SECONDS);
+  portal.visible=ready||unsealed;
+  portal.material.opacity=ready?.78:(unsealed?.26*fading:0);
+  ring.visible=portal.visible;ring.material.opacity=ready?.74:.22*fading;
+  ring.rotation.z=time*.12;
+  glow.intensity=ready?1.8:unsealed?.45*fading:.05;
  }
- const target=box(parent,0xffffff,cx,1.43,z+.33,1.9,2.9,.05,false);
+ const target=box(parent,0xffffff,cx,1.4,z+.35,2.12,3.10,.08,false);
  target.material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
  target.userData.kind='door';
- return {parent,update,target};
+ return {parent,portal,update,target};
 }
 export function createBanquetScene(canvas,state){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
@@ -299,7 +315,8 @@ export function createBanquetScene(canvas,state){
  sun.shadow.bias=-.0005;scene.add(sun);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),color(0xffffff));
  ground.rotation.x=-Math.PI/2;ground.position.y=-1.62;ground.receiveShadow=true;scene.add(ground);
- const hall=banquetHall(scene),table=buildTable(scene),pale=buildPaleMan(scene);
+ const hall=banquetHall(scene),passage=createProcessionalPassage(scene),table=buildTable(scene);
+ const details=enrichForbiddenFeast(scene),pale=buildPaleMan(scene);
  const chalk=chalkPortal(scene);
  const player=createPlayer(scene,new THREE.Vector3(START.x,.03,START.z));
  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -336,7 +353,7 @@ export function createBanquetScene(canvas,state){
   const b=canvas.getBoundingClientRect();
   pointer.set(((cx-b.left)/b.width)*2-1,1-((cy-b.top)/b.height)*2);
   ray.setFromCamera(pointer,camera);
-  const targets=[...table.clickables,chalk.target,hall.children.find(x=>x.isMesh)];
+  const targets=[...table.clickables,chalk.target];
   // Invisible floor collider at y=0 intercepts all unobstructed floor taps.
   const floorHit=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   const world=new THREE.Vector3();
@@ -345,8 +362,7 @@ export function createBanquetScene(canvas,state){
   const doorHit=ray.intersectObject(chalk.target,false)[0];
   if(doorHit)return {kind:'door'};
   if(ray.ray.intersectPlane(floorHit,world)){
-   if(world.x>=HALL.minX&&world.x<=HALL.maxX&&world.z>=HALL.minZ&&world.z<=HALL.maxZ)
-    return {kind:'floor',x:world.x,z:world.z};
+   if(zone(world)!=='outside')return {kind:'floor',x:world.x,z:world.z};
   }
   return null;
  }
@@ -372,14 +388,17 @@ export function createBanquetScene(canvas,state){
     1.48+Math.sin(Math.PI*t)*.66,THREE.MathUtils.lerp(state.player.z,0,Math.sin(Math.PI*t)*.80));
   } else if(state.phase==='escape'){
    target=new THREE.Vector3(DOOR.x,1.45,DOOR.z);
-  } else if(portrait){
-   target=new THREE.Vector3(state.player.x*.79+state.monster.x*.21,1.43,state.player.z*.83+state.monster.z*.17);
-   // Before triggering the monster, focus entirely on the player and food.
-   if(state.phase==='invitation')target.set(state.player.x,1.35,state.player.z);
-  } else {
-   target=new THREE.Vector3(0,1.35,0);
-   if(state.phase==='chase'||state.phase==='drawing')
-    target.set(state.player.x*.60+state.monster.x*.40,1.35,state.player.z*.6+state.monster.z*.4);
+  }else{
+   // A long route cannot share the fixed camera used for the old square room.
+   // Track the avatar on BOTH desktop and mobile while retaining a little
+   // look-ahead into the corridor and a view of the approaching pursuer.
+   const toward=state.phase==='chase'?-1:1;
+   const lead=zone(state.player)==='passage'?toward*(portrait?.36:2.1):0;
+   target=new THREE.Vector3(state.player.x+lead,1.38,state.player.z);
+   if(state.phase==='chase'&&zone(state.player)==='feast'&&!portrait){
+    target.x=state.player.x*.86+state.monster.x*.14;
+    target.z=state.player.z*.86+state.monster.z*.14;
+   }
   }
   focus.lerp(target,1-Math.exp(-Math.max(.015,dt)*(portrait?5.5:3.1)));
   camera.position.copy(focus).addScaledVector(angle,37);camera.lookAt(focus);
