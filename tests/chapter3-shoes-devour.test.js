@@ -56,7 +56,12 @@ test('the captured heroine stays normal size in the 3D cutscene until after swal
  assert.ok(scene.includes("player.body.scale.setScalar(1);"));
  assert.ok(scene.includes("player.body.visible=devour.fade<.97"));
  assert.ok(scene.includes("const held=pale.root.localToWorld("));
- assert.ok(scene.includes("jawPivot.rotation.x=beat.jawOpen*.86"));
+ assert.ok(scene.includes("jawPivot.rotation.x=open*.9"));
+ assert.ok(scene.includes("jawPivot.position.y=2.21-open*.45"));
+ assert.ok(scene.includes("maw.scale.set(.34+open*.12,.10+open*.44,.14)"));
+ assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
+ assert.ok(scene.includes("(portrait?2.25:4.2)*deathBeat(state.deathTime).grip"));
+ assert.ok(scene.includes("fragment.visible=elapsed>0&&elapsed<1.55"));
  assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
  assert.ok(!scene.includes("player.body.scale.setScalar(Math.max(.01,1-t))"));
  assert.ok(main.includes("if(beat.completed&&!endingShown)"));
