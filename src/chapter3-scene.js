@@ -197,24 +197,42 @@ function buildPaleMan(scene){
  const head=ico(rig,0xd8c5b0,0,2.53,-.03,.35,.49,.33,1);
  // Hinged lower jaw and dark inner mouth, only opened for real devouring.
  // A static sad face plus a vanishing protagonist is not a death animation.
- const maw=ico(rig,0x21171a,0,2.29,.337,.255,.17,.085,1);
- maw.visible=false;
- maw.material=new THREE.MeshBasicMaterial({color:0x231b1b,side:THREE.DoubleSide});
+ // The eating close-up needs an unmistakable open throat, NOT a 10-pixel
+ // dark spot. The faceless skin stretches around an oval 3D inner maw.
+ const maw=ico(rig,0x21171a,0,2.29,.505,.34,.27,.135,1);
+ maw.visible=false;maw.material=new THREE.MeshBasicMaterial({color:0x1b1013,side:THREE.DoubleSide});
+ const mouthShadow=ico(rig,0x461e25,0,2.25,.565,.26,.21,.072,1);
+ mouthShadow.visible=false;mouthShadow.material=new THREE.MeshBasicMaterial({color:0x411a23});
+ const lip=new THREE.Mesh(new THREE.TorusGeometry(.365,.050,6,28),
+   new THREE.MeshLambertMaterial({color:bone,flatShading:true}));
+ lip.position.set(0,2.29,.605);lip.scale.set(1,1.10,1);
+ lip.castShadow=true;lip.visible=false;rig.add(lip);
  const jawPivot=new THREE.Group();
- jawPivot.position.set(0,2.27,.28);rig.add(jawPivot);
- const lowerJaw=ico(jawPivot,bone,0,-.15,.14,.24,.095,.17,1);
+ jawPivot.position.set(0,2.21,.37);rig.add(jawPivot);
+ const lowerJaw=ico(jawPivot,bone,0,-.15,.20,.33,.15,.225,1);
  jawPivot.visible=false;
+ const tongue=ico(jawPivot,0x77323a,0,-.065,.38,.22,.070,.065,0);
+ tongue.visible=false;
  const teeth=[];
- for(let k=-2;k<=2;k++){
-  const tooth=ico(rig,0xe7d8b7,k*.083,2.40,.41,.030,.066,.042,0);
-  tooth.visible=false;teeth.push(tooth);
-  const lower=ico(jawPivot,0xe7d8b7,k*.083,-.054,.25,.028,.066,.035,0);
-  lower.visible=false;teeth.push(lower);
+ for(let k=-3;k<=3;k++){
+  const x=k*.091;
+  const upper=new THREE.Mesh(new THREE.ConeGeometry(.040,.18,5),
+   new THREE.MeshLambertMaterial({color:0xf6e8cd,flatShading:true}));
+  upper.position.set(x,2.48,.671);upper.rotation.z=Math.PI;
+  upper.castShadow=true;upper.visible=false;rig.add(upper);teeth.push(upper);
+  const lower=new THREE.Mesh(new THREE.ConeGeometry(.035,.16,5),
+   new THREE.MeshLambertMaterial({color:0xf6e8cd,flatShading:true}));
+  lower.position.set(x,-.075,.39);
+  lower.castShadow=true;lower.visible=false;jawPivot.add(lower);teeth.push(lower);
  }
- const mouthShadow=ico(rig,0x281b1b,0,2.31,.345,.25,.16,.085,0);
- mouthShadow.visible=false;
- mouthShadow.material=new THREE.MeshBasicMaterial({color:0x271a1c});
-
+ // A few floating shreds of red dress fabric register that the teeth made
+ // contact. This is cloth rather than a graphic blood or gore effect.
+ const scraps=[];
+ for(let i=0;i<6;i++){
+  const fragment=ico(rig,i%2?0x6a2a34:0xa2484d,
+    0,2.28,.72,.06+(i%2)*.025,.05,.06,0);
+  fragment.visible=false;scraps.push(fragment);
+ }
  // No face eyes. A long, unsettling mouth cleft occupies their place.
  ico(rig,0x403b35,0,2.31,.309,.11,.23,.025);
  const hands=[],arms=[];
@@ -283,18 +301,36 @@ function buildPaleMan(scene){
    }
    rig.rotation.x=-.09*beat.grip-.20*beat.jawOpen;
    head.position.y=2.53-beat.headLower;
-   jawPivot.visible=true;maw.visible=true;mouthShadow.visible=true;
+   jawPivot.visible=true;maw.visible=true;mouthShadow.visible=true;lip.visible=true;tongue.visible=true;
    teeth.forEach(tooth=>{tooth.visible=true;});
-   jawPivot.rotation.x=beat.jawOpen*.86;
-   jawPivot.position.y=2.27-beat.jawOpen*.24;
-   maw.scale.set(.255+.07*beat.jawOpen,.055+beat.jawOpen*.32,.085);
-   mouthShadow.scale.copy(maw.scale).multiplyScalar(.9);
-   const nod=Math.sin(beat.time*12)*(beat.jawOpen*.055);
+   const open=beat.jawOpen;
+   // Distinct 3D movement: upper jaw holds, lower jaw descends by nearly
+   // half a head height, seven ivory teeth track the hinged chin.
+   jawPivot.rotation.x=open*.9;
+   jawPivot.position.y=2.21-open*.45;
+   jawPivot.position.z=.37+open*.12;
+   maw.scale.set(.34+open*.12,.10+open*.44,.14);
+   mouthShadow.scale.set(.26+open*.06,.075+open*.37,.10);
+   lip.scale.set(1+open*.24,.37+open*1.25,1);
+   lip.position.y=2.29-open*.15;
+   head.rotation.x=-open*.35;
+   head.scale.set(1+open*.10,1+open*.22,1);
+   const nod=Math.sin(beat.time*12)*(open*.13);
    rig.rotation.z=nod;
+   scraps.forEach((fragment,i)=>{
+    const elapsed=beat.time-1.58-i*.055;
+    fragment.visible=elapsed>0&&elapsed<1.55;
+    const a=i*2.39996;
+    fragment.position.set(Math.cos(a)*(.12+elapsed*.28),
+      2.23+.12*Math.sin(a)-elapsed*.26,
+      .69+elapsed*.22);
+    fragment.rotation.set(elapsed*4+i,elapsed*5,elapsed*2);
+   });
   }else{
-   jawPivot.visible=false;maw.visible=false;mouthShadow.visible=false;
+   jawPivot.visible=false;maw.visible=false;mouthShadow.visible=false;lip.visible=false;tongue.visible=false;
    teeth.forEach(tooth=>{tooth.visible=false;});
-   head.position.y=2.53;
+   scraps.forEach(fragment=>{fragment.visible=false;});
+   head.position.y=2.53;head.rotation.x=0;head.scale.set(1,1,1);
    rig.rotation.x=0;
   }
  }
@@ -420,7 +456,7 @@ export function createBanquetScene(canvas,state){
   const reveal=state.phase==='awakening'
    ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
   const caughtZoom=state.phase==='caught'?
-   (portrait?1.22:2.0)*deathBeat(state.deathTime).grip:0;
+   (portrait?2.25:4.2)*deathBeat(state.deathTime).grip:0;
   const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom;
   const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
@@ -463,7 +499,7 @@ export function createBanquetScene(canvas,state){
     state.player.x,.03,state.player.z);
    pale.root.updateWorldMatrix(true,true);
    const held=pale.root.localToWorld(new THREE.Vector3(
-    0,devour.heroLift,.75-devour.yank*.17));
+    .19,devour.heroLift,.83-devour.yank*.18));
    p.copy(captureOrigin).lerp(held,devour.grip);
    p.y+=Math.sin(devour.time*19)*devour.shake;
    player.body.rotation.x=-devour.heroLean;
@@ -487,7 +523,7 @@ export function createBanquetScene(canvas,state){
     1.48+Math.sin(Math.PI*t)*.66,THREE.MathUtils.lerp(state.player.z,0,Math.sin(Math.PI*t)*.80));
   } else if(state.phase==='caught'){
    // The fatal scene is a tight two-character shot, not an off-screen scale.
-   target=new THREE.Vector3(state.monster.x,1.65,state.monster.z+.40);
+   target=new THREE.Vector3(state.monster.x,2.04,state.monster.z+.30);
   } else if(state.phase==='escape'){
    target=new THREE.Vector3(DOOR.x,1.45,DOOR.z);
   }else{
