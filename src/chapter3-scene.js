@@ -105,7 +105,7 @@ function banquetHall(scene){
  }
  return hall;
 }
-function buildTable(scene){
+export function buildTable(scene){
  const group=new THREE.Group();scene.add(group);
  const cx=(TABLE.minX+TABLE.maxX)/2,length=TABLE.maxX-TABLE.minX;
  box(group,0x3d2725,cx,.95,0,length,1.05,2.40);
