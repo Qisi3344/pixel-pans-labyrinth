@@ -9,9 +9,9 @@ export const ROYAL_DIALOGUE=Object.freeze({
  ]),
  offering:Object.freeze([
   Object.freeze({speaker:'father',start:4.05,end:8.28,name:'父王',
-   text:'你打开了归来的门。可我看见，你身后少了一个孩子。'}),
+   text:'欢迎回来，女儿。漫长的归途终于结束了。这里仍有你的王座。'}),
   Object.freeze({speaker:'mother',start:8.28,end:12.95,name:'母后',
-   text:'欢迎回来，女儿。王座仍属于你，但有些代价，连王国也无法偿还。'})
+   text:'来吧，孩子。你终于回到了自己的家。'})
  ])
 });
 export function activeRoyalDialogue(ending,time,royalShown=true){
