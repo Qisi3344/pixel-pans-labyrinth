@@ -507,6 +507,13 @@ export function createBanquetScene(canvas,state){
   const floorHit=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   const world=new THREE.Vector3();
   const foodHit=ray.intersectObjects(table.clickables,false)[0];
+  // Directly clicking the creature is an investigation, not a command to
+  // walk to the dinner table or a second way to awaken it.
+  // Compare depths so table food in front of the monster remains selectable.
+  const monsterHit=state.phase==='invitation'?
+   ray.intersectObject(pale.root,true)[0]:null;
+  if(monsterHit&&(!foodHit||monsterHit.distance<foodHit.distance))
+   return {kind:'monster'};
   if(foodHit)return {kind:'food'};
   const doorHit=ray.intersectObject(chalk.target,false)[0];
   if(doorHit)return {kind:'door'};

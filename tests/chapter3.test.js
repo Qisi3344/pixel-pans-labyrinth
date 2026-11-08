@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 import {
  HALL,TABLE,START,FOOD,DOOR,MONSTER_START,PLAYER_SPEED,HUNTER_SPEED,
  AWAKEN_SECONDS,DOOR_POLYLINE,newBanquet,walkable,moveActor,distance,eat,
- atDoor,startDrawing,traceChalk,cancelDrawing,tickBanquet,attemptCatch,huntRoute
+ atDoor,startDrawing,traceChalk,cancelDrawing,tickBanquet,attemptCatch,huntRoute,
+ inspectSleepingMonster,MONSTER_INSPECT_RADIUS
 } from '../src/chapter3-logic.js';
 
 const nearly=(a,b,err=.0001)=>Math.abs(a-b)<err;
@@ -149,4 +150,40 @@ test('awakening zoom is cinematic and chalk QA does not alter normal chase',()=>
  assert.ok(main.includes("const QA_CHALK_PREVIEW="));
  assert.ok(main.includes("if(QA_CHALK_PREVIEW&&['climbing','drawing'].includes(state.phase))return;"));
  assert.ok(main.includes("if(!['chase','climbing','drawing'].includes(state.phase))return;"));
+});
+
+test('sleeping monster can be observed nearby or by click without waking or navigating to feast',()=>{
+ const s=newBanquet();
+ assert.equal(s.inspectedMonster,false);
+ assert.equal(inspectSleepingMonster(s),false,'entering corridor should not trigger');
+ assert.equal(s.phase,'invitation');
+ s.player={x:MONSTER_START.x-1.3,z:MONSTER_START.z+.6};
+ assert.ok(distance(s.player,s.monster)<MONSTER_INSPECT_RADIUS);
+ assert.equal(inspectSleepingMonster(s),true);
+ assert.equal(s.inspectedMonster,true);
+ assert.equal(s.phase,'invitation','quiet approach must not start chase');
+ assert.equal(s.eaten,false);
+ const clicked=newBanquet();
+ assert.equal(inspectSleepingMonster(clicked,{clicked:true}),true,'clicking figure works without proximity');
+ assert.equal(clicked.phase,'invitation');
+ assert.equal(clicked.eaten,false);
+ clicked.phase='awakening';
+ assert.equal(inspectSleepingMonster(clicked,{clicked:true}),false,'do not override waking/chase UI');
+});
+
+test('third chapter invites free exploration instead of sending the player directly to food',()=>{
+ const main=readFileSync(new URL('../src/chapter3-main.js',import.meta.url),'utf8');
+ const scene=readFileSync(new URL('../src/chapter3-scene.js',import.meta.url),'utf8');
+ assert.ok(main.includes('✧ 先四处看看吧'));
+ assert.ok(main.includes("actionButton.hidden=!(canEat||canDraw)"));
+ assert.ok(main.includes("actionButton.style.display=(canEat||canDraw)?'':'none'"));
+ assert.ok(!main.includes("前往盛宴 ↗"));
+ assert.ok(main.includes("if(hit.kind==='monster')"));
+ assert.ok(main.includes("showSleepingObservation();return;"));
+ assert.ok(main.includes("if(distance(state.player,FOOD)<1.55)doEat();"),
+  'E interaction cannot path to grapes from spawn');
+ assert.ok(main.includes("if(started&&state.phase==='invitation'&&!state.inspectedMonster"));
+ assert.ok(main.includes("tell('他好像在沉睡……'"));
+ assert.ok(scene.includes("ray.intersectObject(pale.root,true)"));
+ assert.ok(scene.includes("return {kind:'monster'}"));
 });

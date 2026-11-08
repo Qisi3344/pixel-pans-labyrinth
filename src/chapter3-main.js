@@ -1,7 +1,8 @@
 import './chapter3-style.css';
 import {HALL,TABLE,START,FOOD,DOOR,PLAYER_SPEED,HUNTER_SPEED,AWAKEN_SECONDS,
  newBanquet,walkable,moveActor,distance,eat,atDoor,startDrawing,cancelDrawing,traceChalk,
- tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone} from './chapter3-logic.js';
+ tickBanquet,attemptCatch,huntRoute,DOOR_POLYLINE,SEAL_SECONDS,zone,
+ MONSTER_INSPECT_RADIUS,inspectSleepingMonster} from './chapter3-logic.js';
 import {createBanquetScene} from './chapter3-scene.js';
 import {note,chime,toggleSound} from './audio.js';
 import {CHILD_SHOE_PILE,SHOE_INSPECT_RADIUS,SHOE_MESSAGE} from './chapter3-shoes.js';
@@ -23,7 +24,7 @@ document.body.innerHTML=[
   '<div class="pale-bottom"><div>WASD / 方向键移动　·　E 交互　·　鼠标点击地面寻路</div><a href="?stage=2">← 巨树之腹</a></div>',
   '<div class="pale-touch"><div id="pale-pad" class="pale-pad" aria-label="虚拟方向摇杆" role="group"><div id="pale-knob" class="pale-knob"></div></div>',
    '<button id="pale-act" class="pale-act" type="button">✦<small>交互</small></button></div>',
-  '<div id="pale-suggest" class="pale-suggest"><span id="pale-suggest-text">✦ 走近长桌，按 E 品尝食物</span><button id="pale-suggest-act" type="button">交互 E</button></div>',
+  '<div id="pale-suggest" class="pale-suggest"><span id="pale-suggest-text">✧ 先四处看看吧。注意墙壁和宴会厅里的细节。</span><button id="pale-suggest-act" type="button" hidden>交互 E</button></div>',
   '<div id="pale-cinematic" class="pale-cinematic" aria-live="polite"></div>',
   '<div id="pale-shoe-clue" class="pale-shoe-clue" role="status" aria-live="polite"><small>环境线索 · 遗失的鞋子</small><p>这些都是小孩的鞋子……</p></div>',
   '<div id="pale-death-vignette" class="pale-death-vignette" aria-hidden="true"></div>',
@@ -34,7 +35,7 @@ document.body.innerHTML=[
    '<div class="draw-meter"><span id="draw-percent">0%</span><span>粉笔描画进度</span></div></div></div>',
   '<section id="pale-intro" class="pale-overlay" role="dialog" aria-modal="true"><div class="pale-card">',
    '<div class="pale-sigil">✦　◈　✦</div><small>CHAPTER III · PALE MAN</small><h2>苍白盛宴</h2>',
-   '<p>魔法入口旁留下了一把旧木椅，长石廊通向盛宴。<br>桌尾的守卫安静地坐着，仿佛早已死去。<br>如果惊醒它，你必须原路逃回来。</p>',
+   '<p>你来到了一条陌生的古老石廊。<br>墙上的图案、地上的痕迹，似乎都隐藏着秘密。<br>先四处看看吧，不必急着往前走。</p>',
    '<button id="pale-start" class="pale-primary" type="button">踏入石廊 ↗</button><footer>LONG PURSUIT · BANQUET & CHALK ESCAPE</footer>',
   '</div></section>',
   '<section id="pale-death" class="pale-overlay hidden" role="dialog" aria-modal="true"><div class="pale-card">',
@@ -56,7 +57,7 @@ const view=createBanquetScene($('pale-world'),state);
 let started=false,last=0,currentTime=0,moveDistance=0,navPath=[],navAction=null;
 let keyboard=new Set(),joystick=null,stickX=0,stickY=0,tipTimer=null;
 let huntPath=[],huntTime=0,lastPhase=state.phase,endingShown=false;
-let inspectedShoes=false,shoeClueUntil=0,deathStage='';
+let inspectedShoes=false,shoeClueUntil=0,monsterClueUntil=0,deathStage='';
 // The previewDoor URL is exclusively a QA mode; normal play never pauses the hunter.
 const QA_CHALK_PREVIEW=new URLSearchParams(location.search).has('previewDoor');
 const QA_RETURN_PREVIEW=new URLSearchParams(location.search).has('previewReturn');
@@ -84,9 +85,13 @@ function allowedMovement(){
 function updateHUD(){
  const phase=state.phase;
  const inPassage=zone(state.player)==='passage';
- let title=inPassage?'沿石廊深入宴会厅':'靠近宴会长桌';
- let desc=inPassage?'身后的粉笔门是唯一退路。穿过漫长石廊，前往尽头的盛宴。':
-  '桌上堆满葡萄、面包和烤肉；苍白怪守在桌尾。';
+ let title=inPassage?'先四处看看吧':'这场宴席有些不对劲';
+ let desc=inPassage?'看看墙壁、石拱和旧木椅。石廊尽头似乎还有东西。':
+  '这里摆满食物，也藏着值得仔细观察的痕迹。';
+ if(phase==='invitation'&&currentTime<monsterClueUntil){
+  title='他好像在沉睡……';
+  desc='苍白的身影坐在宴席尽头，低垂着头，一动不动。';
+ }
  if(phase==='invitation'&&inspectedShoes&&currentTime<shoeClueUntil){
   title='这些都是小孩的鞋子……';
   desc='有鞋带、有搭扣，鞋底磨得很旧。为什么会被丢在宴会厅的角落？';
@@ -124,16 +129,30 @@ function updateHUD(){
  const canDraw=phase==='chase'&&atDoor(state);
  const suggest=phase==='invitation'||canDraw;
  $('pale-suggest').classList.toggle('show',suggest);
- $('pale-suggest-text').textContent=canEat?'✦ 葡萄就在眼前：吃一颗':
-  canDraw?'✦ 木椅到了：踩上去画头顶的出口':
-  inPassage?'✦ 沿石廊穿过拱门，去宴会长桌':'✦ 长桌就在前方。走到葡萄果盘';
- $('pale-suggest-act').textContent=canEat?'吃一口 E':canDraw?'爬椅子 E':'前往盛宴 ↗';
+ const nearMonster=phase==='invitation'&&
+  distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS;
+ $('pale-suggest-text').textContent=canEat?'✧ 葡萄就在手边。要品尝一颗吗？':
+  canDraw?'✦ 木椅就在这里：踩上去画出头顶的出口':
+  nearMonster?'✧ 这个苍白的身影似乎在沉睡……':
+  inPassage?'✧ 先四处看看吧。石廊的墙上似乎藏着线索。':
+  '✧ 不妨仔细看看这里的食物、壁画与角落。';
+ const actionButton=$('pale-suggest-act');
+ actionButton.textContent=canEat?'品尝 E':'爬椅子 E';
+ actionButton.hidden=!(canEat||canDraw);
+ actionButton.style.display=(canEat||canDraw)?'':'none';
  $('pale-act').innerHTML=phase==='drawing'?'✎<small>画门中</small>':
   canEat?'🍇<small>吃一口</small>':canDraw?'🪑<small>爬椅子</small>':'✦<small>交互</small>';
 }
 function start(){
  if(started)return;started=true;$('pale-intro').classList.add('hidden');
- note(392,.25);tell('你从粉笔门进入长甬道。走过石廊前往盛宴。回来时记住入口旁的旧木椅。',5300);
+ note(392,.25);tell('先四处看看吧。留意这条古老石廊里不寻常的细节。',5200);
+ updateHUD();
+}
+function showSleepingObservation(){
+ if(!inspectSleepingMonster(state,{clicked:true}))return;
+ monsterClueUntil=currentTime+5.8;
+ tell('他好像在沉睡……',4700);
+ note(240,.13,'triangle',.018);
  updateHUD();
 }
 function setActionTarget(target,action=null){
@@ -166,8 +185,14 @@ function beginChalk(){
 }
 function interact(){
  if(!started)return;
- if(state.phase==='invitation')doEat();
- else if(state.phase==='chase')beginChalk();
+ if(state.phase==='invitation'){
+  if(distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS){
+   showSleepingObservation();return;
+  }
+  // The interact button must never auto-path straight to the grapes from
+  // the entrance. Only show a food action when actually standing near it.
+  if(distance(state.player,FOOD)<1.55)doEat();
+ }else if(state.phase==='chase')beginChalk();
 }
 function cancelChalk(){
  if(!cancelDrawing(state))return;
@@ -293,6 +318,9 @@ $('pale-world').addEventListener('pointerup',e=>{
  pointerStart=null;
  const hit=view.pick(e.clientX,e.clientY);
  if(!hit||!allowedMovement())return;
+ if(hit.kind==='monster'){
+  showSleepingObservation();return;
+ }
  if(hit.kind==='food'){setActionTarget(FOOD,'eat');return;}
  if(hit.kind==='door'){setActionTarget(DOOR,'draw');return;}
  if(hit.kind==='floor'&&walkable(hit,.28))setActionTarget(hit);
@@ -387,6 +415,17 @@ function frame(now){
  const dt=Math.min(.08,last?(now-last)/1000:.016);last=now;
  currentTime=now/1000;
  moveDistance=started?drivePlayer(dt):0;
+ // The seated Pale Man can be quietly observed on approach. This is a
+ // one-time proximity clue, and never triggers eat() or the chase.
+ if(started&&state.phase==='invitation'&&!state.inspectedMonster&&
+    distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS){
+  if(inspectSleepingMonster(state)){
+   monsterClueUntil=currentTime+5.8;
+   tell('他好像在沉睡……',4800);
+   note(240,.13,'triangle',.018);
+   updateHUD();
+  }
+ }
  // Environment discovery happens through walking, not by inspecting a menu.
  if(started&&!inspectedShoes&&state.phase==='invitation'&&
     distance(state.player,CHILD_SHOE_PILE)<SHOE_INSPECT_RADIUS){
