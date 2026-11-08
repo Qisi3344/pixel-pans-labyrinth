@@ -490,7 +490,7 @@ export function createBanquetScene(canvas,state){
    ? Math.sin(Math.PI*clamp(state.awakeTime/AWAKEN_SECONDS)) : 0;
   const caughtZoom=state.phase==='caught'?
    (portrait?2.7:5.4)*deathBeat(state.deathTime).grip:0;
-  const ceilingZoom=['climbing','drawing','escape','escaped'].includes(state.phase)?(portrait?.28:.86):0;
+  const ceilingZoom=['climbing','drawing','escape','escaped'].includes(state.phase)?(portrait?.04:.86):0;
   const cinematicZoom=1+Math.max(0,reveal)*(portrait?1.05:1.55)+caughtZoom+ceilingZoom;
   const halfV=(portrait?17.6:19.7)/(2*zoom*cinematicZoom);
   camera.left=-halfV*w/h;camera.right=halfV*w/h;
@@ -576,7 +576,11 @@ export function createBanquetScene(canvas,state){
    // The fatal scene is a tight two-character shot, not an off-screen scale.
    target=new THREE.Vector3(state.monster.x,2.04,state.monster.z+.30);
   } else if(['climbing','drawing','escape','escaped'].includes(state.phase)){
-   target=new THREE.Vector3(DOOR.x,2.4,DOOR.z-.42);
+   // Raise the actual chair/hatch into the clear TOP portion of a portrait
+   // viewport: the chalk drawing sheet now lives at the BOTTOM.
+   const verticalTarget=portrait&&state.phase==='drawing'?-2.2:
+    portrait&&state.phase==='climbing'?.7:1.65;
+   target=new THREE.Vector3(DOOR.x,verticalTarget,DOOR.z-.42);
   }else{
    // A long route cannot share the fixed camera used for the old square room.
    // Track the avatar on BOTH desktop and mobile while retaining a little
