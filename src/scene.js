@@ -255,7 +255,7 @@ function ruinPerimeter(parent,radius,start){
   }
   buildEntrance(parent,entrance,radius);
 }
-function buildWell(parent){
+export function buildWell(parent){
   const well=new THREE.Group();parent.add(well);
   // All rim, funnel, stairs and crypt are uniformly scaled around the origin.
   well.scale.setScalar(WELL.visualScale);
