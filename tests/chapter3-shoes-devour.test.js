@@ -60,14 +60,14 @@ test('the captured heroine stays normal size in the 3D cutscene until after swal
  assert.ok(scene.includes("jawPivot.rotation.x=open*.42"));
  assert.ok(scene.includes("jawPivot.position.set(0,-.26-open*.065,.074)"));
  assert.ok(scene.includes("maw.scale.set(.145,.025+open*.118,.027)"));
- assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
+ assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=open>.11;})"));
  assert.ok(scene.includes("(portrait?1.85:3.15)*deathBeat(state.deathTime).grip"));
  assert.ok(scene.includes("const deathCameraAngle=new THREE.Vector3(.05,.42,1.78).normalize()"));
  assert.ok(scene.includes("state.phase==='caught'?biteAngle:angle"));
  assert.ok(scene.includes("biteLight.intensity=.18+open*.64"));
  assert.ok(scene.includes(".52+.10*devour.jawOpen"));
  assert.ok(scene.includes("fragment.visible=elapsed>0&&elapsed<1.55"));
- assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=true;})"));
+ assert.ok(scene.includes("teeth.forEach(tooth=>{tooth.visible=open>.11;})"));
  assert.ok(!scene.includes("player.body.scale.setScalar(Math.max(.01,1-t))"));
  assert.ok(main.includes("if(beat.completed&&!endingShown)"));
  assert.ok(!main.includes("state.deathTime>=1.08&&!endingShown"));
@@ -138,9 +138,11 @@ test('skull, mouth, and hinged jaw form ONE connected facial rig throughout devo
   assert.equal(model.closedMouth.visible,false);
   assert.ok(Math.abs(model.jawPivot.rotation.x-beat.jawOpen*.42)<1e-8);
   // Chunks of head can't detach and become the giant triangular jaw seen in screenshot.
-  const fullSkull=new THREE.Box3().setFromObject(model.head);
-  const mouthPosition=model.maw.getWorldPosition(new THREE.Vector3());
-  assert.ok(mouthPosition.distanceTo(fullSkull.getCenter(new THREE.Vector3()))<.51);
+  model.skull.updateWorldMatrix(true,true);
+  const faceLocal=model.skull.worldToLocal(model.maw.getWorldPosition(new THREE.Vector3()));
+  assert.ok(Math.abs(faceLocal.x)<.01 &&
+   faceLocal.y>-.32 && faceLocal.y<0 && faceLocal.z<.30,
+   'the mouth remains anchored inside the lower-front skull coordinates');
  }
  s.phase='invitation';model.pose(s,5,.016);
  assert.equal(model.closedMouth.visible,true);
