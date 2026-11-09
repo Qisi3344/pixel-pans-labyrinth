@@ -39,7 +39,7 @@ async function runForViewport(viewport,name){
   await page.locator('.tale-extra-settings summary').click();
   await page.locator('[data-quality-mode]').selectOption('low');
   await page.locator('[data-motion-mode]').selectOption('reduce');
-  await page.locator('[data-sound-volume]').fill('45');
+  await page.locator('[data-sound-volume]').evaluate(el=>{el.value='45';el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('[data-mode-accept]').click();
   assert.equal(await page.evaluate(()=>localStorage.getItem('pans-labyrinth:quality-v1')),'low');
   assert.equal(await page.evaluate(()=>localStorage.getItem('pans-labyrinth:motion-v1')),'reduce');
