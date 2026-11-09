@@ -286,11 +286,11 @@ export function buildPaleMan(scene){
   root.position.set(state.monster.x,0,state.monster.z);
   const active=['chase','drawing','caught','escape'].includes(state.phase);
   const awakening=state.phase==='awakening'?smooth(state.awakeTime/AWAKEN_SECONDS):active?1:0;
-  const bob=active&&state.phase!=='caught'?Math.sin(time*8)*.070:0;
+  const bob=active&&state.phase!=='caught'?Math.sin(time*7)*.070:0;
   // Slow rise from the chair AFTER hands have started seeking the eye sockets.
   const standing=smooth((awakening-.28)/.65);
   rig.position.y=-.28+standing*.39+bob;
-  rig.rotation.z=active?Math.sin(time*6)*.065:Math.sin(time*1.0)*.014;
+  rig.rotation.z=active?Math.sin(time*5.2)*.065:Math.sin(time*1.0)*.014;
   const dx=state.player.x-state.monster.x,dz=state.player.z-state.monster.z;
   if(active||awakening>.3){
    root.rotation.y=dampHeading(root.rotation.y,Math.atan2(dx,dz),5,dt);
@@ -305,7 +305,7 @@ export function buildPaleMan(scene){
    hands[k].rotation.z=sign*(.08+awakening*.09);
    const shoulder=new THREE.Vector3(sign*.40,1.82,0);
    positionArm(arms[k],shoulder,aim.clone().add(new THREE.Vector3(0,.25,-.08)));
-   limbs[k].rotation.x=THREE.MathUtils.lerp(-.95,active?Math.sin(time*8+k*Math.PI)*.33:0,standing);
+   limbs[k].rotation.x=THREE.MathUtils.lerp(-.95,active?Math.sin(time*7+k*Math.PI)*.33:0,standing);
   }
   if(state.phase==='caught'){
    const beat=deathBeat(state.deathTime);
