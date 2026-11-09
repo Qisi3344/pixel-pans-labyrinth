@@ -164,7 +164,7 @@ $('final-home').addEventListener('click',toMenu);
 function start(){
  if(started)return;started=true;
  $('final-start').classList.add('hidden');
- showMessage('潘神等在石井旁。别忘记你抱着的是谁。');
+ showMessage('');
  tone(460,.20,'triangle');
 }
 $('final-begin').addEventListener('click',start);
@@ -324,15 +324,14 @@ function updateHud(){
   $('final-faun-text').textContent=line.text;
   $('final-faun-next').textContent=state.dialogueStep>=FINAL_DIALOGUE.length-1?'做出选择 ↗':'继续 E ↗';
   showMessage('');
- }else if(isChoice)showMessage('潘神的要求已经说明。现在，由你决定。');
+ }else if(isChoice)showMessage('');
  else if(state.phase==='approach'){
   const d=Math.max(0,distance(state.player,FINAL_ALTAR)-1.5);
   $('final-guide-text').textContent=d>2
    ?'抱紧弟弟，去中央石井。还有 '+Math.ceil(d)+' 米。'
    :'潘神就在前面。走到石井旁听他最后的要求。';
   $('final-guide-action').textContent=d>2?'前往石井 ↗':'靠近潘神 ↗';
-  showMessage(time<=17?'维达尔的脚步越来越近，快做决定。':
-   '月光落在石井上。潘神正等待你的到来。');
+  showMessage(time<=17?'维达尔快到了！':'');
  }else if(state.phase==='cinematic'){
   showMessage(cinematicNarration());
   $('final-gun-flash').classList.toggle('show',state.gunFlash);
