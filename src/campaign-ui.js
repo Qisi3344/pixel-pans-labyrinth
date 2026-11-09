@@ -2,7 +2,9 @@ import './campaign-style.css';
 import {FINAL_OUTCOMES} from './chapter4-logic.js';
 import {CHAPTERS,CAMPAIGN_MENU,CAMPAIGN_FINAL,loadCampaign,storeCampaign,
  setInputPreference,chapterUnlocked,campaignChapterUrl,selectedInputMode,
- inferredInputMode,defaultProgress} from './campaign.js';
+ inferredInputMode,defaultProgress,exportCampaign,importCampaign} from './campaign.js';
+import {getSoundVolume,setSoundVolume} from './audio.js';
+import {graphicsMode,setGraphicsMode,motionPreference,setMotionPreference,applyMotionPreference} from './graphics-quality.js';
 
 const $=id=>document.getElementById(id);
 const chapterMarkup=(c,save)=>`
@@ -16,6 +18,7 @@ const chapterMarkup=(c,save)=>`
 const setBody=(klass)=>{
  document.body.className='campaign-root '+klass;
  document.documentElement.dataset.inputMode=selectedInputMode();
+ applyMotionPreference();
 };
 const navigate=url=>{window.location.href=url;};
 const chapterButtons=(root,save)=>{
@@ -28,6 +31,15 @@ const chapterButtons=(root,save)=>{
 };
 function addSelectionHandlers(panel,onDone,onCancel){
  let mode=selectedInputMode(),lastFocus=document.activeElement;
+ const quality=panel.querySelector('[data-quality-mode]');
+ const volume=panel.querySelector('[data-sound-volume]');
+ const volumeText=panel.querySelector('[data-volume-value]');
+ const motion=panel.querySelector('[data-motion-mode]');
+ quality.value=graphicsMode();
+ volume.value=String(Math.round(getSoundVolume()*100));
+ motion.value=motionPreference();
+ const updateVolume=()=>{volumeText.textContent=volume.value+'%';};
+ volume.addEventListener('input',updateVolume);updateVolume();
  const update=()=>{
   panel.querySelectorAll('[data-choose-mode]').forEach(el=>{
    el.setAttribute('aria-pressed',String(el.dataset.chooseMode===mode));
@@ -39,6 +51,9 @@ function addSelectionHandlers(panel,onDone,onCancel){
  });
  panel.querySelector('[data-mode-accept]').addEventListener('click',()=>{
   setInputPreference(mode);
+  setGraphicsMode(quality.value);
+  setSoundVolume(Number(volume.value)/100);
+  setMotionPreference(motion.value);
   document.documentElement.dataset.inputMode=mode;
   onDone(mode);
  });
@@ -63,6 +78,28 @@ function modeMarkup(cancel=true){
      <small>WASD / 方向键移动 · E 交互 · 鼠标寻路</small>
     </button>
    </div>
+   <details class="tale-extra-settings">
+    <summary>画质、声音与动态</summary>
+    <div class="tale-advanced-fields">
+     <label>画质
+      <select data-quality-mode aria-label="游戏画质">
+       <option value="auto">自动 · 低帧率会降档</option>
+       <option value="low">省电 · 轻阴影</option>
+       <option value="high">高清 · 清晰阴影</option>
+      </select>
+     </label>
+     <label>音量 <output data-volume-value>100%</output>
+      <input data-sound-volume type="range" min="0" max="100" step="5" aria-label="游戏音量">
+     </label>
+     <label>动态效果
+      <select data-motion-mode aria-label="动态效果">
+       <option value="system">跟随设备设置</option>
+       <option value="reduce">减少动态</option>
+       <option value="normal">标准动态</option>
+      </select>
+     </label>
+    </div>
+   </details>
    <div class="tale-modal-actions">
     ${cancel?'<button type="button" class="tale-text-button" data-mode-cancel>返回</button>':''}
     <button type="button" class="tale-primary" data-mode-accept>确定操作方式 <span>↗</span></button>
@@ -82,6 +119,53 @@ function prologueMarkup(){
   一把钥匙、一柄匕首，以及必须遵守的禁忌，<br>正等待着她。</p>
   <button id="tale-enter" class="tale-primary" type="button">走进迷宫 <span>↗</span></button>
  </article></section>`;
+}
+
+function openSaveManager(){
+ if(document.getElementById('campaign-dialog-host'))return;
+ const host=document.createElement('div');host.id='campaign-dialog-host';
+ host.innerHTML=`
+ <section class="tale-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="save-manager-title">
+  <div class="tale-modal tale-save-dialog">
+   <div class="tale-eyebrow">LOCAL SAVE · 存档备份</div>
+   <h2 id="save-manager-title">备份与恢复旅程</h2>
+   <p>存档默认只在本浏览器中保存。可以复制下方文本备份，换设备时粘贴并导入。导入将覆盖当前进度。</p>
+   <label class="tale-save-label" for="tale-save-export">本机存档 · 只读</label>
+   <textarea id="tale-save-export" readonly spellcheck="false"></textarea>
+   <button class="tale-secondary tale-wide" type="button" id="tale-copy-save">复制存档文本</button>
+   <label class="tale-save-label" for="tale-save-import">恢复存档 · 粘贴备份文本</label>
+   <textarea id="tale-save-import" spellcheck="false" placeholder="在这里粘贴先前复制的存档文本"></textarea>
+   <p class="tale-save-feedback" id="tale-save-feedback" role="status" aria-live="polite"></p>
+   <div class="tale-modal-actions">
+    <button class="tale-text-button" type="button" id="tale-save-cancel">返回</button>
+    <button class="tale-primary" type="button" id="tale-save-restore">确认覆盖并导入</button>
+   </div>
+  </div>
+ </section>`;
+ document.body.append(host);
+ const output=host.querySelector('#tale-save-export');
+ const feedback=host.querySelector('#tale-save-feedback');
+ output.value=exportCampaign();
+ const close=()=>host.remove();
+ host.querySelector('#tale-save-cancel').addEventListener('click',close);
+ host.querySelector('.tale-modal-backdrop').addEventListener('click',event=>{
+  if(event.target===event.currentTarget)close();
+ });
+ host.querySelector('#tale-copy-save').addEventListener('click',async()=>{
+  try{
+   if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(output.value);
+   else{output.focus();output.select();if(!document.execCommand('copy'))throw new Error('clipboard');}
+   feedback.textContent='已复制，可以粘贴到安全位置保存。';
+  }catch{output.focus();output.select();feedback.textContent='已选中文本，请手动复制。';}
+ });
+ host.querySelector('#tale-save-restore').addEventListener('click',()=>{
+  try{
+   const imported=importCampaign(host.querySelector('#tale-save-import').value.trim());
+   feedback.textContent='已恢复到第 '+imported.completed+' 章进度。';
+   location.reload();
+  }catch(error){feedback.textContent=error.message||'导入失败，请检查文本格式。';}
+ });
+ host.querySelector('#tale-save-cancel').focus({preventScroll:true});
 }
 function installHome(){
  const save=loadCampaign();
@@ -106,7 +190,8 @@ function installHome(){
       <div class="tale-main-actions">
        <button class="tale-primary" id="tale-new" type="button">开启旅程 <span>↗</span></button>
        ${save.completed>0?`<button class="tale-secondary" id="tale-continue" type="button">${save.completed>=4?'回顾最终结局':'继续旅程 · 第 '+Math.min(4,save.completed+1)+' 章'} <span>↗</span></button>`:''}
-       <button class="tale-secondary" id="tale-controls" type="button">操作方式 <span>⌘</span></button>
+       <button class="tale-secondary" id="tale-controls" type="button">操作与画质 <span>⌘</span></button>
+       <button class="tale-secondary" id="tale-save-tools" type="button">存档备份 / 恢复 <span>✧</span></button>
        <p class="tale-save">${save.completed===4?'终章已完成 · 两条命运都可重温':save.completed>0?`已走过 ${save.completed} / 4 章 · 进度保存在本机`:'四段微缩章节 · 从石之迷宫开始'}</p>
       </div>
      </section>
@@ -141,6 +226,7 @@ function installHome(){
   });
  });
  $('tale-controls').addEventListener('click',()=>dialog());
+ $('tale-save-tools').addEventListener('click',openSaveManager);
  $('tale-continue')?.addEventListener('click',()=>navigate(save.completed>=4?CAMPAIGN_FINAL:campaignChapterUrl(Math.min(4,save.completed+1))));
 }
 function installEpilogue(){
@@ -213,6 +299,7 @@ export function mountChapterFrame(stage){
  if(!Number.isInteger(stage)||stage<1||stage>4)return;
  document.body.classList.add('campaign-chapter');
  document.documentElement.dataset.inputMode=selectedInputMode();
+ applyMotionPreference();
  document.documentElement.dataset.chapter=String(stage);
  const parent=document.querySelector(stage===1?'.top-actions':stage===2?'.root-tools':stage===3?'.pale-tools':'.final-tools');
  if(!parent||document.getElementById('tale-chapter-menu'))return;
@@ -223,13 +310,16 @@ export function mountChapterFrame(stage){
  menu.addEventListener('click',()=>navigate(CAMPAIGN_MENU));
  const setting=document.createElement('button');
  setting.id='tale-chapter-settings';setting.type='button';setting.textContent='◈';
- setting.title='操作方式';setting.setAttribute('aria-label','切换操作方式');
+ setting.title='操作与画质';setting.setAttribute('aria-label','操作、画质和音量设置');
  setting.className='tale-hud-action';
  parent.prepend(setting);parent.prepend(menu);
  if(stage===1){
   document.getElementById('begin')?.addEventListener('click',()=>{
    const tip=document.getElementById('game-tip');
-   if(tip){
+   let alreadyShown=false;
+   try{alreadyShown=localStorage.getItem('pans-labyrinth:first-controls-v1')==='1';}catch{}
+   if(tip&&!alreadyShown){
+    try{localStorage.setItem('pans-labyrinth:first-controls-v1','1');}catch{}
     tip.textContent=selectedInputMode()==='touch'
      ?'拖动圆形摇杆移动；右侧按钮互动。轻点地面也可以寻路。'
      :'按 WASD / 方向键移动；靠近符印后按 E，或点击地面寻路。';
