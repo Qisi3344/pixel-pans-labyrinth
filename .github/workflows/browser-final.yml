@@ -1,14 +1,24 @@
-name: Verify Final Chapter In Real Chromium
+name: Verify All Chapters In Real Chromium
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/browser-*.mjs'
+      - 'package.json'
+      - '.github/workflows/browser-final.yml'
   pull_request:
     paths:
-      - 'src/chapter4*'
-      - 'tests/browser-final.mjs'
+      - 'src/**'
+      - 'tests/browser-*.mjs'
       - 'package.json'
       - '.github/workflows/browser-final.yml'
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: chapter-browser-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   visual-e2e:
     runs-on: ubuntu-latest
@@ -23,3 +33,4 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:browser
+      - run: npm run test:smoke
