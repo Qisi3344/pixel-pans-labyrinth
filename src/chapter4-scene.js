@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {createPlayer,animatePlayer} from './player.js';
 import {FINAL_START,FINAL_ALTAR,FINAL_BLOOD_STAND,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
 import {FINAL_FAUN_POSITION,FINAL_WELL_CENTER} from './chapter4-maze-layout.js';
@@ -362,6 +363,8 @@ export function createFinalScene(canvas,state){
  sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-37;
  sun.shadow.camera.right=37;sun.shadow.camera.top=37;sun.shadow.camera.bottom=-37;
  sun.shadow.bias=-.0008;scene.add(sun);
+ let graphics=applyShadowQuality(renderer,sun,THREE);
+ renderer.setPixelRatio(1);
  const labyrinth=new THREE.Group();scene.add(labyrinth);
  const maze=buildMaze(labyrinth);
  const royal=new THREE.Group();scene.add(royal);royal.visible=false;
@@ -427,7 +430,7 @@ export function createFinalScene(canvas,state){
   camera.left=-view*aspect;camera.right=view*aspect;
   camera.top=view;camera.bottom=-view;
   camera.updateProjectionMatrix();
-  renderer.setSize(Math.max(1,Math.round(w*.86)),Math.max(1,Math.round(h*.86)),false);
+  renderer.setSize(Math.max(1,Math.round(w*.86*graphics.renderScale)),Math.max(1,Math.round(h*.86*graphics.renderScale)),false);
  }
  function pick(clientX,clientY){
   const rect=canvas.getBoundingClientRect();
@@ -584,6 +587,7 @@ export function createFinalScene(canvas,state){
   if(window.__finalQA?.hideCaptain)vidal.root.visible=false;
   if(window.__finalQA?.hideKnife)ceremonyKnife.visible=false;
   renderer.render(scene,camera);
+  sampleQualityFrame(elapsed*1000,!document.hidden&&!window.__pansModalOpen);
  }
  // Anchor the speech to the ACTUAL king/queen mesh, using the same
  // orthographic projection as the renderer (even after resize).
@@ -616,6 +620,7 @@ export function createFinalScene(canvas,state){
    bloodSegmentsVisible:maze.well.bloodSegments.filter(x=>x.visible).length,
    captainPosition:vidal.root.position.toArray(),heroPosition:hero.body.position.toArray()};
  }
+ window.addEventListener('pans:qualitychange',()=>{graphics=applyShadowQuality(renderer,sun,THREE);sceneWidth=0;resize();});
  function setZoom(value){zoom=Math.max(.78,Math.min(1.25,value));sceneWidth=0;resize();}
  function dispose(){renderer.dispose();}
  resize();
