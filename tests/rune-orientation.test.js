@@ -48,5 +48,5 @@ test('the closeup distinguishes carved goal from the current pointer',()=>{
  assert.match(inspector,/isTarget=index===rune\.target/);
  assert.doesNotMatch(inspector,/i===0\?'#e6d9af'/);
  for(const id of ['rune-inspector-target','rune-inspector-current','rune-inspector-match'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(css,/\.rune-inspector-soft-hint\{animation:none!important/);
+ assert.match(css,/\.rune-inspector-soft-hint\{animation:rune-hint-vanish/);
 });
