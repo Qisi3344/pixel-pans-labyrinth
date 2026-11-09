@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
-import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
+import {applyShadowQuality,sampleQualityFrame,reducedMotion} from './graphics-quality.js';
 import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
 import {createChapter2Ending} from './chapter2-ending.js';
@@ -228,7 +228,7 @@ export function createTreeScene(canvas,state){
    stone.star.position.y=(i===2?3.65:2.70)+Math.sin(seconds*1.7+i)*.12;
    stone.halo.intensity=(i===2?2.1:1.4)+Math.sin(seconds*2.2+i)*.2;
   });
-  toad.position.y=-2.5+Math.sin(seconds*1.6)*.065;
+  toad.position.y=-2.5+(reducedMotion()?0:Math.sin(seconds*1.6)*.065);
   jaw.rotation.z=state.offerings?Math.sin(seconds*3)*.19:Math.sin(seconds*1.4)*.035;
   // The ending owns the key, jaw and revival animations; the ordinary game
   // must not accidentally reveal the key immediately when state.won flips.
