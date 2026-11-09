@@ -1,6 +1,6 @@
 /** Shared diegetic 3D close-up for all three rune puzzles. No maze logic lives here. */
 import * as THREE from 'three';
-import {SYMBOLS} from './maze.js';
+import {SYMBOLS,DIRECTIONS} from './maze.js';
 import {COMPASS_SYMBOLS,QUARTER_TURN,headingAngle,headingPosition} from './rune-orientation.js';
 
 const $=id=>document.getElementById(id);
@@ -28,12 +28,12 @@ function createModel(scene){
  cylinder(root,.69,.72,.06,16,1.145,light);
  torus(root,.75,.05,1.175,0xb8c5ad);
  torus(root,.55,.025,1.192,0x3c4a41);
- // FOUR engraved cardinal symbols are fixed to the stone itself; the
- // central pointer is the only rotating component. Never mark the target.
+ // Four permanent bearings give context; only the correct one gets a gold target ring.
+ const compassMarks=[];
  for(let i=0;i<4;i++){
    const {x,z}=headingPosition(i,.955);
    const medallion=new THREE.Mesh(new THREE.CylinderGeometry(.195,.195,.018,12),
-     stone(i===0?0x4a6353:0x30483d));
+     stone(0x30483d));
    medallion.position.set(x,1.195,z);root.add(medallion);
    const glyph=document.createElement('canvas');
    glyph.width=glyph.height=128;
@@ -41,7 +41,7 @@ function createModel(scene){
    ink.clearRect(0,0,128,128);
    ink.font='bold 94px "Arial Unicode MS","Segoe UI Symbol",sans-serif';
    ink.textAlign='center';ink.textBaseline='middle';
-   ink.fillStyle=i===0?'#e6d9af':'#bad7c2';
+   ink.fillStyle='#bad7c2';
    ink.fillText(COMPASS_SYMBOLS[i],64,67);
    const texture=new THREE.CanvasTexture(glyph);
    texture.colorSpace=THREE.SRGBColorSpace;
@@ -52,11 +52,13 @@ function createModel(scene){
    plaque.rotation.x=-Math.PI/2;
    plaque.position.set(x,1.212,z);
    root.add(plaque);
+   compassMarks.push({medallion,plaque});
  }
- // The golden north marker distinguishes world bearings even in isometric view.
- const north=headingPosition(0,.735);
- const key=new THREE.Mesh(new THREE.OctahedronGeometry(.07,0),stone(0xe6d9af));
- key.position.set(north.x,1.235,north.z);key.scale.y=.25;root.add(key);
+ // The gold ring marks the actual target; permanently emphasizing north is misleading.
+ const targetHalo=new THREE.Mesh(new THREE.TorusGeometry(.218,.028,6,32),
+   new THREE.MeshBasicMaterial({color:0xffdd91,transparent:true,opacity:.96}));
+ targetHalo.rotation.x=Math.PI/2;
+ targetHalo.position.y=1.244;root.add(targetHalo);
  const pointer=new THREE.Group();pointer.position.y=1.22;root.add(pointer);
  // Arrow points north (-Z) at phase 0. Rotating around Y yields four true headings.
  const arrow=new THREE.Shape();
@@ -88,7 +90,7 @@ function createModel(scene){
  const stageGlow=new THREE.Mesh(new THREE.CylinderGeometry(1.37,1.37,.045,48),
    new THREE.MeshBasicMaterial({color:0x5a7a69,transparent:true,opacity:.22}));
  stageGlow.position.y=-.04;root.add(stageGlow);
- return {pointer,centerpiece,accentLight,variants,stageGlow};
+ return {pointer,centerpiece,accentLight,variants,stageGlow,compassMarks,targetHalo};
 }
 
 export function createRuneInspector({onTurn,onClose}){
@@ -96,6 +98,9 @@ export function createRuneInspector({onTurn,onClose}){
  const canvas=$('rune-inspector-canvas');
  const view=$('rune-inspector-view');
  const marker=$('rune-inspector-orient');
+ const targetLabel=$('rune-inspector-target');
+ const currentLabel=$('rune-inspector-current');
+ const matchLabel=$('rune-inspector-match');
  const hint=$('rune-inspector-soft-hint');
  const status=$('rune-inspector-status');
  const scene=new THREE.Scene();
@@ -129,7 +134,13 @@ export function createRuneInspector({onTurn,onClose}){
    camera.updateProjectionMatrix();
  }
  function updateMarker(){
-   if(active)marker.textContent=SYMBOLS[active.phase];
+   if(!active)return;
+   marker.textContent=SYMBOLS[active.phase];
+   targetLabel.textContent=`${SYMBOLS[active.target]} ${DIRECTIONS[active.target]}`;
+   currentLabel.textContent=`${SYMBOLS[active.phase]} ${DIRECTIONS[active.phase]}`;
+   const aligned=active.phase===active.target;
+   matchLabel.textContent=aligned?'已对齐':'尚未对齐';
+   matchLabel.classList.toggle('is-aligned',aligned);
  }
  function open(rune){
    if(!rune||rune.solved||active)return;
@@ -143,7 +154,14 @@ export function createRuneInspector({onTurn,onClose}){
    model.centerpiece.material.color.setHex(color);
    model.centerpiece.material.emissive.setHex(color);
    model.variants.forEach((group,index)=>{group.visible=index===rune.index;});
-   status.textContent="观察石碑箭头，再旋转指针对准石盘上相同的方向刻度。";
+   model.compassMarks.forEach(({medallion,plaque},index)=>{
+     const isTarget=index===rune.target;
+     medallion.material.color.setHex(isTarget?0x977447:0x30483d);
+     plaque.material.color.setHex(isTarget?0xffe5a3:0xa4c4ae);
+   });
+   const goal=headingPosition(rune.target,.955);
+   model.targetHalo.position.set(goal.x,1.244,goal.z);
+   status.textContent=`石碑刻痕指向${DIRECTIONS[rune.target]}。旋转中央指针，对准石盘上唯一的金色目标刻度。`;
    modal.classList.remove("is-hidden","is-solved");
    modal.setAttribute("aria-hidden","false");
    document.body.classList.add("rune-inspecting");
@@ -172,10 +190,10 @@ export function createRuneInspector({onTurn,onClose}){
    if(result.solved){
      solved=true;
      modal.classList.add("is-solved");
-     status.textContent="封印归位。石门正在下沉。";
+     status.textContent="指针与石碑刻痕对齐。封印归位，石门正在下沉。";
      closeTimer=setTimeout(close,1150);
    }else{
-     status.textContent="符印转到"+SYMBOLS[active.phase]+"方向。";
+     status.textContent=`指针当前朝${DIRECTIONS[active.phase]}，石碑目标朝${DIRECTIONS[active.target]}。`;
    }
    return true;
  }
