@@ -320,3 +320,26 @@ body.campaign-chapter .joystick-knob{background:radial-gradient(circle at 38% 30
  .tale-ending-content .tale-ending-actions{flex-direction:column}
  .tale-ending-content .tale-ending-actions button{width:100%}
 }
+
+/* Settings are hidden inside the existing modal, never as persistent screen HUD. */
+.tale-extra-settings{text-align:left;margin:15px 0 8px;border-top:1px solid #81766365;padding-top:11px}
+.tale-extra-settings summary{font-size:12px;color:#e3ccab;cursor:pointer;padding:8px 0}
+.tale-advanced-fields{display:grid;grid-template-columns:1fr;gap:12px;padding:12px;background:#171c1b7a;border-radius:7px}
+.tale-advanced-fields label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#e6d9c7}
+.tale-advanced-fields select,.tale-advanced-fields input[type=range]{width:100%;min-height:38px;accent-color:#d4b17b}
+.tale-advanced-fields select{background:#29302c;color:#f1e5d3;border:1px solid #7b755f;border-radius:5px;padding:8px}
+.tale-advanced-fields output{float:right;font-variant-numeric:tabular-nums}
+.tale-save-dialog{text-align:left}
+.tale-save-dialog h2{text-align:center}
+.tale-save-label{display:block;margin:10px 0 7px;font-size:12px;color:#e1ceac}
+.tale-save-dialog textarea{width:100%;height:91px;resize:vertical;background:#141b1a;color:#eddfca;border:1px solid #736956;border-radius:6px;padding:10px;font:11px/1.6 ui-monospace,monospace}
+.tale-save-dialog textarea:focus-visible{outline:2px solid #d8be8a;outline-offset:2px}
+.tale-save-dialog #tale-copy-save{min-height:38px;margin:8px 0 13px;width:100%}
+.tale-save-feedback{min-height:20px!important;margin:6px 0!important;color:#d6bf94!important}
+.tale-save-dialog .tale-modal-actions{justify-content:flex-end}
+@media(max-width:620px){
+ body.campaign-chapter .tale-hud-action{width:40px!important;height:40px!important;min-width:40px!important}
+ body.campaign-chapter .root-tools button,body.campaign-chapter .pale-tools button{min-height:40px;min-width:40px}
+ .tale-save-dialog{padding:20px}
+}
+html[data-reduced-motion="true"] *{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
