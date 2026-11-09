@@ -62,3 +62,24 @@ export function sampleQualityFrame(now,visible=true){
  if(typeof window!=='undefined')window.dispatchEvent(new Event('pans:qualitychange'));
  return true;
 }
+
+export const MOTION_KEY='pans-labyrinth:motion-v1';
+export function motionPreference(storage=browserStorage()){
+ try{const value=storage?.getItem(MOTION_KEY);return value==='reduce'||value==='normal'?value:'system';}
+ catch{return 'system';}
+}
+export function reducedMotion(){
+ const setting=motionPreference();
+ if(setting==='reduce')return true;
+ if(setting==='normal')return false;
+ try{return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);}catch{return false;}
+}
+export function setMotionPreference(mode,storage=browserStorage()){
+ if(!['system','reduce','normal'].includes(mode))throw new TypeError('Invalid motion preference');
+ try{storage?.setItem(MOTION_KEY,mode);}catch{}
+ applyMotionPreference();
+ return mode;
+}
+export function applyMotionPreference(){
+ if(typeof document!=='undefined')document.documentElement.dataset.reducedMotion=String(reducedMotion());
+}
