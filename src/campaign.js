@@ -82,3 +82,20 @@ export function isCampaignScreen(params){
  return !params.has('stage')||params.get('screen')==='menu'||params.get('screen')==='epilogue';
 }
 export const getItemNames=save=>CHAPTERS.slice(0,Math.max(0,Math.min(4,save.completed))).map(c=>c.item);
+
+/** Portable text backup. Chapter 2/3 inventory is derived from the validated progress. */
+export const SAVE_FORMAT='pans-labyrinth-save-v1';
+export function exportCampaign(storage){
+ return JSON.stringify({format:SAVE_FORMAT,progress:loadCampaign(storage)},null,2);
+}
+export function importCampaign(text,storage){
+ if(typeof text!=='string'||text.length>20000)throw new Error('存档文本太长或格式不正确');
+ let data;
+ try{data=JSON.parse(text);}catch{throw new Error('无法读取存档：请粘贴完整的 JSON 文本');}
+ if(!data||data.format!==SAVE_FORMAT||!data.progress||typeof data.progress!=='object'||
+   Array.isArray(data.progress)||!Number.isInteger(data.progress.completed)||
+   data.progress.completed<0||data.progress.completed>4)
+   throw new Error('存档格式不受支持，或章节进度无效');
+ const clean=normalizeProgress(data.progress);
+ return storeCampaign(clean,storage);
+}
