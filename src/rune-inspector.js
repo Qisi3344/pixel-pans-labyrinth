@@ -102,6 +102,10 @@ export function createRuneInspector({onTurn,onClose}){
  const currentLabel=$('rune-inspector-current');
  const matchLabel=$('rune-inspector-match');
  const hint=$('rune-inspector-soft-hint');
+ const helpButton=$('rune-inspector-help');
+ const TUTORIAL_KEY='pans-labyrinth:rune-help-v1';
+ const helpSeen=()=>{try{return window.localStorage.getItem(TUTORIAL_KEY)==='1';}catch{return false;}};
+ const rememberHelp=()=>{try{window.localStorage.setItem(TUTORIAL_KEY,'1');}catch{}};
  const status=$('rune-inspector-status');
  const scene=new THREE.Scene();
  const camera=new THREE.OrthographicCamera(-2.25,2.25,2.05,-2.05,.1,40);
@@ -166,6 +170,7 @@ export function createRuneInspector({onTurn,onClose}){
    modal.setAttribute("aria-hidden","false");
    document.body.classList.add("rune-inspecting");
    updateMarker();resize();
+   modal.classList.toggle('is-help-visible',!helpSeen());
    hint.style.animation="none";void hint.offsetWidth;hint.style.animation="";
    view.focus({preventScroll:true});
  }
@@ -174,7 +179,7 @@ export function createRuneInspector({onTurn,onClose}){
    clearTimeout(closeTimer);closeTimer=null;
    active=null;solved=false;drag=null;
    modal.classList.add("is-hidden");
-   modal.classList.remove("is-solved");
+   modal.classList.remove("is-solved","is-help-visible");
    modal.setAttribute("aria-hidden","true");
    document.body.classList.remove("rune-inspecting");
    if(previousFocus&&document.contains(previousFocus))previousFocus.focus({preventScroll:true});
@@ -186,6 +191,7 @@ export function createRuneInspector({onTurn,onClose}){
    const result=onTurn(active.index,direction);
    if(!result?.changed)return false;
    targetAngle-=direction*QUARTER;
+   rememberHelp();modal.classList.remove('is-help-visible');
    updateMarker();
    if(result.solved){
      solved=true;
@@ -198,6 +204,7 @@ export function createRuneInspector({onTurn,onClose}){
    return true;
  }
  function rotateByInput(direction){rotate(direction);}
+ helpButton.addEventListener('click',()=>{if(active)modal.classList.toggle('is-help-visible');});
  modal.querySelector(".rune-inspector-shade").addEventListener("click",close);
  let pointerId=null;
  view.addEventListener('pointerdown',event=>{
