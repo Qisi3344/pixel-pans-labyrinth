@@ -188,3 +188,12 @@ test('ceiling drawing UI does not obscure its actual 3D chair and trapdoor',()=>
  assert.ok(scene.includes("(portrait?.04:.86)"),
   'portrait should keep enough room to show both chair and raised hatch');
 });
+
+test('Pale Man pursuit gives approximately 1.5 extra seconds across forty units',()=>{
+ const previousSpeed=4.15;
+ const metres=40;
+ const breathingRoom=metres/HUNTER_SPEED-metres/previousSpeed;
+ assert.ok(breathingRoom>=1.3&&breathingRoom<=1.7,
+  'the slower pursuer should grant around 1.5 seconds without altering the player');
+ assert.equal(PLAYER_SPEED,4.6);
+});
