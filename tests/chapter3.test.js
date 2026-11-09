@@ -198,5 +198,5 @@ test('third chapter uses the world itself for clues, without the old side task c
  }
  assert.ok(main.includes('pale-suggest'),'keep the small contextual interactable hint');
  assert.ok(main.includes('pale-escape-guide'),'keep chase directions');
- assert.ok(main.includes("remaining+' 秒后入口关闭'"),'keep the timed chase information');
+ assert.ok(main.includes("remaining+'s 封门'"),'keep the compact countdown without a misleading permanent help card');
 });
