@@ -1,4 +1,5 @@
 import './chapter4-style.css';
+import {getSoundVolume} from './audio.js';
 import {newFinalTrial,updateFinalTrial,moveFinalPlayer,walkableFinal,
  nearFaun,advanceFaunDialogue,FINAL_DIALOGUE,decideFinal,FINAL_ALTAR,CHAPTER4_TIME_LIMIT,FINAL_OUTCOMES,
  finalClockLabel,distance} from './chapter4-logic.js';
@@ -122,7 +123,7 @@ function tone(freq=430,duration=.18,type='sine'){
   const osc=ctx.createOscillator(),gain=ctx.createGain(),at=ctx.currentTime;
   osc.type=type;osc.frequency.setValueAtTime(freq,at);
   gain.gain.setValueAtTime(.0001,at);
-  gain.gain.exponentialRampToValueAtTime(.065,at+.018);
+  gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.065*getSoundVolume()),at+.018);
   gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
   osc.connect(gain);gain.connect(ctx.destination);
   osc.start(at);osc.stop(at+duration+.01);
