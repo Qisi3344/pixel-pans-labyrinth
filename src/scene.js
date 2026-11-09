@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
+import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {headingAngle,headingPosition} from './rune-orientation.js';
 import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
 import {ARCH,WELL,spiralStep,visibleSpiralPosition,visibleWellFloorY,entranceAngle} from './architecture.js';
@@ -441,6 +442,7 @@ export function createDiorama(canvas,maze) {
   sun.position.set(-12,27,17);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   sun.shadow.camera.left=-23;sun.shadow.camera.right=23;sun.shadow.camera.top=23;sun.shadow.camera.bottom=-23;
   sun.shadow.camera.near=1;sun.shadow.camera.far=70;sun.shadow.bias=-.0005;scene.add(sun);
+   let graphics=applyShadowQuality(renderer,sun,THREE);
   const table=new THREE.Mesh(new THREE.PlaneGeometry(150,150),mat(0xffffff));
   // Keep the tabletop UNDER the entire 4.9-unit shaft; never bisect the stairs.
   table.rotation.x=-Math.PI/2;table.position.y=-8.4;table.receiveShadow=true;scene.add(table);
@@ -562,9 +564,10 @@ export function createDiorama(canvas,maze) {
     camera.updateProjectionMatrix();
     const factor=aspect<.85?2.35:2.15;
     renderer.setPixelRatio(1);
-    renderer.setSize(Math.max(160,Math.floor(w/factor)),Math.max(170,Math.floor(h/factor)),false);
+    renderer.setSize(Math.max(160,Math.floor(w*graphics.renderScale/factor)),Math.max(170,Math.floor(h*graphics.renderScale/factor)),false);
     renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';
   }
+  window.addEventListener('pans:qualitychange',()=>{graphics=applyShadowQuality(renderer,sun,THREE);screenWidth=0;resize();});
   function setZoom(next){zoom=THREE.MathUtils.clamp(next,.72,1.65);screenWidth=0;resize();return zoom;}
   function pick(clientX,clientY){
     const rect=canvas.getBoundingClientRect();
@@ -599,6 +602,7 @@ export function createDiorama(canvas,maze) {
     camera.position.copy(target).addScaledVector(direction,43);
     lookAt.copy(target);camera.lookAt(lookAt);
     renderer.render(scene,camera);
+    sampleQualityFrame(now*1000,!document.hidden&&!window.__pansModalOpen);
   }
   resize();draw(0,.016,maze.start,false);
   return { renderer,scene,camera,player,visuals,draw,pick,setZoom,getZoom:()=>zoom,resize,dispose:()=>renderer.dispose() };
