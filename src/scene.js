@@ -68,7 +68,7 @@ function ivyOnStone(parent,x,z,height,seed){
     if(front) next.x+=(hash(seed,k+90)-.44)*.28;
     else next.z+=(hash(seed,k+90)-.44)*.28;
     next.y-=height*(.19+hash(seed,k+65)*.045);
-    root(parent,pos,next,.025,tint);
+    root(parent,pos,next,.025,tint,false);
     // Subtle solid leaves rather than noisy flat decals.
     const leaf=new THREE.Mesh(new THREE.TetrahedronGeometry(.095+hash(seed,k+20)*.045,0),mat(k%2?0x567854:0x3d5c45));
     leaf.position.copy(next);
@@ -90,12 +90,12 @@ function fernClump(parent,x,z,seed){
     group.add(leaf);
   }
 }
-function root(parent, start, end, radius=.17, color=0x2e3737) {
+function root(parent, start, end, radius=.17, color=0x2e3737, cast=true) {
   const dir=new THREE.Vector3().subVectors(end,start);
   const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius*.68,radius,dir.length(),5),mat(color));
   mesh.position.copy(start).addScaledVector(dir,.5);
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
-  mesh.castShadow=true;parent.add(mesh);
+  mesh.castShadow=cast;parent.add(mesh);
 }
 function twistedTree(parent,x,z,seed=0) {
   const tree=new THREE.Group();tree.position.set(x,-.05,z);parent.add(tree);
