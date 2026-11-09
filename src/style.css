@@ -238,5 +238,20 @@
 .rune-inspector-guide-compare{font-size:21px;color:#89a392}
 .rune-inspector-match{grid-column:1/-1;font-size:11px;letter-spacing:.14em;color:#c5d1c9;opacity:.75}
 .rune-inspector-match.is-aligned{color:#a3f5c2;opacity:1}
-.rune-inspector-soft-hint{animation:none!important;opacity:.9!important;white-space:normal;line-height:1.65;width:min(480px,90vw);font-size:clamp(11px,1.45vw,13px);letter-spacing:.03em;color:#d6e7dc}
+.rune-inspector-soft-hint{animation:rune-hint-vanish 4.6s ease-in-out both;opacity:0;white-space:normal;line-height:1.65;width:min(480px,90vw);font-size:clamp(11px,1.45vw,13px);letter-spacing:.03em;color:#d6e7dc}
 @media(max-width:700px){.rune-inspector-guide{top:calc(24px + env(safe-area-inset-top));width:min(365px,94vw);column-gap:8px}.rune-inspector-guide-label{font-size:10px}.rune-inspector-bearing strong{font-size:24px}.rune-inspector-soft-hint{bottom:calc(24px + env(safe-area-inset-bottom));font-size:11px}}
+
+/* Compact contextual hints: avoid occupying the 3D labyrinth viewport. */
+.hint{width:max-content;max-width:min(90vw,330px);padding:6px 8px;gap:5px;box-shadow:0 5px 16px #26362e12;border-radius:11px}
+.hint-sigil{display:none}
+.hint #hint-content{font-size:10px;line-height:1.45;max-width:156px}
+.hint .interact{white-space:nowrap;padding:9px 12px}
+@media(max-width:820px){
+ .chapter-desc,.chapter .runes{display:none}
+ .chapter{max-width:150px}
+ .hint{bottom:calc(170px + env(safe-area-inset-bottom));padding:4px;width:auto;max-width:90vw}
+ .hint #hint-content{display:none}
+ .hint .interact{font-size:11px;padding:9px 12px}
+}
+@media(max-width:820px) and (orientation:landscape){.hint{bottom:calc(78px + env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.rune-inspector-soft-hint{animation:none;opacity:.8}}
