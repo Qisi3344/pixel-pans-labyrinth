@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {createPlayer,animatePlayer} from './player.js';
+import {buildStoneInstances} from './maze-instancing.js';
 import {FINAL_START,FINAL_ALTAR,FINAL_BLOOD_STAND,VIDAL_START,CHAPTER4_TIME_LIMIT,distance} from './chapter4-logic.js';
 import {FINAL_FAUN_POSITION,FINAL_WELL_CENTER} from './chapter4-maze-layout.js';
 import {buildFirstMazeCenterFragment} from './chapter4-maze-center.js';
@@ -230,12 +231,19 @@ function royalThrone(root,x,z,central=false){
 export function royalHall(root){
  const floor=box(root,0x423733,0,-.49,-.55,32.5,.94,25.25);
  const surface=box(root,0x846f58,0,.012,-.55,32.04,.085,24.76);
+ // The 192 static floor slabs share three draw calls, without merging actors or throne.
+ const tileColors=[0xb59a73,0x9a836a,0xa58d6d];
+ const tileBatches=tileColors.map(()=>[]);
  for(let i=0;i<16;i++)for(let k=0;k<12;k++){
   const x=-14.97+i*2.0,z=-11.8+k*2.03;
-  const tile=box(root,(i+k)%4===0?0xb59a73:(i+k)%3===0?0x9a836a:0xa58d6d,
-   x,.068,z,1.96,.035,1.97,false);
-  tile.receiveShadow=true;
+  const colorIndex=(i+k)%4===0?0:(i+k)%3===0?1:2;
+  tileBatches[colorIndex].push({position:[x,.068,z],scale:[1.96,.035,1.97]});
  }
+ const sharedTileGeometry=new THREE.BoxGeometry(1,1,1);
+ tileBatches.forEach((entries,i)=>{
+  const batch=buildStoneInstances(entries,sharedTileGeometry,mat(tileColors[i]));
+  if(batch)root.add(batch);
+ });
  // The central runner recedes into the throne dais, visually extending
  // the royal court far beyond the protagonist instead of ending at her feet.
  box(root,0x5a3842,0,.105,1.85,3.55,.035,15.9,false);
