@@ -45,7 +45,7 @@ function updateUI(){
  const near=maze.runes.find(r=>!r.solved&&distance(current,r)<=1);
  const hint=$('hint');
  if (near&&started&&!won){
-  $('hint-content').innerHTML=`石台旁的小石碑刻着答案。按 <strong>E</strong> 查看符印，将中央指针对准<strong>金色目标刻度</strong>。`;
+  $('hint-content').innerHTML=`观察石碑刻痕，再点击<strong>观察符印</strong>。`;
   hint.classList.add('visible');
  } else {hint.classList.remove('visible');}
 }
