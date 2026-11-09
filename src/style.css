@@ -228,3 +228,15 @@
   .hint{bottom:calc(128px + env(safe-area-inset-bottom))}
   .bottom-panel{bottom:calc(126px + env(safe-area-inset-bottom))}
 }
+
+/* Rune clue: visible engraved target and live pointer, consistent on mobile and desktop. */
+.rune-inspector-guide{position:absolute;z-index:2;top:clamp(18px,4dvh,34px);left:50%;transform:translateX(-50%);display:grid;grid-template-columns:minmax(112px,1fr) auto minmax(112px,1fr);column-gap:clamp(9px,2.5vw,20px);row-gap:8px;align-items:center;width:min(420px,92vw);pointer-events:none;text-align:center}
+.rune-inspector-bearing{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0}
+.rune-inspector-guide-label{font-size:clamp(10px,1.5vw,12px);letter-spacing:.09em;color:#b7c9b9;white-space:nowrap}
+.rune-inspector-bearing strong{font-size:clamp(23px,3.9vw,30px);font-weight:600;letter-spacing:.12em;color:#daeee1;font-variant-numeric:tabular-nums}
+.rune-inspector-bearing-target strong{color:#f6d995;text-shadow:0 0 14px #efcf8859}
+.rune-inspector-guide-compare{font-size:21px;color:#89a392}
+.rune-inspector-match{grid-column:1/-1;font-size:11px;letter-spacing:.14em;color:#c5d1c9;opacity:.75}
+.rune-inspector-match.is-aligned{color:#a3f5c2;opacity:1}
+.rune-inspector-soft-hint{animation:none!important;opacity:.9!important;white-space:normal;line-height:1.65;width:min(480px,90vw);font-size:clamp(11px,1.45vw,13px);letter-spacing:.03em;color:#d6e7dc}
+@media(max-width:700px){.rune-inspector-guide{top:calc(24px + env(safe-area-inset-top));width:min(365px,94vw);column-gap:8px}.rune-inspector-guide-label{font-size:10px}.rune-inspector-bearing strong{font-size:24px}.rune-inspector-soft-hint{bottom:calc(24px + env(safe-area-inset-bottom));font-size:11px}}
