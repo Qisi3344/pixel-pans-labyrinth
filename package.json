@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.js",
-    "test:browser": "node tests/browser-final.mjs"
+    "test:browser": "node tests/browser-final.mjs",
+    "test:smoke": "node tests/browser-smoke.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"
