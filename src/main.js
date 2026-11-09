@@ -14,15 +14,24 @@ const maze=generateMaze();
 const diorama=createDiorama($('world'),maze);
 let current={...maze.start}, moving=null, route=[],started=false,won=false,autoDescending=false;
 let autoRune=null,lastTime=0,lastNotice=0,tipTimeout=null;
+let lastActivityAt=performance.now(),idleStage=0;
+const RUNE_NAMES=['苔之印','月之印','灰烬印'];
+function markActivity(){lastActivityAt=performance.now();idleStage=0;diorama.highlightRune(null);}
+function nextRune(){return maze.runes.find(r=>!r.solved);}
+function objectiveText(){const rune=nextRune();return rune?`已解 ${maze.gates.filter(g=>g.open).length} / 3，下一枚：${RUNE_NAMES[rune.index]}`:'三枚符印已归位，前往中央石井。';}
 const heldMovementKeys=[]; // held state, not single keypress commands
 const inspector=createRuneInspector({
  onTurn:(index,direction)=>{
   const result=stepRune(maze,index,direction);
   if(result.changed){
    // A single crisp latch sound on success; no popup gives away the answer.
-   if(result.solved)note(980,.10,'triangle',.065);
-   else note(direction>0?440:380,.09,'triangle',.018);
-   updateUI();
+   if(result.solved){
+    note(980,.10,'triangle',.065);
+    notice(`${RUNE_NAMES[index]}已归位 · ${maze.gates.filter(g=>g.open).length} / 3`,3);
+    document.querySelector(`[data-rune="${index}"]`)?.classList.add('rune-just-solved');
+    setTimeout(()=>document.querySelector(`[data-rune="${index}"]`)?.classList.remove('rune-just-solved'),700);
+   }else note(direction>0?440:380,.09,'triangle',.018);
+   markActivity();updateUI();
   }
   return result;
  },
@@ -32,7 +41,8 @@ const vector=(c)=>world(c);
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.z-b.z);
 function notice(message,seconds=3){
  const elem=$('game-tip');elem.textContent=message;elem.classList.add('show');lastNotice=performance.now();
- clearTimeout(tipTimeout);tipTimeout=setTimeout(()=>elem.classList.remove('show'),seconds*1000);
+ const readingTime=Math.min(6.5,Math.max(seconds,Array.from(message).length*.15));
+ clearTimeout(tipTimeout);tipTimeout=setTimeout(()=>elem.classList.remove('show'),readingTime*1000);
 }
 function updateUI(){
  let released=maze.gates.filter(g=>g.open).length;
@@ -45,12 +55,22 @@ function updateUI(){
  const near=maze.runes.find(r=>!r.solved&&distance(current,r)<=1);
  const hint=$('hint');
  if (near&&started&&!won){
-  $('hint-content').innerHTML=`观察石碑刻痕，再点击<strong>观察符印</strong>。`;
+  $('hint-content').innerHTML=`${!firstInspectionDone()?'拖动中央箭头，对准金色刻度。':'石碑刻痕就是方向线索。'}<strong>观察符印</strong>`;
   hint.classList.add('visible');
  } else {hint.classList.remove('visible');}
 }
+function firstInspectionDone(){try{return localStorage.getItem('pans-labyrinth:rune-help-v1')==='1';}catch{return false;}}
+function checkIdle(now){
+ if(!started||won||autoDescending||inspector.isOpen()||window.__pansModalOpen||document.hidden){lastActivityAt=now;return;}
+ if(moving||route.length||heldMovementKeys.length||joystickPointer!==null){lastActivityAt=now;idleStage=0;diorama.highlightRune(null);return;}
+ const elapsed=now-lastActivityAt;
+ if(elapsed>=40000&&idleStage<2){
+  const rune=nextRune();if(rune)diorama.highlightRune(rune.index);
+  notice(objectiveText()+'，目标石台开始发光。',4);idleStage=2;
+ }else if(elapsed>=20000&&idleStage===0){notice(objectiveText()+'，沿岔路寻找石台。',4);idleStage=1;}
+}
 function startGame(){
- started=true;$('intro').classList.add('hidden');
+ started=true;markActivity();$('intro').classList.add('hidden');
  note(440,.15);notice('穿过带石面孔的古老拱门。寻找三枚符印，沿螺旋石阶下到井底。',4);
  updateUI();
 }
@@ -60,7 +80,7 @@ function interact(withIndex=null){
  heldMovementKeys.length=0;
  const available=maze.runes.filter(r=>!r.solved&&distance(current,r)<=1);
  const rune=withIndex===null?available[0]:available.find(r=>r.index===withIndex);
- if(!rune){notice('还没靠近可操作的符印。试着沿岔路寻找石台。');return;}
+ if(!rune){notice(objectiveText()+'。先靠近石台。');return;}
  // Pause the maze path queue while a single isolated 3D rune is inspected.
  route=[];autoRune=null;
  note(523,.16,'sine',.025);
@@ -71,7 +91,7 @@ function planTo(to){
  if(!started||won||autoDescending||inspector.isOpen())return false;
  if(moving)return false;
  const path=availablePath(maze,current,to);
- if(!path){notice('这条路被石墙封住了。先寻找符印。');return false;}
+ if(!path){notice('这条路被石墙封住。'+objectiveText());return false;}
  route=path.slice(1);autoRune=null;
  return true;
 }
@@ -109,6 +129,7 @@ function releaseJoystick(event){
  if(!autoDescending)route=[];
 }
 joystickPad.addEventListener('pointerdown',event=>{
+ markActivity();
  if(joystickPointer!==null||event.button>0||!started||won||autoDescending||inspector.isOpen())return;
  event.preventDefault();
  joystickPointer=event.pointerId;
@@ -148,6 +169,7 @@ function wonGame(){
  $('victory').classList.remove('hidden');
 }
 function update(now){
+ checkIdle(now);
  const dt=window.__pansModalOpen?0:Math.min(.05,lastTime?(now-lastTime)/1000:.016);lastTime=now;
  let distanceMoved=0;
  if(started&&!won&&!inspector.isOpen()){
@@ -213,6 +235,7 @@ $('sound').addEventListener('click',()=>{const enabled=toggleSound();$('sound').
 $('zoom-in').addEventListener('click',()=>diorama.setZoom(diorama.getZoom()+.12));
 $('zoom-out').addEventListener('click',()=>diorama.setZoom(diorama.getZoom()-.12));
 window.addEventListener('keydown',event=>{
+ markActivity();
  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key))event.preventDefault();
  if(inspector.isOpen()){
   if(['Escape','e','E'].includes(event.key)){event.preventDefault();inspector.close();return;}
@@ -250,7 +273,7 @@ document.addEventListener('visibilitychange',()=>{
  if(document.hidden){releaseKeyboard();releaseJoystick();}
 });
 let pointerStart=null;
-$('world').addEventListener('pointerdown',event=>{pointerStart={x:event.clientX,y:event.clientY};});
+$('world').addEventListener('pointerdown',event=>{markActivity();pointerStart={x:event.clientX,y:event.clientY};});
 $('world').addEventListener('pointerup',event=>{
  if(!started||won||autoDescending||!pointerStart)return;
  if(Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>15){pointerStart=null;return;}
@@ -261,6 +284,6 @@ $('world').addEventListener('pointerup',event=>{
  if(hit.kind==='tile')planTo({x:hit.x,z:hit.z});
  if(hit.kind==='gate'&&!maze.gates[hit.index].open)notice('古老石墙上的封印没有回应。需要先修复符印。');
 });
-$('world').addEventListener('wheel',event=>{if(!started||autoDescending)return;event.preventDefault();diorama.setZoom(diorama.getZoom()+(event.deltaY>0?-.06:.06));},{passive:false});
+$('world').addEventListener('wheel',event=>{markActivity();if(!started||autoDescending)return;event.preventDefault();diorama.setZoom(diorama.getZoom()+(event.deltaY>0?-.06:.06));},{passive:false});
 window.addEventListener('resize',()=>{diorama.resize();inspector.resize();});
 updateUI();
