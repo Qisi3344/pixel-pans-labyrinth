@@ -389,7 +389,7 @@ function makeRune(parent,rune,clickables){
   engraving.lineTo(-.08,-.26);engraving.lineTo(-.08,.085);
   engraving.lineTo(-.20,.085);engraving.closePath();
   const carvedArrow=new THREE.Mesh(new THREE.ShapeGeometry(engraving),
-    new THREE.MeshBasicMaterial({color:0xb1c6a9,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({color:0xf0d69c,side:THREE.DoubleSide}));
   carvedArrow.rotation.x=-Math.PI/2;carvedHeading.add(carvedArrow);
   // Dark cuts around the compass stone emphasize the north/east/south/west frame.
   for(let k=0;k<4;k++){
