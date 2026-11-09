@@ -76,10 +76,10 @@ function drawHUD(){
  $('root-enter-guide').hidden=!outside;
  if(outside){
   $('amber-guide').hidden=true;
-  $('root-status').textContent='走进树干中央的黑色洞口即可进入。也可点击洞口，或靠近后按 E / 进入。';
+  $('root-status').hidden=true; // Entry is already explained by the button.
   return;
  }
- $('amber-guide').hidden=state.stones[2];
+ $('amber-guide').hidden=state.stones[2] || (state.node!==8 && !waypointPending);
  document.querySelectorAll('#root-stones span').forEach((element,i)=>{
   element.classList.toggle('got',state.stones[i]);
   element.textContent=(state.stones[i]?'◆ ':'◇ ')+['苔绿魔石','紫晶魔石','琥珀魔石'][i];
@@ -88,12 +88,13 @@ function drawHUD(){
  const node=state.node;
  let status='沿着地下根脉探索，寻找魔石。';
  if(STONE_NODES.some((n,i)=>n===node&&!state.stones[i])) status='魔石就在这里。按 E 拾取。';
- else if(node===8&&!state.stones[2])status='这里有两条路：金色碎石指向前侧的琥珀洞室。先拿魔石，再推动巨石去见蟾蜍。';
+ else if(node===8&&!state.stones[2])status='沿金色碎石寻找琥珀魔石。';
  else if(node===8&&!state.boulderMoved)status='巨石挡住去往蟾蜍的通道，按 E 推开；琥珀魔石在另一条支路。';
  else if(TOAD_INTERACTION_NODES.includes(node)&&state.boulderMoved&&!state.stones.every(Boolean))status='巨蟾蜍就在前方，不必再靠近。先找齐三颗魔石。';
  else if(node===4&&!rootOpen(state.time))status='树根收缩！等待它舒展开，再向前穿过。';
  else if(TOAD_INTERACTION_NODES.includes(node)&&state.boulderMoved&&state.stones.every(Boolean))status='站在安全的石道上，按 E 向巨蟾蜍献上魔石。';
  $('root-status').textContent=status;
+ $('root-status').hidden=status==='沿着地下根脉探索，寻找魔石。';
 }
 function enterTree(){
  if(!outside)return;
@@ -149,14 +150,15 @@ function follow(destination){
  if(!path){
   if(destination===STONE_NODES[2]&&!state.stones[2]){
    waypointPending=true;
-   tip('通往琥珀魔石的树根暂时收缩了，等它松开后会继续寻路。',3400);
+   drawHUD();
+   tip('树根收缩了，等它舒展后继续。',2200);
   }else tip('这段根脉还不能通行。观察收缩的树根或搬动石块。');
   return;
  }
  waypointPending=false;
  queue=path.slice(1);
  if(destination===STONE_NODES[2]){
-  tip('沿着金色地面印记走，到琥珀洞室后按 E 拾取魔石。',4200);
+  tip('沿金色印记到魔石处，按 E 拾取。',2300);
  }
 }
 function tryMove(to){
