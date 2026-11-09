@@ -233,3 +233,13 @@ html[data-input-mode="keyboard"] .final-touch{display:none}
  .final-faun-dialogue p{margin:4px 0 7px;font-size:11px;min-height:0}
  .final-faun-actions button{min-height:30px}
 }
+
+/* Keep the timed decision and action; drop duplicate permanent mission text. */
+.final-guide{padding:5px;border-radius:8px;gap:0;box-shadow:0 4px 15px #0003}
+.final-guide span{display:none}
+.final-guide button{padding:9px 14px;border-radius:6px;font-size:11px}
+.final-message{top:auto;bottom:clamp(98px,16vh,145px);padding:8px 12px;max-width:min(460px,85vw);font-size:11px;box-shadow:0 5px 18px #0003}
+@media(max-width:820px){
+ .final-guide{bottom:calc(13px + env(safe-area-inset-bottom))}
+ .final-message{bottom:calc(132px + env(safe-area-inset-bottom));max-width:88vw;font-size:10px}
+}
