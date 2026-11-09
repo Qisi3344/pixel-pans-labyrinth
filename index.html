@@ -47,11 +47,23 @@
     <section id="rune-inspector" class="rune-inspector is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="符印特写解谜">
       <div class="rune-inspector-shade" aria-hidden="true"></div>
       <div class="rune-inspector-solo">
+        <div class="rune-inspector-guide" aria-label="石碑目标方向和指针当前方向">
+          <div class="rune-inspector-bearing rune-inspector-bearing-target">
+            <span class="rune-inspector-guide-label">石碑刻痕 · 金色目标</span>
+            <strong id="rune-inspector-target">↓ 南</strong>
+          </div>
+          <span class="rune-inspector-guide-compare" aria-hidden="true">⇢</span>
+          <div class="rune-inspector-bearing">
+            <span class="rune-inspector-guide-label">中央指针 · 当前</span>
+            <strong id="rune-inspector-current">→ 东</strong>
+          </div>
+          <span class="rune-inspector-match" id="rune-inspector-match" aria-live="polite">尚未对齐</span>
+        </div>
         <div class="rune-inspector-viewport" id="rune-inspector-view" tabindex="-1" aria-label="拖动符印，旋转至石碑暗示的方位">
           <canvas id="rune-inspector-canvas" role="img" aria-label="可拖动旋转的三维符印石盘"></canvas>
           <span class="rune-inspector-orient" id="rune-inspector-orient" aria-hidden="true">↑</span>
         </div>
-        <p class="rune-inspector-soft-hint" id="rune-inspector-soft-hint" aria-hidden="true">观察石碑箭头 · 拖动对准相同刻度 · Esc / E 退出</p>
+        <p class="rune-inspector-soft-hint" id="rune-inspector-soft-hint" aria-hidden="true">拖动中央箭头，对准唯一的金色刻度 · ← → 旋转 · Esc / E 退出</p>
         <span class="rune-sr-only" id="rune-inspector-status" role="status" aria-live="polite"></span>
       </div>
     </section>
