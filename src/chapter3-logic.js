@@ -25,7 +25,8 @@ export const CHAIR=Object.freeze({minX:-30.10,maxX:-29.20,minZ:-1.39,maxZ:-.47})
 export const MONSTER_START=Object.freeze({x:6.78,z:.12});
 export const MONSTER_INSPECT_RADIUS=2.35;
 export const PLAYER_SPEED=4.6;
-export const HUNTER_SPEED=4.15;
+// Approximately 1.5 extra seconds over a representative 40-unit pursuit.
+export const HUNTER_SPEED=3.60;
 export const AWAKEN_SECONDS=3.35;
 export const CATCH_RADIUS=.76;
 export const DOOR_RADIUS=1.35;
