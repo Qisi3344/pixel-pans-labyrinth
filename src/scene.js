@@ -541,7 +541,7 @@ export function createDiorama(canvas,maze) {
   const target=new THREE.Vector3();const lookAt=new THREE.Vector3();
   const direction=new THREE.Vector3(1,1,1).normalize();
   // On portrait phones we pan after the character, never rotate the ISO camera.
-  let portraitFollow=false,cameraReady=false;
+  let portraitFollow=false,cameraReady=false,guidanceIndex=null;
   function playerFocal(){
     const p=player.body.position;
     return new THREE.Vector3(p.x,Math.max(-1.6,p.y*.48),p.z);
@@ -587,7 +587,7 @@ export function createDiorama(canvas,maze) {
       v.gem.position.y=1.18+Math.sin(now*2.7+i)*.10;
       v.gem.rotation.y+=dt*.6;
       v.ring.material.color.setHex(rune.solved?0x75a092:rune.color);
-      v.light.intensity=rune.solved?.35:1.1;
+      v.light.intensity=rune.solved?.35:i===guidanceIndex?2.5+.6*Math.sin(now*4):1.1;
       const y=rune.solved?-2.2:0;
       gate.group.position.y=THREE.MathUtils.damp(gate.group.position.y,y,5,dt);
     }
@@ -605,5 +605,6 @@ export function createDiorama(canvas,maze) {
     sampleQualityFrame(now*1000,!document.hidden&&!window.__pansModalOpen);
   }
   resize();draw(0,.016,maze.start,false);
-  return { renderer,scene,camera,player,visuals,draw,pick,setZoom,getZoom:()=>zoom,resize,dispose:()=>renderer.dispose() };
+  return { renderer,scene,camera,player,visuals,draw,pick,setZoom,getZoom:()=>zoom,resize,
+   highlightRune:index=>{guidanceIndex=index;},dispose:()=>renderer.dispose() };
 }
