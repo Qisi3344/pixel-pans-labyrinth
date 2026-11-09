@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {createPlayer,animatePlayer} from './player.js';
 import {HALL,CORRIDOR,TABLE,START,FOOD,DOOR,MONSTER_START,DOOR_POLYLINE,AWAKEN_SECONDS,SEAL_SECONDS,CHAIR_CLIMB_SECONDS,ESCAPE_CLIMB_SECONDS,zone} from './chapter3-logic.js';
 import {createProcessionalPassage,enrichForbiddenFeast} from './chapter3-passage.js';
@@ -469,6 +470,7 @@ export function createBanquetScene(canvas,state){
  sun.position.set(-12,25,14);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
  Object.assign(sun.shadow.camera,{left:-22,right:22,top:22,bottom:-22});
  sun.shadow.bias=-.0005;scene.add(sun);
+  let graphics=applyShadowQuality(renderer,sun,THREE);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),color(0xffffff));
  ground.rotation.x=-Math.PI/2;ground.position.y=-1.62;ground.receiveShadow=true;scene.add(ground);
  const hall=banquetHall(scene),passage=createProcessionalPassage(scene),table=buildTable(scene);
@@ -496,7 +498,7 @@ export function createBanquetScene(canvas,state){
    w=width;h=height;portrait=isPortrait;
    const divisor=isPortrait?2.0:2.15;
    renderer.setPixelRatio(1);
-   renderer.setSize(Math.max(144,Math.round(w/divisor)),Math.max(144,Math.round(h/divisor)),false);
+   renderer.setSize(Math.max(144,Math.round(w*graphics.renderScale/divisor)),Math.max(144,Math.round(h*graphics.renderScale/divisor)),false);
    canvas.style.width='100%';canvas.style.height='100%';
    // Recenter at resize so mobile view doesn't drift into blank white space.
    const p=state.player;
@@ -514,6 +516,7 @@ export function createBanquetScene(canvas,state){
   camera.top=halfV;camera.bottom=-halfV;
   camera.updateProjectionMatrix();
  }
+ window.addEventListener('pans:qualitychange',()=>{graphics=applyShadowQuality(renderer,sun,THREE);resize(true);});
  function setZoom(delta){zoom=THREE.MathUtils.clamp(zoom+delta,.85,1.42);resize(true);}
  function pick(cx,cy){
   const b=canvas.getBoundingClientRect();
@@ -634,6 +637,7 @@ export function createBanquetScene(canvas,state){
   camera.position.copy(focus).addScaledVector(state.phase==='caught'?biteAngle:angle,37);
   camera.lookAt(focus);
   renderer.render(scene,camera);
+  sampleQualityFrame(now*1000,!document.hidden&&!window.__pansModalOpen);
   return devour;
  }
  resize(true);draw(0,.016,0);
