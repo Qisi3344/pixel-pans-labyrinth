@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
 import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {headingAngle,headingPosition} from './rune-orientation.js';
+import {buildStoneInstances,resolveStonePick} from './maze-instancing.js';
 import {CELL,SIZE,CENTER,RUIN_RADIUS,withinRuin,WELL_ROUTE,id} from './maze.js';
 import {ARCH,WELL,spiralStep,visibleSpiralPosition,visibleWellFloorY,entranceAngle} from './architecture.js';
 
@@ -460,7 +461,8 @@ export function createDiorama(canvas,maze) {
   ruinPerimeter(stage,RUIN_RADIUS*CELL+.43,maze.start);
   buildWell(stage);
   const clickables=[];
-  const tiles=[];
+  const floorBatches=PALETTE.floor.map(()=>[]);
+  const wallBatches=PALETTE.rock.map(()=>[]);
   for(let z=0;z<SIZE;z++) for(let x=0;x<SIZE;x++){
     if(!withinRuin(x,z))continue;
     const p=world({x,z});const h=hash(x,z);
@@ -485,21 +487,21 @@ export function createDiorama(canvas,maze) {
       // Only the real well shaft remains open via the 'inner' guard above.
       // Weathered, short, visibly stacked stonework: not tall concrete blocks.
       const height=.78+h*.40;
-      const column=box(stage,PALETTE.rock[Math.floor(h*5)],
-        [p.x,height/2-.08,p.z],[CELL*.985,height,CELL*.985]);
+      wallBatches[Math.floor(h*5)].push({
+        position:[p.x,height/2-.08,p.z],scale:[CELL*.985,height,CELL*.985]
+      });
       if(hash(z,x,7)>.35){
         box(stage,0x849187,[p.x,height-.055,p.z],[CELL*1.005,.10,CELL*1.005],false);
       }
       if(hash(x,z,54)>.60){
         box(stage,0x334b41,[p.x+CELL*.23,height+.012,p.z-CELL*.23],[CELL*.26,.045,CELL*.22],false);
       }
-      column.userData.kind='wall';
       if(h>.78)ivyOnStone(stage,p.x,p.z,height,x*37+z*107);
       if(h>.87)fernClump(stage,p.x+(hash(x,z,12)-.5)*.52,p.z+(hash(z,x,23)-.5)*.47,x*23+z);
     } else {
-      const slab=box(stage,PALETTE.floor[Math.floor(h*5)],
-        [p.x,p.y-.105,p.z],[CELL*.965,.22,CELL*.965],false);
-      slab.userData={kind:'tile',x,z};clickables.push(slab);tiles.push(slab);
+      floorBatches[Math.floor(h*5)].push({
+        position:[p.x,p.y-.105,p.z],scale:[CELL*.965,.22,CELL*.965],cell:{x,z}
+      });
       if(hash(x,z,9)>.76 && !maze.runes.some(r=>r.x===x&&r.z===z)){
         tuft(stage,p.x+(h-.5)*.65,p.z+(hash(z,x)-.5)*.6,.19,PALETTE.moss[Math.floor(h*4)]);
       }
@@ -511,6 +513,17 @@ export function createDiorama(canvas,maze) {
       }
     }
   }
+
+  // Five material batches replace hundreds of individual identical static stone meshes.
+  // Tile instanceId maps back to grid cells for click-to-pathfinding.
+  floorBatches.forEach((entries,i)=>{
+    const mesh=buildStoneInstances(entries,cube,mat(PALETTE.floor[i]),{kind:'tile'});
+    if(mesh){stage.add(mesh);clickables.push(mesh);}
+  });
+  wallBatches.forEach((entries,i)=>{
+    const mesh=buildStoneInstances(entries,cube,mat(PALETTE.rock[i]),{kind:'wall',castShadow:true});
+    if(mesh)stage.add(mesh);
+  });
 
   // Narrow broken-stone causeway from the existing approach tile into the
   // smaller well. The automatic descent walks over it before the first tread.
@@ -574,7 +587,7 @@ export function createDiorama(canvas,maze) {
     mouse.set(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);
     ray.setFromCamera(mouse,camera);
     const hit=ray.intersectObjects(clickables,false)[0];
-    return hit?.object.userData||null;
+    return resolveStonePick(hit);
   }
   function draw(now,dt,cell,moving,travelled=0){
     resize();
