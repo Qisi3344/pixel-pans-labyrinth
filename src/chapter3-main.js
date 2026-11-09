@@ -123,31 +123,25 @@ $('pale-fresco-modal').addEventListener('click',e=>{
 });
 function updateHUD(){
  const phase=state.phase;
- const inPassage=zone(state.player)==='passage';
  $('pale-game').dataset.phase=phase;
- const chased=['chase','climbing','drawing','caught'].includes(phase);
+ const chased=phase==='chase';
  $('pale-escape-guide').classList.toggle('active',chased);
  const remaining=Math.max(0,Math.ceil(SEAL_SECONDS-state.chaseTime));
  const span=Math.abs(FOOD.x-DOOR.x);
  const progress=Math.max(0,Math.min(1,(FOOD.x-state.player.x)/span));
  $('pale-escape-fill').style.width=(progress*100).toFixed(1)+'%';
  $('pale-escape-distance').textContent=
-  Math.ceil(distance(state.player,DOOR))+' 米 · '+
-  (state.sealed?'入口已关闭 · 快画门':remaining+' 秒后入口关闭');
+  '距木椅 '+Math.ceil(distance(state.player,DOOR))+'m · '+
+  (state.sealed?'旧门已封':remaining+'s 封门');
  const canDagger=phase==='invitation'&&!state.hasDagger&&
   distance(state.player,DAGGER_POINT)<DAGGER_RADIUS;
  const canEat=phase==='invitation'&&state.hasDagger&&distance(state.player,FOOD)<1.55;
  const canDraw=phase==='chase'&&atDoor(state);
- const suggest=phase==='invitation'||canDraw;
+ const suggest=canDagger||canEat||canDraw;
  $('pale-suggest').classList.toggle('show',suggest);
- const nearMonster=phase==='invitation'&&
-  distance(state.player,state.monster)<=MONSTER_INSPECT_RADIUS;
- $('pale-suggest-text').textContent=canDagger?'⚷ 柜门的锁孔与黄金钥匙吻合。':
-  canEat?'✧ 葡萄就在手边。要品尝一颗吗？':
-  canDraw?'✦ 木椅就在这里：踩上去画出头顶的出口':
-  nearMonster?'✧ 这个苍白的身影似乎在沉睡……':
-  inPassage?'✧ 先四处看看吧。石廊的墙上似乎藏着线索。':
-  '✧ 不妨仔细看看这里的食物、壁画与角落。';
+ $('pale-suggest-text').textContent=canDagger?'石柜可以打开':
+  canEat?'葡萄就在手边':
+  canDraw?'踩木椅画出口':'';
  const actionButton=$('pale-suggest-act');
  actionButton.textContent=canDagger?'开柜 E':canEat?'品尝 E':'爬椅子 E';
  actionButton.hidden=!(canDagger||canEat||canDraw);
