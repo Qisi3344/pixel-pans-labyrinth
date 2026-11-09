@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createPlayer,animatePlayer} from './player.js';
+import {applyShadowQuality,sampleQualityFrame} from './graphics-quality.js';
 import {chapterFraming} from './chapter2-camera.js';
 import {createExterior} from './chapter2-exterior.js';
 import {createChapter2Ending} from './chapter2-ending.js';
@@ -40,6 +41,7 @@ export function createTreeScene(canvas,state){
  const key=new THREE.DirectionalLight(0xf8fff9,2.3);key.position.set(-12,23,11);key.castShadow=true;
  key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-20;key.shadow.camera.right=20;
  key.shadow.camera.top=20;key.shadow.camera.bottom=-20;key.shadow.bias=-.0006;scene.add(key);
+  let graphics=applyShadowQuality(renderer,key,THREE);
  const fill=new THREE.PointLight(0xaab9a6,1.6,18);fill.position.set(2,-.4,8);scene.add(fill);
  const camera=new THREE.OrthographicCamera(-13,13,9,-9,.1,120);
  const direction=new THREE.Vector3(1,1.05,1.3).normalize();
@@ -181,8 +183,8 @@ export function createTreeScene(canvas,state){
    const divisor=portrait?2.05:2.10;
    renderer.setPixelRatio(1);
    renderer.setSize(
-    Math.max(128,Math.round(w/divisor)),
-    Math.max(128,Math.round(h/divisor)),false
+    Math.max(128,Math.round(w*graphics.renderScale/divisor)),
+    Math.max(128,Math.round(h*graphics.renderScale/divisor)),false
    );
    canvas.style.width='100%';canvas.style.height='100%';
   }
@@ -195,6 +197,7 @@ export function createTreeScene(canvas,state){
   }
   return framing;
  }
+ window.addEventListener('pans:qualitychange',()=>{graphics=applyShadowQuality(renderer,key,THREE);width=-1;resize();});
  function setZoom(n){zoom=THREE.MathUtils.clamp(n,.8,1.7);resize();}
  function pick(x,y){
   const rect=canvas.getBoundingClientRect();
@@ -240,6 +243,7 @@ export function createTreeScene(canvas,state){
    area==='interior'?cavernDirection:direction,33);
   camera.lookAt(focus);
   renderer.render(scene,camera);
+  sampleQualityFrame(seconds*1000,!document.hidden&&!window.__pansModalOpen);
   return cinematic;
  }
  resize();draw(0,.016,0);
