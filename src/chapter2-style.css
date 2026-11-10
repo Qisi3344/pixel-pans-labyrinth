@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
-:root{font-family:'DM Sans','Noto Sans SC',system-ui,sans-serif;color:#34483d;background:#fff}
+:root{font-family:var(--tale-serif,'EB Garamond','Noto Serif SC','Songti SC',serif);color:#34483d;background:#fff}
 *{box-sizing:border-box}html,body,.root-game{width:100%;height:100%;margin:0;overflow:hidden}button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible{outline:2px solid #799a84;outline-offset:3px}
 .root-game{position:relative;touch-action:none;isolation:isolate}#root-world{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;touch-action:none}
 .root-head{position:absolute;z-index:2;left:clamp(20px,3.5vw,60px);right:clamp(20px,3.5vw,60px);top:clamp(20px,4vh,45px);display:flex;justify-content:space-between;pointer-events:none;gap:12px}.root-head small,.root-label,.root-card small{font-size:10px;letter-spacing:.2em;color:#7e9988;font-weight:700}
