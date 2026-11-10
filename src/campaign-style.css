@@ -1,9 +1,14 @@
 /* Shared art direction across all three miniature Three.js chapters.
    Dark fairytale / aged masonry / candlelight, not a dashboard. */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
 :root{--tale-ink:#131719;--tale-rock:#202524;--tale-panel:#252a28;
  --tale-cream:#eee7d7;--tale-mist:#bcb4a4;--tale-gold:#bfa67b;
- --tale-ember:#7c4242;--tale-border:rgba(198,171,127,.36);}
-html:root{font-family:'DM Sans','Noto Sans SC','PingFang SC',system-ui,sans-serif}
+ --tale-ember:#7c4242;--tale-border:rgba(198,171,127,.36);
+ --tale-serif:'EB Garamond','Noto Serif SC','Songti SC','SimSun',serif;
+ --tale-chip:rgba(24,29,27,.88);
+ --tale-chip-border:rgba(198,171,127,.42);
+ --tale-glow:0 10px 30px rgba(8,10,9,.35);}
+html:root{font-family:var(--tale-serif);font-synthesis:none}
 body.campaign-root,body.campaign-chapter{
  margin:0;background:#161a19;color:var(--tale-cream);
  -webkit-font-smoothing:antialiased;
@@ -30,8 +35,8 @@ body.campaign-root,body.campaign-chapter{
 .tale-crest{font-size:32px;color:#c5a77c;line-height:1.2;margin:17px 0 4px;
  text-shadow:0 0 24px rgba(210,175,110,.17)}
 .tale-title h1,.tale-ending-content h1,.tale-modal h2{
- font-family:'DM Sans','Noto Sans SC','PingFang SC',sans-serif;letter-spacing:.22em;
- font-weight:400;color:var(--tale-cream)}
+ font-family:var(--tale-serif);letter-spacing:.22em;
+ font-weight:600;color:var(--tale-cream)}
 .tale-title h1{font-size:clamp(35px,5.2vw,61px);margin:0 0 8px}
 .tale-english{font-size:10px;letter-spacing:.42em;color:#b49b77}
 .tale-rule{max-width:275px;height:27px;margin:10px auto 8px;display:flex;
