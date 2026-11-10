@@ -39,8 +39,13 @@ const inspector=createRuneInspector({
 });
 const vector=(c)=>world(c);
 const distance=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.z-b.z);
+let lastTipMessage='',lastTipShownAt=0;
 function notice(message,seconds=3){
- const elem=$('game-tip');elem.textContent=message;elem.classList.add('show');lastNotice=performance.now();
+ // Don't nag: an identical tip never re-appears within a short cooldown.
+ const now=performance.now();
+ if(message===lastTipMessage&&now-lastTipShownAt<8000)return;
+ lastTipMessage=message;lastTipShownAt=now;
+ const elem=$('game-tip');elem.textContent=message;elem.classList.add('show');lastNotice=now;
  const readingTime=Math.min(6.5,Math.max(seconds,Array.from(message).length*.15));
  clearTimeout(tipTimeout);tipTimeout=setTimeout(()=>elem.classList.remove('show'),readingTime*1000);
 }
